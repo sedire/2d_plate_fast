@@ -27,8 +27,6 @@ int main()
 	beginTime = time( 0 );
 	solver->pre_step();
 	endTime = time( 0 );
-	
-	cout << "hellp\n";
 
 	solver->cur_t += solver->dt;
 	++( solver->curTimeStep );
