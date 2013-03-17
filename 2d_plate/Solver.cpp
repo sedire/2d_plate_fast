@@ -825,19 +825,23 @@ void Solver::walkthrough( int mode )
 		calc_Newmark_AB( _x, mode );
 		calc_system( _x );
 
-#pragma parallel for private( baseVect )
+#pragma omp parallel for firstprivate( baseVect )
 		for( int vNum = 0; vNum < varNum / 2; ++vNum )
 		{
 			for( int i = 0; i < varNum; ++i )
 			{
 				baseVect[i] = orthoBuilder->solInfoMap[_x].zi[vNum][i];
 			}
-			rungeKutta->calc( matr_A, vect_f, dy, 0, &baseVect );
+			rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 0, &baseVect );
+			for( int i = 0; i < varNum; ++i )
+			{
+				orthoBuilder->solInfoMap[_x + 1].zi[vNum][i] = baseVect[i];
+			}
 		}
 
 		for( int vNum = 0; vNum < varNum / 2; ++vNum )
 		{
-			orthoBuilder->orthonorm( vNum, _x, &baseVect );
+			orthoBuilder->orthonorm( vNum, _x, &( orthoBuilder->solInfoMap[_x + 1].zi[vNum] ) );
 		}
 
 		for( int i = 0; i < varNum; ++i )
@@ -845,8 +849,7 @@ void Solver::walkthrough( int mode )
 			/*baseVect[i] = orthoBuilder->solInfoMap[_x].z5[i];*/
 			baseVect[i] = orthoBuilder->z5[_x][i];
 		}
-
-		rungeKutta->calc( matr_A, vect_f, dy, 1, &baseVect );
+		rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 1, &baseVect );
 
 		orthoBuilder->orthonorm( varNum / 2, _x, &baseVect );
 

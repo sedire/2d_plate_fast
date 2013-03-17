@@ -19,7 +19,7 @@ RungeKutta::RungeKutta( int _eq_num )
 	rgk_d41 = 1.0 - rgk_d42 - rgk_d43;
 }
 
-void RungeKutta::calc( const vector<vector<PL_NUM>>& A, PL_NUM *f, PL_NUM dx, int hom, vector<PL_NUM>* x )
+void RungeKutta::calc( const vector<vector<PL_NUM>>& A, PL_NUM *f, PL_NUM dx, int thrNum, int hom, vector<PL_NUM>* x )
 {
 	//if( A.size() != eq_num || 
 	//	A[0].size() != eq_num ||
@@ -33,42 +33,42 @@ void RungeKutta::calc( const vector<vector<PL_NUM>>& A, PL_NUM *f, PL_NUM dx, in
 	int sizeOfF = EQ_NUM * NUMBER_OF_LINES;
 
 	for( int i = 0; i < sizeOfF; ++i ) {
-		f1[i] = 0.0;
-		f2[i] = 0.0;
-		f3[i] = 0.0;
-		f4[i] = 0.0;
+		f1[thrNum][i] = 0.0;
+		f2[thrNum][i] = 0.0;
+		f3[thrNum][i] = 0.0;
+		f4[thrNum][i] = 0.0;
 	}
 
 	for( int i = 0; i < sizeOfF; ++i ) {				//f1 = dx * Fhi( x )
 		for( int j = 0; j < eq_num; ++j ) {
-			f1[i] += dx * A[i][j] * (*x)[j];
+			f1[thrNum][i] += dx * A[i][j] * (*x)[j];
 		}
 	}
 	for( int i = 0; i < sizeOfF; ++i ) {				//f2 = dx * Fhi( x + d21 * f1 )
 		for( int j = 0; j < eq_num; ++j ) {
-			f2[i] += dx * A[i][j] * ( (*x)[j] + rgk_d21 * f1[j] );
+			f2[thrNum][i] += dx * A[i][j] * ( (*x)[j] + rgk_d21 * f1[thrNum][j] );
 		}
 	}
 	for( int i = 0; i < sizeOfF; ++i ) {				//f3 = dx * Fhi( x + d31 * f1 + d32 * f2 )
 		for( int j = 0; j < eq_num; ++j ) {
-			f3[i] += dx * A[i][j] * ( (*x)[j] + rgk_d31 * f1[j] + rgk_d32 * f2[j] );
+			f3[thrNum][i] += dx * A[i][j] * ( (*x)[j] + rgk_d31 * f1[thrNum][j] + rgk_d32 * f2[thrNum][j] );
 		}
 	}
 	for( int i = 0; i < sizeOfF; ++i ) {				//f2 = dx * Fhi( x + d41 * f1 + d42 * f2 + d43 * f3 )
 		for( int j = 0; j < eq_num; ++j ) {
-			f4[i] += dx * A[i][j] * ( (*x)[j] + rgk_d41 * f1[j] + rgk_d42 * f2[j] + rgk_d43 * f3[j] );
+			f4[thrNum][i] += dx * A[i][j] * ( (*x)[j] + rgk_d41 * f1[thrNum][j] + rgk_d42 * f2[thrNum][j] + rgk_d43 * f3[thrNum][j] );
 		}
 	}
 	if( hom != 0 ) {
 		for( int i = 0; i < sizeOfF; ++i ) {
-			f1[i] += dx * f[i];
-			f2[i] += dx * f[i];
-			f3[i] += dx * f[i];
-			f4[i] += dx * f[i];
+			f1[thrNum][i] += dx * f[i];
+			f2[thrNum][i] += dx * f[i];
+			f3[thrNum][i] += dx * f[i];
+			f4[thrNum][i] += dx * f[i];
 		}
 	}
 
 	for( int i = 0; i < sizeOfF; ++i ) {
-		(*x)[i] = (*x)[i] + rgk_C1 * f1[i] + rgk_C2 * f2[i] + rgk_C3 * f3[i] + rgk_C4 * f4[i];
+		(*x)[i] = (*x)[i] + rgk_C1 * f1[thrNum][i] + rgk_C2 * f2[thrNum][i] + rgk_C3 * f3[thrNum][i] + rgk_C4 * f4[thrNum][i];
 	}
 }

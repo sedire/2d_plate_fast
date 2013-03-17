@@ -10,5 +10,6 @@
 #define NEWTON_IT 0
 #define ALMOST_ZERO 0.0000000000001
 #define _MMM_PI 3.14159265
+#define NUM_OF_THREADS 4
 
 #endif

@@ -10,7 +10,7 @@ using std::endl;
 int main()
 {
 	cout << "hello\n";
-	omp_set_num_threads( 4 );
+	omp_set_num_threads( NUM_OF_THREADS );
 	cout << "initializing...\n";
 
 	time_t beginTime = time( 0 );
