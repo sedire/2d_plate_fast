@@ -10,7 +10,7 @@ using std::endl;
 int main()
 {
 	cout << "hello\n";
-
+	omp_set_num_threads( 4 );
 	cout << "initializing...\n";
 
 	time_t beginTime = time( 0 );
@@ -35,7 +35,7 @@ int main()
 	cout << "\n pre_step done\n";
 	cout << "pre_step done in " << float( endTime - beginTime ) << " ~~\n";
 
-	while( solver->cur_t <= 0.016 )
+	while( solver->cur_t <= 0.01 )
 	{
 		for( int i = 0; i < 1; ++i )
 		{
@@ -45,7 +45,7 @@ int main()
 			++( solver->curTimeStep );
 			cout << solver->cur_t << " -- step done\n";
 		}
-		solver->dump_check_sol();
+		solver->dump_check_sol2D();
 		//solver->dump_left_border_vals();
 	}
 	

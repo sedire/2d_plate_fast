@@ -12,6 +12,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <omp.h>
 
 using std::cout;
 using std::vector;

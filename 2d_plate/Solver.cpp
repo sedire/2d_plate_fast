@@ -34,7 +34,7 @@ void Solver::setTask()
 	nu23 = 0.3;
 	rho = 1594;
 	hp = 0.0021;
-	ap = 0.1524 * 100;	//len
+	ap = 0.1524 * 1;	//len
 	bp = 0.1524;	//width
 	//mu = 4 * _MMM_PI / 10000000;
 	mu = 0.00000125664;
@@ -145,8 +145,7 @@ void Solver::calc_system( int _x )
 	PL_NUM h = hp;
 	PL_NUM Btdt = 2 * dt * betta;
 	PL_NUM Jx = J0;
-	PL_NUM Pimp = p0; //* sin( 100.0 * _MMM_PI * ( cur_t + dt ) );
-	//long r;
+	PL_NUM Pimp = p0 * sin( 100.0 * _MMM_PI * ( cur_t + dt ) );
 
 	int i = 0;
 	int r = i + 1;
@@ -162,7 +161,7 @@ void Solver::calc_system( int _x )
 	matr_A[1 + i * eq_num][3 + i * eq_num] = 1.0 / ( h * B22 ) / al;
 
 	matr_A[2 + i * eq_num][0 + r * eq_num] = ( B12 * B12 / B22 - B11 ) * h / ( dx * dx ) / al;
-	matr_A[2 + i * eq_num][0 + i * eq_num] = rho * h / ( betta * dt * dt ) - ( B12 * B12 / B22 - B11 ) * 2.0 * h / ( dx * dx ) + h * sigma_z * By1 * By1 / ( 4.0 * Btdt );
+	matr_A[2 + i * eq_num][0 + i * eq_num] = rho * h / ( betta * dt * dt ) - ( B12 * B12 / B22 - B11 ) * 2.0 * h / ( dx * dx ) + h * sigma_z * By1 * By1 / ( 4.0 * Btdt )
 				+ ( B12 / B22 / 2.0 / dx * h * B12 / dx );
 	matr_A[2 + i * eq_num][1 + r * eq_num] = eps_x_0 * h / ( 2.0 * Btdt * dx ) * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num];
 	matr_A[2 + i * eq_num][3 + r * eq_num] = -B12 / ( B22 * 2.0 * dx );
@@ -177,7 +176,7 @@ void Solver::calc_system( int _x )
 	matr_A[2 + i * eq_num][9 + r * eq_num] = ( h / ( mu * 2.0 * dx ) * mesh[_x].Nk[9 + i * eq_num] );
 
 	matr_A[3 + i * eq_num][0 + r * eq_num] = ( -B12 * eps_x_0 * h / ( 2.0 * Btdt * dx * B22 ) * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] );
-	matr_A[3 + i * eq_num][1 + i * eq_num] = ( rho * h * 2.0 / ( Btdt * dt ) + sigma_x * h / Btdt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] ) / al;
+	matr_A[3 + i * eq_num][1 + i * eq_num] = ( rho * h * 2.0 / ( Btdt * dt ) + sigma_x * h / Btdt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] ) / al
 				+ h * B66 / dx / dx / 2.0 / al;
 	matr_A[3 + i * eq_num][2 + r * eq_num] = -1.0 / ( 2.0 * dx );
 	matr_A[3 + i * eq_num][3 + i * eq_num] = ( eps_x_0 / ( B22 * Btdt ) * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] );
@@ -336,8 +335,8 @@ void Solver::calc_system( int _x )
 	matr_A[1 + i * eq_num][3 + i * eq_num] = 1.0 / ( h * B22 ) / al;
 
 	matr_A[2 + i * eq_num][0 + j * eq_num] = ( B12 * B12 / B22 - B11 ) * h / ( dx * dx );
-	matr_A[2 + i * eq_num][0 + i * eq_num] = rho * h * 2.0 / ( Btdt * dt ) - ( B12 * B12 / B22 - B11 ) * 2.0 * h / ( dx * dx ) + h * sigma_z * By1 * By1 / ( 4.0 * Btdt );
-				//- ( B12 / B22 / 2.0 / dx * h * B12 / dx );		//WEIRD
+	matr_A[2 + i * eq_num][0 + i * eq_num] = rho * h * 2.0 / ( Btdt * dt ) - ( B12 * B12 / B22 - B11 ) * 2.0 * h / ( dx * dx ) + h * sigma_z * By1 * By1 / ( 4.0 * Btdt )
+				- ( B12 / B22 / 2.0 / dx * h * B12 / dx );		//WEIRD
 	matr_A[2 + i * eq_num][1 + j * eq_num] = -eps_x_0 * h / ( 2.0 * Btdt * dx ) * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num];
 	matr_A[2 + i * eq_num][3 + j * eq_num] = B12 / ( B22 * 2.0 * dx ) / al;
 	matr_A[2 + i * eq_num][4 + j * eq_num] = eps_x_0 * h * By1 / ( 4.0 * Btdt * dx ) * mesh[_x].Nk[8 + i * eq_num];
@@ -350,8 +349,8 @@ void Solver::calc_system( int _x )
 	matr_A[2 + i * eq_num][9 + j * eq_num] = ( -h / ( mu * 2.0 * dx ) * mesh[_x].Nk[9 + i * eq_num] );
 
 	matr_A[3 + i * eq_num][0 + j * eq_num] = ( B12 * eps_x_0 * h / ( 2.0 * Btdt * dx * B22 ) * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] );
-	matr_A[3 + i * eq_num][1 + i * eq_num] = ( rho * h * 2.0 / ( Btdt * dt ) + sigma_x * h / Btdt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] ) / al;
-				//- 1.0 / 2.0 / dx * h * B66 / dx / al;			//WEIRD
+	matr_A[3 + i * eq_num][1 + i * eq_num] = ( rho * h * 2.0 / ( Btdt * dt ) + sigma_x * h / Btdt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] ) / al
+				- 1.0 / 2.0 / dx * h * B66 / dx / al;			//WEIRD
 	matr_A[3 + i * eq_num][2 + j * eq_num] = 1.0 / ( 2.0 * dx );
 	matr_A[3 + i * eq_num][3 + i * eq_num] = ( eps_x_0 / ( B22 * Btdt ) * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] );
 	matr_A[3 + i * eq_num][4 + i * eq_num] = ( -sigma_x * h * By1 / ( 2.0 * Btdt ) * mesh[_x].Nk[9 + i * eq_num] );
@@ -826,6 +825,7 @@ void Solver::walkthrough( int mode )
 		calc_Newmark_AB( _x, mode );
 		calc_system( _x );
 
+#pragma parallel for private( baseVect )
 		for( int vNum = 0; vNum < varNum / 2; ++vNum )
 		{
 			for( int i = 0; i < varNum; ++i )
@@ -833,9 +833,13 @@ void Solver::walkthrough( int mode )
 				baseVect[i] = orthoBuilder->solInfoMap[_x].zi[vNum][i];
 			}
 			rungeKutta->calc( matr_A, vect_f, dy, 0, &baseVect );
+		}
 
+		for( int vNum = 0; vNum < varNum / 2; ++vNum )
+		{
 			orthoBuilder->orthonorm( vNum, _x, &baseVect );
 		}
+
 		for( int i = 0; i < varNum; ++i )
 		{
 			/*baseVect[i] = orthoBuilder->solInfoMap[_x].z5[i];*/
@@ -856,6 +860,7 @@ void Solver::walkthrough( int mode )
 	}
 	orthoBuilder->buildSolution( &mesh );
 
+#pragma omp parallel for
 	for( int _x = 0; _x < Km; ++_x )
 	{
 		orthoBuilder->flushO( _x );
@@ -864,6 +869,7 @@ void Solver::walkthrough( int mode )
 
 void Solver::updateDerivs()
 {
+#pragma omp parallel for
 	for( int i = 0; i < Km; ++i )
 	{
 		for( int j = 0; j < varNum; ++j )
