@@ -96,11 +96,12 @@ private:
 	PL_NUM betta;		//parameter at Newmark's time integration scheme
 
 	vector<VarVect> mesh;		//2d mesh for solution.
-	vector<vector<PL_NUM>> matr_A;		//matrix A for the nonlinear system at certain t and x
+	//vector<vector<PL_NUM>> matr_A;		//matrix A for the nonlinear system at certain t and x
 	//vector<PL_NUM> vect_f;		//vector f on right part of nonlinear system at certain t and x
 	//vector<PL_NUM> newmark_A;
 	//vector<PL_NUM> newmark_B;
 	//PL_NUM matr_A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES];
+	PL_NUM matr_A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES];
 	PL_NUM vect_f[EQ_NUM * NUMBER_OF_LINES];		//vector f on right part of nonlinear system at certain t and x
 	PL_NUM newmark_A[EQ_NUM * NUMBER_OF_LINES];
 	PL_NUM newmark_B[EQ_NUM * NUMBER_OF_LINES];

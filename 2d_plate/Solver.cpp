@@ -34,7 +34,7 @@ void Solver::setTask()
 	nu23 = 0.3;
 	rho = 1594;
 	hp = 0.0021;
-	ap = 0.1524 * 1;	//len
+	ap = 0.1524 * 100;	//len
 	bp = 0.1524;	//width
 	//mu = 4 * _MMM_PI / 10000000;
 	mu = 0.00000125664;
@@ -86,14 +86,23 @@ void Solver::setTask()
 
 	cout << "mesh resized\n";
 
-	matr_A.resize( varNum, vector<PL_NUM>( varNum, 0.0) );
-	cout << "A resized\n";
+	//matr_A.resize( varNum, vector<PL_NUM>( varNum, 0.0) );
+	//cout << "A resized\n";
 	/*vect_f.resize( varNum, 0.0 );
 	cout << "f resized\n";*/
+
 	for( int i = 0; i < NUMBER_OF_LINES * EQ_NUM; ++i )
 	{
+		for( int j = 0; j < NUMBER_OF_LINES * EQ_NUM; ++j )
+		{
+			matr_A[i][j] = 0.0;
+		}
 		vect_f[i] = 0.0;
 	}
+	//for( int i = 0; i < NUMBER_OF_LINES * EQ_NUM; ++i )
+	//{
+	//	vect_f[i] = 0.0;
+	//}
 
 	//newmark_A.resize( varNum, 0.0 );
 	//newmark_B.resize( varNum, 0.0 );
@@ -145,7 +154,7 @@ void Solver::calc_system( int _x )
 	PL_NUM h = hp;
 	PL_NUM Btdt = 2 * dt * betta;
 	PL_NUM Jx = J0;
-	PL_NUM Pimp = p0 * sin( 100.0 * _MMM_PI * ( cur_t + dt ) );
+	PL_NUM Pimp = p0;// * sin( 100.0 * _MMM_PI * ( cur_t + dt ) );
 
 	int i = 0;
 	int r = i + 1;
@@ -820,13 +829,31 @@ void Solver::walkthrough( int mode )
 	baseVect.resize( varNum, 0.0 );
 
 	//integrate and orthonorm
-	for( int _x = 0; _x < Km - 1; ++_x )
+	int _x = 0;
+#pragma omp parallel firstprivate( baseVect )
 	{
-		calc_Newmark_AB( _x, mode );
-		calc_system( _x );
+	for( _x; _x < Km - 1; )
+	{
+		if( omp_get_thread_num() == 0 )
+		{
+			//cout << " " << _x << endl;
+			calc_Newmark_AB( _x, mode );
+			calc_system( _x );
+		}
 
-#pragma omp parallel for firstprivate( baseVect )
-		for( int vNum = 0; vNum < varNum / 2; ++vNum )
+		int begIt = omp_get_thread_num() * ( varNum / 2 / NUM_OF_THREADS + 1 );
+		int endIt = begIt + varNum / 2 / NUM_OF_THREADS + 1;
+		if( omp_get_thread_num() == NUM_OF_THREADS - 1 )
+		{
+			endIt = varNum / 2;
+		}
+
+		//#pragma omp critical
+		//{
+		//	cout << " -- proc " << omp_get_thread_num() << " beg = " << begIt << "; end = " << endIt << endl;
+		//}
+#pragma omp barrier
+		for( int vNum = begIt; vNum < endIt; ++vNum )
 		{
 			for( int i = 0; i < varNum; ++i )
 			{
@@ -838,28 +865,37 @@ void Solver::walkthrough( int mode )
 				orthoBuilder->solInfoMap[_x + 1].zi[vNum][i] = baseVect[i];
 			}
 		}
+#pragma omp barrier
+		//cout << "proc " << omp_get_thread_num() <<  " 2\n";
 
-		for( int vNum = 0; vNum < varNum / 2; ++vNum )
+		if( omp_get_thread_num() == 0 )
 		{
-			orthoBuilder->orthonorm( vNum, _x, &( orthoBuilder->solInfoMap[_x + 1].zi[vNum] ) );
+			for( int vNum = 0; vNum < varNum / 2; ++vNum )
+			{
+				orthoBuilder->orthonorm( vNum, _x, &( orthoBuilder->solInfoMap[_x + 1].zi[vNum] ) );
+			}
+
+			for( int i = 0; i < varNum; ++i )
+			{
+				/*baseVect[i] = orthoBuilder->solInfoMap[_x].z5[i];*/
+				baseVect[i] = orthoBuilder->z5[_x][i];
+			}
+			rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 1, &baseVect );
+
+			//cout << "last orthonorm\n";
+			orthoBuilder->orthonorm( varNum / 2, _x, &baseVect );
+
+			//if( _x == 0 || _x == Km - 2 )
+			//{
+			//	if( curTimeStep % 10 == 0 )
+			//	{
+			//		dumpMatrA( _x );
+			//	}
+			//}
+			++_x;
 		}
-
-		for( int i = 0; i < varNum; ++i )
-		{
-			/*baseVect[i] = orthoBuilder->solInfoMap[_x].z5[i];*/
-			baseVect[i] = orthoBuilder->z5[_x][i];
-		}
-		rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 1, &baseVect );
-
-		orthoBuilder->orthonorm( varNum / 2, _x, &baseVect );
-
-		//if( _x == 0 || _x == Km - 2 )
-		//{
-		//	if( curTimeStep % 10 == 0 )
-		//	{
-		//		dumpMatrA( _x );
-		//	}
-		//}
+		#pragma omp barrier
+	}
 	}
 	orthoBuilder->buildSolution( &mesh );
 

@@ -29,7 +29,6 @@ SolInfo::~SolInfo()
 
 OrthoBuilder::OrthoBuilder()
 {
-
 }
 
 OrthoBuilder::~OrthoBuilder()
@@ -40,6 +39,8 @@ OrthoBuilder::~OrthoBuilder()
 OrthoBuilderGSh::OrthoBuilderGSh( int _varNum)
 {
 	eq_num = _varNum;
+	LL.resize( eq_num / 2, vector<PL_NUM>( eq_num / 2, 0.0 ) );
+	UU.resize( eq_num / 2, vector<PL_NUM>( eq_num / 2, 0.0 ) );
 }
 
 OrthoBuilderGodunov::OrthoBuilderGodunov( int _varNum)
@@ -162,8 +163,8 @@ void OrthoBuilder::LUsolve( vector<vector<PL_NUM>>& AA, vector<PL_NUM>& ff, vect
 		}
 	}
 
-	vector<vector<PL_NUM>> LL( AAsize, vector<PL_NUM>( AAsize, 0.0 ) );			//TODO here we can use less memory, UU and LL are trialgular
-	vector<vector<PL_NUM>> UU( AAsize, vector<PL_NUM>( AAsize, 0.0 ) );			//TODO initialization of arrays is slow
+	//vector<vector<PL_NUM>> LL( AAsize, vector<PL_NUM>( AAsize, 0.0 ) );			//TODO here we can use less memory, UU and LL are trialgular
+	//vector<vector<PL_NUM>> UU( AAsize, vector<PL_NUM>( AAsize, 0.0 ) );			//TODO initialization of arrays is slow
 
 	//Crout's algorithm, theory is in book: Kincaid, Cheney - Numerical analysis: mathematics of scientific computing
 	for( int k = 0; k < AAsize; ++k )

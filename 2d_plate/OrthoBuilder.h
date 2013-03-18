@@ -45,6 +45,8 @@ public:
 protected:
 	int eq_num;
 	int Km;
+	vector<vector<PL_NUM>> LL;
+	vector<vector<PL_NUM>> UU;
 };
 
 class OrthoBuilderGodunov : public OrthoBuilder			//not working yet!

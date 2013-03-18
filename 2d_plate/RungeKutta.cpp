@@ -19,7 +19,7 @@ RungeKutta::RungeKutta( int _eq_num )
 	rgk_d41 = 1.0 - rgk_d42 - rgk_d43;
 }
 
-void RungeKutta::calc( const vector<vector<PL_NUM>>& A, PL_NUM *f, PL_NUM dx, int thrNum, int hom, vector<PL_NUM>* x )
+void RungeKutta::calc( /*const vector<vector<PL_NUM>>& A*/PL_NUM A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES], PL_NUM *f, PL_NUM dx, int thrNum, int hom, vector<PL_NUM>* x )
 {
 	//if( A.size() != eq_num || 
 	//	A[0].size() != eq_num ||

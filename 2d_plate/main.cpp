@@ -30,7 +30,7 @@ int main()
 
 	solver->cur_t += solver->dt;
 	++( solver->curTimeStep );
-	solver->dump_check_sol2D();
+	solver->dump_check_sol();
 
 	cout << "\n pre_step done\n";
 	cout << "pre_step done in " << float( endTime - beginTime ) << " ~~\n";
@@ -45,7 +45,7 @@ int main()
 			++( solver->curTimeStep );
 			cout << solver->cur_t << " -- step done\n";
 		}
-		solver->dump_check_sol2D();
+		solver->dump_check_sol();
 		//solver->dump_left_border_vals();
 	}
 	
