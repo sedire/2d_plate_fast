@@ -8,7 +8,7 @@ SolInfo::SolInfo()
 void SolInfo::setup( int _varNum )
 {
 	o.resize( ( _varNum / 2 + 1 ) * ( _varNum / 2 + 2 ) / 2, 0.0 );		//the matrix is diagonal. such size is to store less  TODO: maybe I can make the size smaller by 1
-	zi.resize( _varNum / 2, vector< PL_NUM>( _varNum, 0.0 ) );
+	//zi.resize( _varNum / 2, vector< PL_NUM>( _varNum, 0.0 ) );
 	//z5.resize( _varNum, 0.0 );
 
 	C.resize( _varNum / 2, 0.0 );				//FIXME may be another size here
@@ -233,11 +233,11 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, vector<PL_NUM>* NtoOrt )		//b
 		{
 			for( int k = 0; k < eq_num; ++k )
 			{
-				solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += (*NtoOrt)[k] * solInfoMap[n + 1].zi[bvIt][k];
+				solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += (*NtoOrt)[k] * zi[n + 1][bvIt][k];
 			}
 			for( int k = 0; k < eq_num; ++k )
 			{
-				(*NtoOrt)[k] -= solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] * solInfoMap[n + 1].zi[bvIt][k];
+				(*NtoOrt)[k] -= solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] * zi[n + 1][bvIt][k];
 			}
 		}
 		for( int k = 0; k < eq_num; ++k )
@@ -248,7 +248,7 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, vector<PL_NUM>* NtoOrt )		//b
 
 		for( int k = 0; k < eq_num; ++k )
 		{
-			solInfoMap[n + 1].zi[baseV][k] = (*NtoOrt)[k] / solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV];
+			zi[n + 1][baseV][k] = (*NtoOrt)[k] / solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV];
 //			(*NtoOrt)[k] = solInfoMap[n + 1].zi[baseV][k];
 		}
 	}
@@ -259,11 +259,11 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, vector<PL_NUM>* NtoOrt )		//b
 		{
 			for( int k = 0; k < eq_num; ++k )
 			{
-				solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += (*NtoOrt)[k] * solInfoMap[n + 1].zi[bvIt][k];
+				solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += (*NtoOrt)[k] * zi[n + 1][bvIt][k];
 			}
 			for( int k = 0; k < eq_num; ++k )
 			{
-				(*NtoOrt)[k] -= solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] * solInfoMap[n + 1].zi[bvIt][k];
+				(*NtoOrt)[k] -= solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] * zi[n + 1][bvIt][k];
 			}
 		}
 		for( int k = 0; k < eq_num; ++k )
@@ -301,11 +301,11 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 	{
 		for( int vNum = 0; vNum < eq_num / 2; ++vNum )
 		{
-			M[line * _a + 0][vNum] = solInfoMap[Km - 1].zi[vNum][line * EQ_NUM + 0];		//TODO potential lags here!
-			M[line * _a + 1][vNum] = solInfoMap[Km - 1].zi[vNum][line * EQ_NUM + 1];
-			M[line * _a + 2][vNum] = solInfoMap[Km - 1].zi[vNum][line * EQ_NUM + 4];
-			M[line * _a + 3][vNum] = solInfoMap[Km - 1].zi[vNum][line * EQ_NUM + 6];
-			M[line * _a + 4][vNum] = solInfoMap[Km - 1].zi[vNum][line * EQ_NUM + 8];
+			M[line * _a + 0][vNum] = zi[Km - 1][vNum][line * EQ_NUM + 0];		//TODO potential lags here!
+			M[line * _a + 1][vNum] = zi[Km - 1][vNum][line * EQ_NUM + 1];
+			M[line * _a + 2][vNum] = zi[Km - 1][vNum][line * EQ_NUM + 4];
+			M[line * _a + 3][vNum] = zi[Km - 1][vNum][line * EQ_NUM + 6];
+			M[line * _a + 4][vNum] = zi[Km - 1][vNum][line * EQ_NUM + 8];
 		}
 		/*f11[line * _a + 0] = -solInfoMap[Km - 1].z5[line * EQ_NUM + 0];
 		f11[line * _a + 1] = -solInfoMap[Km - 1].z5[line * EQ_NUM + 1];
@@ -420,7 +420,7 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 			(*_mesh)[_x].Nk1[i] = 0.0;
 			for( int vNum = 0; vNum < eq_num / 2; ++vNum )
 			{
-				(*_mesh)[_x].Nk1[i] += solInfoMap[_x].C[vNum] * solInfoMap[_x].zi[vNum][i];			//FIXME lags may happen here
+				(*_mesh)[_x].Nk1[i] += solInfoMap[_x].C[vNum] * zi[_x][vNum][i];			//FIXME lags may happen here
 			}
 			/*(*_mesh)[_x].Nk1[i] += solInfoMap[_x].z5[i];*/
 			(*_mesh)[_x].Nk1[i] += z5[_x][i];

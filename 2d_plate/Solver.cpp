@@ -34,7 +34,7 @@ void Solver::setTask()
 	nu23 = 0.3;
 	rho = 1594;
 	hp = 0.0021;
-	ap = 0.1524 * 100;	//len
+	ap = 0.1524;	//len
 	bp = 0.1524;	//width
 	//mu = 4 * _MMM_PI / 10000000;
 	mu = 0.00000125664;
@@ -154,7 +154,7 @@ void Solver::calc_system( int _x )
 	PL_NUM h = hp;
 	PL_NUM Btdt = 2 * dt * betta;
 	PL_NUM Jx = J0;
-	PL_NUM Pimp = p0;// * sin( 100.0 * _MMM_PI * ( cur_t + dt ) );
+	PL_NUM Pimp = p0 * sin( 100.0 * _MMM_PI * ( cur_t + dt ) );
 
 	int i = 0;
 	int r = i + 1;
@@ -205,8 +205,6 @@ void Solver::calc_system( int _x )
 	matr_A[5 + i * eq_num][4 + i * eq_num] = 2.0 * B12 / ( B22 * dx * dx ) / al;
 	matr_A[5 + i * eq_num][6 + i * eq_num] = -12.0 / ( B22 * h * h * h ) / al;
 
-
-	//from here:
 	matr_A[6 + i * eq_num][4 + i * eq_num] = ( -h * h * h * B12 / B22 * eps_x_0 / ( 6.0 * dx * dx ) * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] / Btdt );
 	matr_A[6 + i * eq_num][4 + r * eq_num] = ( h * h * h * B12 / B22 * eps_x_0 / ( 12.0 * dx * dx ) * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] / Btdt );
 	matr_A[6 + i * eq_num][5 + i * eq_num] = ( -rho * h * h * h / ( 6.0 * Btdt * dt ) - h * h * h * B66 / ( 3.0 * dx * dx )
@@ -857,12 +855,12 @@ void Solver::walkthrough( int mode )
 		{
 			for( int i = 0; i < varNum; ++i )
 			{
-				baseVect[i] = orthoBuilder->solInfoMap[_x].zi[vNum][i];
+				baseVect[i] = orthoBuilder->zi[_x][vNum][i];
 			}
 			rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 0, &baseVect );
 			for( int i = 0; i < varNum; ++i )
 			{
-				orthoBuilder->solInfoMap[_x + 1].zi[vNum][i] = baseVect[i];
+				orthoBuilder->zi[_x + 1][vNum][i] = baseVect[i];
 			}
 		}
 #pragma omp barrier
@@ -872,7 +870,11 @@ void Solver::walkthrough( int mode )
 		{
 			for( int vNum = 0; vNum < varNum / 2; ++vNum )
 			{
-				orthoBuilder->orthonorm( vNum, _x, &( orthoBuilder->solInfoMap[_x + 1].zi[vNum] ) );
+				for( int i = 0; i < varNum; ++i )
+				{
+					baseVect[i] = orthoBuilder->zi[_x + 1][vNum][i];
+				}
+				orthoBuilder->orthonorm( vNum, _x, &baseVect );
 			}
 
 			for( int i = 0; i < varNum; ++i )
@@ -926,11 +928,11 @@ void Solver::pre_step()
 {
 	for( int i = 0; i < nx; ++i )			//TODO check indexes
 	{
-		orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 0][i * eq_num + 2] = 1.0;
-		orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 1][i * eq_num + 3] = 1.0;
-		orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 2][i * eq_num + 5] = 1.0;
-		orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 3][i * eq_num + 7] = 1.0;
-		orthoBuilder->solInfoMap[0].zi[( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 1] = -1.0;
+		orthoBuilder->zi[0][i * eq_num / 2 + 0][i * eq_num + 2] = 1.0;
+		orthoBuilder->zi[0][i * eq_num / 2 + 1][i * eq_num + 3] = 1.0;
+		orthoBuilder->zi[0][i * eq_num / 2 + 2][i * eq_num + 5] = 1.0;
+		orthoBuilder->zi[0][i * eq_num / 2 + 3][i * eq_num + 7] = 1.0;
+		orthoBuilder->zi[0][( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 1] = -1.0;
 	}
 	//z5s are already zeros
 
@@ -951,7 +953,7 @@ void Solver::pre_step()
 		{
 			for( int j = 0; j < varNum; ++j )
 			{
-				orthoBuilder->solInfoMap[0].zi[i][j] = 0;
+				orthoBuilder->zi[0][i][j] = 0;
 			}
 		}
 		for( int i = 0; i < varNum; ++i ) 			//TODO check indexes
@@ -961,12 +963,12 @@ void Solver::pre_step()
 		}
 		for( int i = 0; i < nx; ++i )			//TODO check indexes
 		{
-			orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 0][i * eq_num + 2] = 1.0;
-			orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 1][i * eq_num + 3] = 1.0;
-			orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 2][i * eq_num + 5] = 1.0;
-			orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 3][i * eq_num + 7] = 1.0;
-			orthoBuilder->solInfoMap[0].zi[( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 2] = mesh[0].Nk1[i * eq_num + 1] / betta / 2.0 / dt + newmark_B[i * eq_num + 1];
-			orthoBuilder->solInfoMap[0].zi[( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 1] = -1.0;
+			orthoBuilder->zi[0][i * eq_num / 2 + 0][i * eq_num + 2] = 1.0;
+			orthoBuilder->zi[0][i * eq_num / 2 + 1][i * eq_num + 3] = 1.0;
+			orthoBuilder->zi[0][i * eq_num / 2 + 2][i * eq_num + 5] = 1.0;
+			orthoBuilder->zi[0][i * eq_num / 2 + 3][i * eq_num + 7] = 1.0;
+			orthoBuilder->zi[0][( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 2] = mesh[0].Nk1[i * eq_num + 1] / betta / 2.0 / dt + newmark_B[i * eq_num + 1];
+			orthoBuilder->zi[0][( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 1] = -1.0;
 
 			//orthoBuilder->solInfoMap[0].z5[i * eq_num + 8] = newmark_B[i * eq_num + 1] * mesh[0].Nk1[i * eq_num + 9] - newmark_B[i * eq_num + 4] * By0;
 			//orthoBuilder->solInfoMap[0].z5[i * eq_num + 9] = -mesh[0].Nk1[i * eq_num + 9];
@@ -999,19 +1001,19 @@ void Solver::do_step()
 		{
 			for( int j = 0; j < varNum / 2; ++j )
 			{
-				orthoBuilder->solInfoMap[0].zi[j][i] = 0;			//TODO lags here
+				orthoBuilder->zi[0][j][i] = 0;			//TODO lags here
 			}
 			/*orthoBuilder->solInfoMap[0].z5[i] = 0;*/
 			orthoBuilder->z5[0][i] = 0;
 		}
 		for( int i = 0; i < nx; ++i )			//TODO check indexes
 		{
-			orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 0][i * eq_num + 2] = 1.0;
-			orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 1][i * eq_num + 3] = 1.0;
-			orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 2][i * eq_num + 5] = 1.0;
-			orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 3][i * eq_num + 7] = 1.0;
-			orthoBuilder->solInfoMap[0].zi[( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 2] = mesh[0].Nk1[i * eq_num + 1] / betta / 2.0 / dt + newmark_B[i * eq_num + 1];
-			orthoBuilder->solInfoMap[0].zi[( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 1] = -1.0;
+			orthoBuilder->zi[0][i * eq_num / 2 + 0][i * eq_num + 2] = 1.0;
+			orthoBuilder->zi[0][i * eq_num / 2 + 1][i * eq_num + 3] = 1.0;
+			orthoBuilder->zi[0][i * eq_num / 2 + 2][i * eq_num + 5] = 1.0;
+			orthoBuilder->zi[0][i * eq_num / 2 + 3][i * eq_num + 7] = 1.0;
+			orthoBuilder->zi[0][( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 2] = mesh[0].Nk1[i * eq_num + 1] / betta / 2.0 / dt + newmark_B[i * eq_num + 1];
+			orthoBuilder->zi[0][( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 1] = -1.0;
 
 			//orthoBuilder->solInfoMap[0].z5[i * eq_num + 8] = newmark_B[i * eq_num + 1] * mesh[0].Nk1[i * eq_num + 9] - newmark_B[i * eq_num + 4] * By0;
 			//orthoBuilder->solInfoMap[0].z5[i * eq_num + 9] = -mesh[0].Nk1[i * eq_num + 9];
