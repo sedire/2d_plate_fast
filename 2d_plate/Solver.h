@@ -34,9 +34,10 @@ public:
 	void pre_step();
 	void do_step();
 	void dump_sol();
+	void dump_whole_sol( int var );
 	void dump_check_sol();
 	void dump_check_sol2D();
-	void dump_left_border_vals();
+	void dump_border_vals();
 
 
 	void testLUsolve();		//DELETEME

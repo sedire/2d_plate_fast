@@ -20,7 +20,7 @@ public:
 	~SolInfo();
 
 	vector<PL_NUM> o;		//omega matrix to restore the solution
-	//vector<vector<PL_NUM>> zi;		//basis vectors of the solution, orthonormalized
+	vector<vector<PL_NUM>> zi;		//basis vectors of the solution, orthonormalized
 	//vector<PL_NUM> z5;
 
 	vector<PL_NUM> C;
@@ -41,7 +41,7 @@ public:
 	virtual void flushO( int x );
 	virtual void setInitVects( const vector<PL_NUM>& N1, const vector<PL_NUM>& N2, const vector<PL_NUM>& N3, const vector<PL_NUM>& N4, const vector<PL_NUM>& N5 );
 	void LUsolve( vector<vector<PL_NUM>>& AA, vector<PL_NUM>& ff, vector<PL_NUM>* xx );
-	PL_NUM zi[NODES_ON_Y][EQ_NUM * NUMBER_OF_LINES / 2][EQ_NUM * NUMBER_OF_LINES];
+	//PL_NUM zi[NODES_ON_Y][EQ_NUM * NUMBER_OF_LINES / 2][EQ_NUM * NUMBER_OF_LINES];
 	PL_NUM z5[NODES_ON_Y][EQ_NUM * NUMBER_OF_LINES];
 protected:
 	int eq_num;

@@ -5,8 +5,8 @@
 
 #define PL_NUM long double
 #define EQ_NUM 10
-#define NUMBER_OF_LINES 11
-#define NODES_ON_Y 6000
+#define NUMBER_OF_LINES 15
+#define NODES_ON_Y 6001
 #define NEWTON_IT 0
 #define ALMOST_ZERO 0.0000000000001
 #define _MMM_PI 3.14159265

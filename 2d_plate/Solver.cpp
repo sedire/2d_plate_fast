@@ -23,6 +23,8 @@ void Solver::setTask()
 
 	ofstream of1( "test_sol.txt" );
 	of1.close();
+	ofstream of2( "sol_borders.txt" );
+	of2.close();
 
 	newtonIt = 0;
 
@@ -52,7 +54,7 @@ void Solver::setTask()
 
 	J0 = 0.0;
 	omega = 314.16;
-	p0 = 1000.0;
+	p0 = 100.0;
 
 	By0 = 0.0;
 	eps_0 = 0.000000000008854;			// electric permittivity in the vacuum
@@ -63,7 +65,7 @@ void Solver::setTask()
 
 	dt = 0.0001;
 	dx = ap / ( nx + 1 );
-	dy = bp / Km;
+	dy = bp / ( Km - 1 );
 
 	betta = 0.25;
 	maxNewtonIt = NEWTON_IT;
@@ -154,7 +156,8 @@ void Solver::calc_system( int _x )
 	PL_NUM h = hp;
 	PL_NUM Btdt = 2 * dt * betta;
 	PL_NUM Jx = J0;
-	PL_NUM Pimp = p0 * sin( 100.0 * _MMM_PI * ( cur_t + dt ) );
+	PL_NUM Pimp = 0.0;//p0 * sin( 100.0 * _MMM_PI * ( cur_t + dt ) );
+	PL_NUM Rad2 = ap * ap / 64.0;
 
 	int i = 0;
 	int r = i + 1;
@@ -223,16 +226,31 @@ void Solver::calc_system( int _x )
 	matr_A[7 + i * eq_num][1 + i * eq_num] = ( -sigma_x * h * By1 / Btdt / 2 * mesh[_x].Nk[9 + i * eq_num] );
 	matr_A[7 + i * eq_num][4 + i * eq_num] = ( rho * h * 2.0 / ( Btdt * dt ) + sigma_x * h / ( 4.0 * Btdt ) * ( By1 * By1 + 1.0 / 3.0 * By2 * By2 ) + rho * h * h * h / ( 3.0 * dx * dx * Btdt * dt )
 				 + h * h * h / 6.0 * ( sigma_y * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] + sigma_z * By1 * By1 / 4.0 ) / ( dx * dx * Btdt ) )
-				 + ( h * h * h / 3.0 * ( 2.0 * B66 * B12 / B22 ) / dx / dx / dx / dx ) / al
-				 - ( h * h * h / 3.0 * ( B11 - B12 * B12 / B22 ) / dx / dx / dx / dx ) / al;			//CAUTION: ANOTHER THING IN AMIR'S VERSION
+
+				 +(h*h*h/3.0*(2.0*B66*B12/B22)/dx/dx/dx/dx)/al 
+					+(5.0*h*h*h/12.0*(B11-B12*B12/B22)/dx/dx/dx/dx)/al;
+
+				 //+ ( h * h * h / 3.0 * ( 2.0 * B66 * B12 / B22 ) / dx / dx / dx / dx ) / al
+				 //- ( h * h * h / 3.0 * ( B11 - B12 * B12 / B22 ) / dx / dx / dx / dx ) / al;			//CAUTION: ANOTHER THING IN AMIR'S VERSION
 	matr_A[7 + i * eq_num][4 + r * eq_num] = ( -rho * h * h * h / ( 6.0 * dx * dx * Btdt * dt )
 				 - h * h * h / ( 24.0 * dx * dx ) * sigma_y / Btdt * mesh[_x].Nk[9 + i * eq_num] * ( mesh[_x].Nk[9 + r * eq_num] - mesh[_x].Nk[9 + i * eq_num] )		//TODO * N10i??
 				 - h * h * h / 12.0 * ( sigma_y * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] + sigma_z * By1 * By1 / 4.0 ) / ( dx * dx * Btdt ) )
-				 - ( h * h * h / 2.0 * ( 2.0 * B66 * B12 / B22 ) / dx / dx / dx / dx ) / al
-				 + ( h * h * h / 2.0 * ( B11 - B12 * B12 / B22 ) / dx / dx / dx / dx ) / al;			//CAUTION: ANOTHER THING IN AMIR'S VERSION
+
+				  -(h*h*h/2.0*(2.0*B66*B12/B22)/dx/dx/dx/dx)/al
+				+(-4.0*h*h*h/12.0*(B11-B12*B12/B22)/dx/dx/dx/dx)/al;
+
+				 //- ( h * h * h / 2.0 * ( 2.0 * B66 * B12 / B22 ) / dx / dx / dx / dx ) / al
+				 //+ ( h * h * h / 2.0 * ( B11 - B12 * B12 / B22 ) / dx / dx / dx / dx ) / al;			//CAUTION: ANOTHER THING IN AMIR'S VERSION
 	matr_A[7 + i * eq_num][4 + rr * eq_num] = ( h * h * h / 3.0 * ( 2.0 * B66 * B12 / B22 ) / dx / dx / dx / dx ) / al
-				 + ( -h * h * h / 3.0 * ( B11 - B12 * B12 / B22 ) / dx / dx / dx / dx ) / al;			//CAUTION: ANOTHER THING IN AMIR'S VERSION
-	matr_A[7 + i * eq_num][4 + ( rr + 1 ) * eq_num] = -( h * h * h / 12.0 * ( 2.0 * B66 * B12 / B22 - B11 + B12 * B12 / B22 ) / dx / dx / dx / dx ) / al;			//CAUTION: ANOTHER THING IN AMIR'S VERSION
+
+				+(h*h*h/12.0*(B11-B12*B12/B22)/dx/dx/dx/dx)/al;		
+		
+				//+ ( -h * h * h / 3.0 * ( B11 - B12 * B12 / B22 ) / dx / dx / dx / dx ) / al;			//CAUTION: ANOTHER THING IN AMIR'S VERSION
+	matr_A[7 + i * eq_num][4 + ( rr + 1 ) * eq_num] = 
+		
+				-(h*h*h/12.0*(2.0*B66*B12/B22)/dx/dx/dx/dx)/al;
+
+				//-( h * h * h / 12.0 * ( 2.0 * B66 * B12 / B22 - B11 + B12 * B12 / B22 ) / dx / dx / dx / dx ) / al;			//CAUTION: ANOTHER THING IN AMIR'S VERSION
 	matr_A[7 + i * eq_num][5 + i * eq_num] = ( -eps_x_0 * h / Btdt * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num]
 				 + h * h * h / 6.0 * eps_x_0 * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] / ( dx * dx * Btdt ) );
 	matr_A[7 + i * eq_num][5 + r * eq_num] = ( -h * h * h / 12.0 * eps_x_0 * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] / ( dx * dx * Btdt )
@@ -343,7 +361,7 @@ void Solver::calc_system( int _x )
 
 	matr_A[2 + i * eq_num][0 + j * eq_num] = ( B12 * B12 / B22 - B11 ) * h / ( dx * dx );
 	matr_A[2 + i * eq_num][0 + i * eq_num] = rho * h * 2.0 / ( Btdt * dt ) - ( B12 * B12 / B22 - B11 ) * 2.0 * h / ( dx * dx ) + h * sigma_z * By1 * By1 / ( 4.0 * Btdt )
-				- ( B12 / B22 / 2.0 / dx * h * B12 / dx );		//WEIRD
+				+ ( B12 / B22 / 2.0 / dx * h * B12 / dx );		//SHOULD BE -?? - NO, LOOKS LIKE A MISTAKE IN AMIR'S CODE
 	matr_A[2 + i * eq_num][1 + j * eq_num] = -eps_x_0 * h / ( 2.0 * Btdt * dx ) * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num];
 	matr_A[2 + i * eq_num][3 + j * eq_num] = B12 / ( B22 * 2.0 * dx ) / al;
 	matr_A[2 + i * eq_num][4 + j * eq_num] = eps_x_0 * h * By1 / ( 4.0 * Btdt * dx ) * mesh[_x].Nk[8 + i * eq_num];
@@ -357,7 +375,7 @@ void Solver::calc_system( int _x )
 
 	matr_A[3 + i * eq_num][0 + j * eq_num] = ( B12 * eps_x_0 * h / ( 2.0 * Btdt * dx * B22 ) * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] );
 	matr_A[3 + i * eq_num][1 + i * eq_num] = ( rho * h * 2.0 / ( Btdt * dt ) + sigma_x * h / Btdt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] ) / al
-				- 1.0 / 2.0 / dx * h * B66 / dx / al;			//WEIRD
+				+ h * B66 / 2.0 / dx / dx / al;			//SHOULD BE -?? - NO, LOOKS LIKE A MISTAKE IN AMIR'S CODE
 	matr_A[3 + i * eq_num][2 + j * eq_num] = 1.0 / ( 2.0 * dx );
 	matr_A[3 + i * eq_num][3 + i * eq_num] = ( eps_x_0 / ( B22 * Btdt ) * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] );
 	matr_A[3 + i * eq_num][4 + i * eq_num] = ( -sigma_x * h * By1 / ( 2.0 * Btdt ) * mesh[_x].Nk[9 + i * eq_num] );
@@ -394,16 +412,32 @@ void Solver::calc_system( int _x )
 	matr_A[7 + i * eq_num][1 + i * eq_num] = ( -sigma_x * h * By1 / Btdt / 2.0 * mesh[_x].Nk[9 + i * eq_num] );
 	matr_A[7 + i * eq_num][4 + i * eq_num] = ( rho * h * 2.0 / ( Btdt * dt ) + sigma_x * h / ( 4.0 * Btdt ) * ( By1 * By1 + 1.0 / 3.0 * By2 * By2 ) + rho * h * h * h / ( 3.0 * dx * dx * Btdt * dt )
 				 + h * h * h / 6.0 * ( sigma_y * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] + sigma_z * By1 * By1 / 4.0 ) / ( dx * dx * Btdt ) )
-				 + ( h * h * h / 3.0 * ( 2.0 * B66 * B12 / B22 ) / dx / dx / dx / dx ) / al
-				 - ( h * h * h / 3.0 * ( B11 - B12 * B12 / B22 ) / dx / dx / dx / dx ) / al;			//CAUTION: ANOTHER THING IN AMIR'S VERSION
+				 
+				 +(h*h*h/3.0*(2.0*B66*B12/B22)/dx/dx/dx/dx)/al
+             +(5.0*h*h*h/12.0*(B11-B12*B12/B22)/dx/dx/dx/dx)/al;
+				 
+				 //+ ( h * h * h / 3.0 * ( 2.0 * B66 * B12 / B22 ) / dx / dx / dx / dx ) / al
+				 //- ( h * h * h / 3.0 * ( B11 - B12 * B12 / B22 ) / dx / dx / dx / dx ) / al;			//CAUTION: ANOTHER THING IN AMIR'S VERSION
 	matr_A[7 + i * eq_num][4 + j * eq_num] = ( -rho * h * h * h / ( 6.0 * dx * dx * Btdt * dt )
 				 + h * h * h / ( 24.0 * dx * dx ) * sigma_y / Btdt * mesh[_x].Nk[9 + i * eq_num] * ( mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + j * eq_num] )
 				 - h * h * h / 12.0 * ( sigma_y * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] + sigma_z * By1 * By1 / 4.0 ) / ( dx * dx * Btdt ) )
-				 - ( h * h * h / 2.0 * ( 2.0 * B66 * B12 / B22 ) / dx / dx / dx / dx ) / al
-				 + ( h * h * h / 2.0 * ( B11 - B12 * B12 / B22 ) / dx / dx / dx / dx ) / al;			//CAUTION: ANOTHER THING IN AMIR'S VERSION
-	matr_A[7 + i * eq_num][4 + jj * eq_num] = ( h * h * h / 3.0 * ( 2.0 * B66 * B12 / B22 ) / dx / dx / dx / dx ) / al
-				 + ( h * h * h / 3.0 * ( -B11 + B12 * B12 / B22 ) / dx / dx / dx / dx ) / al;			//CAUTION: ANOTHER THING IN AMIR'S VERSION
-	matr_A[7 + i * eq_num][4 + ( jj - 1 ) * eq_num] = - ( h * h * h / 12.0 * ( 2.0 * B66 * B12 / B22 - B11 + B12 * B12 / B22 ) / dx / dx / dx / dx ) / al;		//CAUTION: ANOTHER THING IN AMIR'S VERSION
+				 
+				 -(h*h*h/2.0*(2.0*B66*B12/B22)/dx/dx/dx/dx)/al
+             +(-4.0*h*h*h/12.0*(B11-B12*B12/B22)/dx/dx/dx/dx)/al;
+
+				 //- ( h * h * h / 2.0 * ( 2.0 * B66 * B12 / B22 ) / dx / dx / dx / dx ) / al
+				 //+ ( h * h * h / 2.0 * ( B11 - B12 * B12 / B22 ) / dx / dx / dx / dx ) / al;			//CAUTION: ANOTHER THING IN AMIR'S VERSION
+	matr_A[7 + i * eq_num][4 + jj * eq_num] = 
+		
+		+(h*h*h/3.0*(2.0*B66*B12/B22)/dx/dx/dx/dx)/al
+             +(h*h*h/12.0*(B11-B12*B12/B22)/dx/dx/dx/dx)/al;
+		
+		//( h * h * h / 3.0 * ( 2.0 * B66 * B12 / B22 ) / dx / dx / dx / dx ) / al
+			//	 + ( h * h * h / 3.0 * ( -B11 + B12 * B12 / B22 ) / dx / dx / dx / dx ) / al;			//CAUTION: ANOTHER THING IN AMIR'S VERSION
+	matr_A[7 + i * eq_num][4 + ( jj - 1 ) * eq_num] = 
+				-(h*h*h/12.0*(2.0*B66*B12/B22)/dx/dx/dx/dx)/al ;
+		
+		//- ( h * h * h / 12.0 * ( 2.0 * B66 * B12 / B22 - B11 + B12 * B12 / B22 ) / dx / dx / dx / dx ) / al;		//CAUTION: ANOTHER THING IN AMIR'S VERSION
 	matr_A[7 + i * eq_num][5 + i * eq_num] = ( -eps_x_0 * h / Btdt * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num]
 				 + h * h * h / 6.0 * eps_x_0 * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] / ( dx * dx * Btdt ) );
 	matr_A[7 + i * eq_num][5 + j * eq_num] = ( -h * h * h / 12.0 * eps_x_0 * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] / ( dx * dx * Btdt )
@@ -502,6 +536,17 @@ void Solver::calc_system( int _x )
 
 	for( int i = 1; i < nx - 1; ++i )
 	{
+		Pimp = 0.0;//p0 * sin( 100.0 * _MMM_PI * ( cur_t + dt ) );
+		PL_NUM rad2 = ( ( Km - 1 ) / 2 - _x ) * dy * ( ( Km - 1 ) / 2 - _x ) * dy + ( ( nx - 1 ) / 2 - i ) * dx * ( ( nx - 1 ) / 2 - i ) * dx;
+		if( rad2 < Rad2 )
+		{
+			Pimp = p0 * sqrt( 1 - rad2 / Rad2 ) * sin( 100.0 * _MMM_PI * ( cur_t + dt ) );
+		}
+		else if( _x == ( Km - 1 ) / 2 )
+		{
+			cout << " == line " << i << " is out\n";
+		}
+
 		r = i + 1;
 		rr = i + 2;
 		j = i - 1;
@@ -855,12 +900,12 @@ void Solver::walkthrough( int mode )
 		{
 			for( int i = 0; i < varNum; ++i )
 			{
-				baseVect[i] = orthoBuilder->zi[_x][vNum][i];
+				baseVect[i] = orthoBuilder->solInfoMap[_x].zi[vNum][i];
 			}
 			rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 0, &baseVect );
 			for( int i = 0; i < varNum; ++i )
 			{
-				orthoBuilder->zi[_x + 1][vNum][i] = baseVect[i];
+				orthoBuilder->solInfoMap[_x + 1].zi[vNum][i] = baseVect[i];
 			}
 		}
 #pragma omp barrier
@@ -872,7 +917,7 @@ void Solver::walkthrough( int mode )
 			{
 				for( int i = 0; i < varNum; ++i )
 				{
-					baseVect[i] = orthoBuilder->zi[_x + 1][vNum][i];
+					baseVect[i] = orthoBuilder->solInfoMap[_x + 1].zi[vNum][i];
 				}
 				orthoBuilder->orthonorm( vNum, _x, &baseVect );
 			}
@@ -928,11 +973,11 @@ void Solver::pre_step()
 {
 	for( int i = 0; i < nx; ++i )			//TODO check indexes
 	{
-		orthoBuilder->zi[0][i * eq_num / 2 + 0][i * eq_num + 2] = 1.0;
-		orthoBuilder->zi[0][i * eq_num / 2 + 1][i * eq_num + 3] = 1.0;
-		orthoBuilder->zi[0][i * eq_num / 2 + 2][i * eq_num + 5] = 1.0;
-		orthoBuilder->zi[0][i * eq_num / 2 + 3][i * eq_num + 7] = 1.0;
-		orthoBuilder->zi[0][( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 1] = -1.0;
+		orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 0][i * eq_num + 2] = 1.0;
+		orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 1][i * eq_num + 3] = 1.0;
+		orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 2][i * eq_num + 5] = 1.0;
+		orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 3][i * eq_num + 7] = 1.0;
+		orthoBuilder->solInfoMap[0].zi[( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 1] = -1.0;
 	}
 	//z5s are already zeros
 
@@ -953,7 +998,7 @@ void Solver::pre_step()
 		{
 			for( int j = 0; j < varNum; ++j )
 			{
-				orthoBuilder->zi[0][i][j] = 0;
+				orthoBuilder->solInfoMap[0].zi[i][j] = 0;
 			}
 		}
 		for( int i = 0; i < varNum; ++i ) 			//TODO check indexes
@@ -963,12 +1008,12 @@ void Solver::pre_step()
 		}
 		for( int i = 0; i < nx; ++i )			//TODO check indexes
 		{
-			orthoBuilder->zi[0][i * eq_num / 2 + 0][i * eq_num + 2] = 1.0;
-			orthoBuilder->zi[0][i * eq_num / 2 + 1][i * eq_num + 3] = 1.0;
-			orthoBuilder->zi[0][i * eq_num / 2 + 2][i * eq_num + 5] = 1.0;
-			orthoBuilder->zi[0][i * eq_num / 2 + 3][i * eq_num + 7] = 1.0;
-			orthoBuilder->zi[0][( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 2] = mesh[0].Nk1[i * eq_num + 1] / betta / 2.0 / dt + newmark_B[i * eq_num + 1];
-			orthoBuilder->zi[0][( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 1] = -1.0;
+			orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 0][i * eq_num + 2] = 1.0;
+			orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 1][i * eq_num + 3] = 1.0;
+			orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 2][i * eq_num + 5] = 1.0;
+			orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 3][i * eq_num + 7] = 1.0;
+			orthoBuilder->solInfoMap[0].zi[( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 2] = mesh[0].Nk1[i * eq_num + 1] / betta / 2.0 / dt + newmark_B[i * eq_num + 1];
+			orthoBuilder->solInfoMap[0].zi[( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 1] = -1.0;
 
 			//orthoBuilder->solInfoMap[0].z5[i * eq_num + 8] = newmark_B[i * eq_num + 1] * mesh[0].Nk1[i * eq_num + 9] - newmark_B[i * eq_num + 4] * By0;
 			//orthoBuilder->solInfoMap[0].z5[i * eq_num + 9] = -mesh[0].Nk1[i * eq_num + 9];
@@ -1001,19 +1046,19 @@ void Solver::do_step()
 		{
 			for( int j = 0; j < varNum / 2; ++j )
 			{
-				orthoBuilder->zi[0][j][i] = 0;			//TODO lags here
+				orthoBuilder->solInfoMap[0].zi[j][i] = 0;			//TODO lags here
 			}
 			/*orthoBuilder->solInfoMap[0].z5[i] = 0;*/
 			orthoBuilder->z5[0][i] = 0;
 		}
 		for( int i = 0; i < nx; ++i )			//TODO check indexes
 		{
-			orthoBuilder->zi[0][i * eq_num / 2 + 0][i * eq_num + 2] = 1.0;
-			orthoBuilder->zi[0][i * eq_num / 2 + 1][i * eq_num + 3] = 1.0;
-			orthoBuilder->zi[0][i * eq_num / 2 + 2][i * eq_num + 5] = 1.0;
-			orthoBuilder->zi[0][i * eq_num / 2 + 3][i * eq_num + 7] = 1.0;
-			orthoBuilder->zi[0][( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 2] = mesh[0].Nk1[i * eq_num + 1] / betta / 2.0 / dt + newmark_B[i * eq_num + 1];
-			orthoBuilder->zi[0][( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 1] = -1.0;
+			orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 0][i * eq_num + 2] = 1.0;
+			orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 1][i * eq_num + 3] = 1.0;
+			orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 2][i * eq_num + 5] = 1.0;
+			orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 3][i * eq_num + 7] = 1.0;
+			orthoBuilder->solInfoMap[0].zi[( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 2] = mesh[0].Nk1[i * eq_num + 1] / betta / 2.0 / dt + newmark_B[i * eq_num + 1];
+			orthoBuilder->solInfoMap[0].zi[( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 1] = -1.0;
 
 			//orthoBuilder->solInfoMap[0].z5[i * eq_num + 8] = newmark_B[i * eq_num + 1] * mesh[0].Nk1[i * eq_num + 9] - newmark_B[i * eq_num + 4] * By0;
 			//orthoBuilder->solInfoMap[0].z5[i * eq_num + 9] = -mesh[0].Nk1[i * eq_num + 9];
@@ -1149,10 +1194,47 @@ void Solver::dump_check_sol2D()
 	of1.close();
 }
 
-void Solver::dump_left_border_vals()
+void Solver::dump_border_vals()
 {
-	ofstream of1( "sol_left_border.txt", ofstream::app );
-	of1 << "v : " << mesh[0].Nk1[0] << "\tw : " << mesh[0].Nk1[1] << "\tW : " << mesh[0].Nk1[2] << "\tMyy : " << mesh[0].Nk1[5] << "\tNyy : " << mesh[0].Nk1[3] << "\tNyz : " << mesh[0].Nk1[4] << endl;
+	ofstream of1( "sol_borders.txt", ofstream::app );
+
+	of1 << "\t" << cur_t << endl;
+	of1 << " ~~ top\n";
+	of1 << "u : " << mesh[Km - 1].Nk1[0 + (nx-1)/2 * eq_num] << " v : " << mesh[Km - 1].Nk1[1 + (nx-1)/2 * eq_num] << " Nxy : " << mesh[Km - 1].Nk1[2 + (nx-1)/2 * eq_num]
+			<< " Nyy : " << mesh[Km - 1].Nk1[3 + (nx-1)/2 * eq_num] << " w : " << mesh[Km - 1].Nk1[4 + (nx-1)/2 * eq_num] << " W : " << mesh[Km - 1].Nk1[5 + (nx-1)/2 * eq_num]
+			<< " Myy : " << mesh[Km - 1].Nk1[6 + (nx-1)/2 * eq_num] << " Nyz : " << mesh[Km - 1].Nk1[7 + (nx-1)/2 * eq_num] << " Ex : " << mesh[Km - 1].Nk1[8 + (nx-1)/2 * eq_num]
+			<< " Bz : " << mesh[Km - 1].Nk1[9 + (nx-1)/2 * eq_num] << endl;
+	of1 << " ~~ bottom\n";
+	of1 << "u : " << mesh[0].Nk1[0 + (nx-1)/2 * eq_num] << " v : " << mesh[0].Nk1[1 + (nx-1)/2 * eq_num] << " Nxy : " << mesh[0].Nk1[2 + (nx-1)/2 * eq_num]
+			<< " Nyy : " << mesh[0].Nk1[3 + (nx-1)/2 * eq_num] << " w : " << mesh[0].Nk1[4 + (nx-1)/2 * eq_num] << " W : " << mesh[0].Nk1[5 + (nx-1)/2 * eq_num]
+			<< " Myy : " << mesh[0].Nk1[6 + (nx-1)/2 * eq_num] << " Nyz : " << mesh[0].Nk1[7 + (nx-1)/2 * eq_num] << " Ex : " << mesh[0].Nk1[8 + (nx-1)/2 * eq_num]
+			<< " Bz : " << mesh[0].Nk1[9 + (nx-1)/2 * eq_num] << endl;
+	of1 << " ~~ left\n";
+	of1 << "u : " << mesh[( Km - 1 ) / 2].Nk1[0 + 0 * eq_num] << " v : " << mesh[( Km - 1 ) / 2].Nk1[1 + 0 * eq_num] << " Nxy : " << mesh[( Km - 1 ) / 2].Nk1[2 + 0 * eq_num]
+			<< " Nyy : " << mesh[( Km - 1 ) / 2].Nk1[3 + 0 * eq_num] << " w : " << mesh[( Km - 1 ) / 2].Nk1[4 + 0 * eq_num] << " W : " << mesh[( Km - 1 ) / 2].Nk1[5 + 0 * eq_num]
+			<< " Myy : " << mesh[( Km - 1 ) / 2].Nk1[6 + 0 * eq_num] << " Nyz : " << mesh[( Km - 1 ) / 2].Nk1[7 + 0 * eq_num] << " Ex : " << mesh[( Km - 1 ) / 2].Nk1[8 + 0 * eq_num]
+			<< " Bz : " << mesh[( Km - 1 ) / 2].Nk1[9 + 0 * eq_num] << endl;
+	of1 << " ~~ right\n";
+	of1 << "u : " << mesh[( Km - 1 ) / 2].Nk1[0 + (nx-1) * eq_num] << " v : " << mesh[( Km - 1 ) / 2].Nk1[1 + (nx-1) * eq_num] << " Nxy : " << mesh[( Km - 1 ) / 2].Nk1[2 + (nx-1) * eq_num]
+			<< " Nyy : " << mesh[( Km - 1 ) / 2].Nk1[3 + (nx-1) * eq_num] << " w : " << mesh[( Km - 1 ) / 2].Nk1[4 + (nx-1) * eq_num] << " W : " << mesh[( Km - 1 ) / 2].Nk1[5 + (nx-1) * eq_num]
+			<< " Myy : " << mesh[( Km - 1 ) / 2].Nk1[6 + (nx-1) * eq_num] << " Nyz : " << mesh[( Km - 1 ) / 2].Nk1[7 + (nx-1) * eq_num] << " Ex : " << mesh[( Km - 1 ) / 2].Nk1[8 + (nx-1) * eq_num]
+			<< " Bz : " << mesh[( Km - 1 ) / 2].Nk1[9 + (nx-1) * eq_num] << endl;
+	of1 << "====\n";
+	of1.close();
+}
+
+void Solver::dump_whole_sol( int var )
+{
+	stringstream ss;
+	ss << "sol_whole_" << curTimeStep << ".bin";
+	ofstream of1( ss.str(), ofstream::out | ofstream::binary );
+	for( int y = 0; y < Km; ++y )
+	{
+		for( int x = 0; x < nx; ++x )
+		{
+			of1.write( reinterpret_cast<char*>( &(mesh[y].Nk1[var + x * eq_num]) ), sizeof(PL_NUM) );
+		}
+	}
 	of1.close();
 }
 
