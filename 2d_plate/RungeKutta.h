@@ -13,12 +13,12 @@ using std::vector;
 class RungeKutta
 {
 public:
-	RungeKutta( int _eq_num );
+	RungeKutta( int _varNum );
 	~RungeKutta();
 	void calc( /*const vector<vector<PL_NUM>>& A*/PL_NUM A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES], PL_NUM *f, PL_NUM dx, int thrNum, int hom, vector<PL_NUM>* x );			//method for solving a system of ODE like dy/dx = Ax + f
 
 private:
-	int eq_num;
+	int varNum;
 	PL_NUM rgk_u;
 	PL_NUM rgk_v;
 	PL_NUM rgk_C1, rgk_C2, rgk_C3, rgk_C4;

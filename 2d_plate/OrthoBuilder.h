@@ -6,6 +6,7 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
+#include "omp.h"
 
 using std::cout;
 using std::endl;
@@ -44,10 +45,12 @@ public:
 	//PL_NUM zi[NODES_ON_Y][EQ_NUM * NUMBER_OF_LINES / 2][EQ_NUM * NUMBER_OF_LINES];
 	PL_NUM z5[NODES_ON_Y][EQ_NUM * NUMBER_OF_LINES];
 protected:
-	int eq_num;
+	int varNum;
 	int Km;
 	vector<vector<PL_NUM>> LL;
 	vector<vector<PL_NUM>> UU;
+	//PL_NUM omega2[EQ_NUM * NUMBER_OF_LINES];
+	PL_NUM omegaPar[NUM_OF_THREADS];
 };
 
 class OrthoBuilderGodunov : public OrthoBuilder			//not working yet!
@@ -66,6 +69,9 @@ public:
 	~OrthoBuilderGSh() {};
 	void orthonorm( int baseV, int n, vector<PL_NUM>* NtoOrt );
 	void buildSolution( vector<VarVect>* _mesh );
+
+	void calcScalarProdsPar( int baseV, int n, vector<PL_NUM>* NtoOrt );
+	void calcScalarProdsPar2( int baseV, int n, vector<PL_NUM>* NtoOrt );
 };
 
 #endif

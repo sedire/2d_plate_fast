@@ -9,9 +9,9 @@ class VarVect
 {
 public:
 	VarVect();
-	VarVect( int _eq_num );
+	VarVect( int _varNum );
 	~VarVect();
-	void setup( int _eq_num );
+	void setup( int _varNum );
 
 	vector<PL_NUM> Nk;
 	vector<PL_NUM> Nk1;

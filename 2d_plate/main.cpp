@@ -10,7 +10,6 @@ using std::endl;
 int main()
 {
 	cout << "hello\n";
-	cout << sizeof( PL_NUM ) << endl;
 	omp_set_num_threads( NUM_OF_THREADS );
 	cout << "initializing...\n";
 
@@ -31,7 +30,7 @@ int main()
 
 	solver->cur_t += solver->dt;
 	++( solver->curTimeStep );
-	solver->dump_check_sol2D();
+	solver->dump_check_sol();
 	solver->dump_whole_sol( 4 );
 
 	cout << "\n pre_step done\n";
@@ -51,7 +50,7 @@ int main()
 			cout << solver->cur_t << " -- step done\n";
 		}
 		solver->dump_whole_sol( 4 );
-		solver->dump_check_sol2D();
+		solver->dump_check_sol();
 		//solver->dump_border_vals();
 	}
 	

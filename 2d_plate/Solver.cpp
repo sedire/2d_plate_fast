@@ -36,7 +36,7 @@ void Solver::setTask()
 	nu23 = 0.3;
 	rho = 1594;
 	hp = 0.0021;
-	ap = 0.1524;	//len
+	ap = 0.1524 * 100.0;	//len
 	bp = 0.1524;	//width
 	//mu = 4 * _MMM_PI / 10000000;
 	mu = 0.00000125664;
@@ -63,7 +63,7 @@ void Solver::setTask()
 	Km = NODES_ON_Y;
 	nx = NUMBER_OF_LINES;
 
-	dt = 0.0001;
+	dt = 0.00005;
 	dx = ap / ( nx + 1 );
 	dy = bp / ( Km - 1 );
 
@@ -156,7 +156,7 @@ void Solver::calc_system( int _x )
 	PL_NUM h = hp;
 	PL_NUM Btdt = 2 * dt * betta;
 	PL_NUM Jx = J0;
-	PL_NUM Pimp = 0.0;//p0 * sin( 100.0 * _MMM_PI * ( cur_t + dt ) );
+	PL_NUM Pimp = p0;// * sin( 100.0 * _MMM_PI * ( cur_t + dt ) );
 	PL_NUM Rad2 = ap * ap / 64.0;
 
 	int i = 0;
@@ -536,16 +536,16 @@ void Solver::calc_system( int _x )
 
 	for( int i = 1; i < nx - 1; ++i )
 	{
-		Pimp = 0.0;//p0 * sin( 100.0 * _MMM_PI * ( cur_t + dt ) );
-		PL_NUM rad2 = ( ( Km - 1 ) / 2 - _x ) * dy * ( ( Km - 1 ) / 2 - _x ) * dy + ( ( nx - 1 ) / 2 - i ) * dx * ( ( nx - 1 ) / 2 - i ) * dx;
-		if( rad2 < Rad2 )
-		{
-			Pimp = p0 * sqrt( 1 - rad2 / Rad2 ) * sin( 100.0 * _MMM_PI * ( cur_t + dt ) );
-		}
-		else if( _x == ( Km - 1 ) / 2 )
-		{
-			cout << " == line " << i << " is out\n";
-		}
+		//Pimp = 0.0;//p0 * sin( 100.0 * _MMM_PI * ( cur_t + dt ) );
+		//PL_NUM rad2 = ( ( Km - 1 ) / 2 - _x ) * dy * ( ( Km - 1 ) / 2 - _x ) * dy + ( ( nx - 1 ) / 2 - i ) * dx * ( ( nx - 1 ) / 2 - i ) * dx;
+		//if( rad2 < Rad2 )
+		//{
+		//	Pimp = p0 * sqrt( 1 - rad2 / Rad2 ) * sin( 100.0 * _MMM_PI * ( cur_t + dt ) );
+		//}
+		//else if( _x == ( Km - 1 ) / 2 )
+		//{
+		//	cout << " == line " << i << " is out\n";
+		//}
 
 		r = i + 1;
 		rr = i + 2;
@@ -891,10 +891,6 @@ void Solver::walkthrough( int mode )
 			endIt = varNum / 2;
 		}
 
-		//#pragma omp critical
-		//{
-		//	cout << " -- proc " << omp_get_thread_num() << " beg = " << begIt << "; end = " << endIt << endl;
-		//}
 #pragma omp barrier
 		for( int vNum = begIt; vNum < endIt; ++vNum )
 		{
@@ -941,7 +937,7 @@ void Solver::walkthrough( int mode )
 			//}
 			++_x;
 		}
-		#pragma omp barrier
+		#pragma omp barrier		//may be this is redundant
 	}
 	}
 	orthoBuilder->buildSolution( &mesh );

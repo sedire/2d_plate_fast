@@ -1,8 +1,8 @@
 #include "RungeKutta.h"
 
-RungeKutta::RungeKutta( int _eq_num )
+RungeKutta::RungeKutta( int _varNum )
 {
-	eq_num = _eq_num;
+	varNum = _varNum;
 	rgk_u = 0.3;
 	rgk_v = 0.6;
 
@@ -21,11 +21,11 @@ RungeKutta::RungeKutta( int _eq_num )
 
 void RungeKutta::calc( /*const vector<vector<PL_NUM>>& A*/PL_NUM A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES], PL_NUM *f, PL_NUM dx, int thrNum, int hom, vector<PL_NUM>* x )
 {
-	//if( A.size() != eq_num || 
-	//	A[0].size() != eq_num ||
-	//	f.size() != eq_num ||
+	//if( A.size() != varNum || 
+	//	A[0].size() != varNum ||
+	//	f.size() != varNum ||
 	//	x == 0 ||
-	//	x->size() != eq_num ) {
+	//	x->size() != varNum ) {
 	//	cout << "Error in Runge-Kutta calc: bad input\n";
 	//	return;
 	//}
@@ -40,22 +40,22 @@ void RungeKutta::calc( /*const vector<vector<PL_NUM>>& A*/PL_NUM A[EQ_NUM * NUMB
 	}
 
 	for( int i = 0; i < sizeOfF; ++i ) {				//f1 = dx * Fhi( x )
-		for( int j = 0; j < eq_num; ++j ) {
+		for( int j = 0; j < varNum; ++j ) {
 			f1[thrNum][i] += dx * A[i][j] * (*x)[j];
 		}
 	}
 	for( int i = 0; i < sizeOfF; ++i ) {				//f2 = dx * Fhi( x + d21 * f1 )
-		for( int j = 0; j < eq_num; ++j ) {
+		for( int j = 0; j < varNum; ++j ) {
 			f2[thrNum][i] += dx * A[i][j] * ( (*x)[j] + rgk_d21 * f1[thrNum][j] );
 		}
 	}
 	for( int i = 0; i < sizeOfF; ++i ) {				//f3 = dx * Fhi( x + d31 * f1 + d32 * f2 )
-		for( int j = 0; j < eq_num; ++j ) {
+		for( int j = 0; j < varNum; ++j ) {
 			f3[thrNum][i] += dx * A[i][j] * ( (*x)[j] + rgk_d31 * f1[thrNum][j] + rgk_d32 * f2[thrNum][j] );
 		}
 	}
 	for( int i = 0; i < sizeOfF; ++i ) {				//f2 = dx * Fhi( x + d41 * f1 + d42 * f2 + d43 * f3 )
-		for( int j = 0; j < eq_num; ++j ) {
+		for( int j = 0; j < varNum; ++j ) {
 			f4[thrNum][i] += dx * A[i][j] * ( (*x)[j] + rgk_d41 * f1[thrNum][j] + rgk_d42 * f2[thrNum][j] + rgk_d43 * f3[thrNum][j] );
 		}
 	}
