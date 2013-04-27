@@ -7,12 +7,15 @@
 #include <vector>
 #include <fstream>
 #include "omp.h"
+#include <Eigen/Eigen>
 
 using std::cout;
 using std::endl;
 using std::vector;
 using std::ofstream;
 using std::bad_alloc;
+using std::complex;
+using namespace Eigen;
 
 class SolInfo
 {
@@ -34,9 +37,9 @@ class OrthoBuilder
 {
 public:
 	vector<SolInfo> solInfoMap;
-	OrthoBuilder();
+	OrthoBuilder( int _varNum, int Km );
 	virtual ~OrthoBuilder();
-	virtual void setParams( int _Km );
+	virtual void setParams();
 	virtual void orthonorm( int baseV, int n, vector<PL_NUM>* NtoOrt ) {};
 	virtual void buildSolution( vector<VarVect>* _mesh ) {};
 	virtual void flushO( int x );
@@ -45,18 +48,20 @@ public:
 	//PL_NUM zi[NODES_ON_Y][EQ_NUM * NUMBER_OF_LINES / 2][EQ_NUM * NUMBER_OF_LINES];
 	PL_NUM z5[NODES_ON_Y][EQ_NUM * NUMBER_OF_LINES];
 protected:
-	int varNum;
-	int Km;
+	const int varNum;
+	const int Km;
 	vector<vector<PL_NUM>> LL;
 	vector<vector<PL_NUM>> UU;
 	//PL_NUM omega2[EQ_NUM * NUMBER_OF_LINES];
 	PL_NUM omegaPar[NUM_OF_THREADS];
+private:
+	OrthoBuilder();
 };
 
 class OrthoBuilderGodunov : public OrthoBuilder			//not working yet!
 {
 public:
-	OrthoBuilderGodunov( int _varNum );
+	OrthoBuilderGodunov( int _varNum, int _Km );
 	~OrthoBuilderGodunov() {};
 	void orthonorm( int baseV, int n, vector<PL_NUM>* NtoOrt );
 	void buildSolution( vector<VarVect>* _mesh );
@@ -65,13 +70,15 @@ public:
 class OrthoBuilderGSh : public OrthoBuilder			//use this
 {
 public:
-	OrthoBuilderGSh( int _varNum);
+	OrthoBuilderGSh( int _varNum, int Km );
 	~OrthoBuilderGSh() {};
 	void orthonorm( int baseV, int n, vector<PL_NUM>* NtoOrt );
 	void buildSolution( vector<VarVect>* _mesh );
 
 	void calcScalarProdsPar( int baseV, int n, vector<PL_NUM>* NtoOrt );
 	void calcScalarProdsPar2( int baseV, int n, vector<PL_NUM>* NtoOrt );
+private:
+	OrthoBuilderGSh();
 };
 
 #endif

@@ -16,8 +16,10 @@ public:
 	RungeKutta( int _varNum );
 	~RungeKutta();
 	void calc( /*const vector<vector<PL_NUM>>& A*/PL_NUM A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES], PL_NUM *f, PL_NUM dx, int thrNum, int hom, vector<PL_NUM>* x );			//method for solving a system of ODE like dy/dx = Ax + f
+	void calc( /*const vector<vector<PL_NUM>>& A*/PL_NUM A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES], PL_NUM *f, PL_NUM dx, int thrNum, int hom, const vector<PL_NUM>& x, vector<PL_NUM>* x1 );
 
 private:
+	RungeKutta();
 	int varNum;
 	PL_NUM rgk_u;
 	PL_NUM rgk_v;
@@ -28,6 +30,10 @@ private:
 	PL_NUM f2[NUM_OF_THREADS][EQ_NUM * NUMBER_OF_LINES];
 	PL_NUM f3[NUM_OF_THREADS][EQ_NUM * NUMBER_OF_LINES];
 	PL_NUM f4[NUM_OF_THREADS][EQ_NUM * NUMBER_OF_LINES];
+
+	int lb[EQ_NUM * NUMBER_OF_LINES];
+	int rb[EQ_NUM * NUMBER_OF_LINES];
+	void buildBorders();
 };
 
 #endif

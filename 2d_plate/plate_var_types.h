@@ -5,10 +5,11 @@
 
 #define PL_NUM long double
 #define EQ_NUM 10
-#define NUMBER_OF_LINES 11
+#define NUMBER_OF_LINES 15
 #define NODES_ON_Y 6001
-#define NEWTON_IT 0
+#define MAX_NEWTON_IT 0
 #define ALMOST_ZERO 0.0000000000001
+#define EPS_W 0.0000000000000000000000001
 #define _MMM_PI 3.14159265
 #define NUM_OF_THREADS 4
 

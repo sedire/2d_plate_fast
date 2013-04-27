@@ -39,69 +39,70 @@ public:
 	void dump_check_sol2D();
 	void dump_border_vals();
 
+	void dump_Amir_sol();
 
-	void testLUsolve();		//DELETEME
+	PL_NUM increaseTime();
+	PL_NUM getCurTime();
 
-	PL_NUM cur_t;
-	PL_NUM dt;			//time step
-	int curTimeStep;
 private:
-	PL_NUM E1;				//Young's modulus
-	PL_NUM E2;				//Young's modulus
-	PL_NUM nu21;			//Poisson's ratio	
-	PL_NUM nu23;			//Poisson's ratio	
-	PL_NUM rho;				//composite's density
-	PL_NUM G23;				//shear modulus
+	const PL_NUM E1;				//Young's modulus
+	const PL_NUM E2;				//Young's modulus
+	const PL_NUM nu21;			//Poisson's ratio	
+	const PL_NUM nu23;			//Poisson's ratio	
+	const PL_NUM rho;				//composite's density
+	const PL_NUM G23;				//shear modulus
 
-	PL_NUM mu;
+	const PL_NUM B11;
+	const PL_NUM B22;
+	const PL_NUM B12;
+	const PL_NUM B66;
+	const PL_NUM By0;
+	const PL_NUM By1;				// in considered boundary-value problem
+	const PL_NUM By2;   
+	const PL_NUM betta;		//parameter at Newmark's time integration scheme
 
-	PL_NUM sigma_x;			//electric conductivity
-	PL_NUM sigma_x_mu;
-	PL_NUM sigma_y;
-	PL_NUM sigma_y_mu;
-	PL_NUM sigma_z;
+	const PL_NUM mu;
+	const PL_NUM sigma_x;			//electric conductivity
+	const PL_NUM sigma_x_mu;
+	const PL_NUM sigma_y;
+	const PL_NUM sigma_y_mu;
+	const PL_NUM sigma_z;
 
-	PL_NUM hp;				//thickness of the plate
-	PL_NUM ap;				//width of the plate
-	PL_NUM bp;				//length of the plate
+	const PL_NUM J0;
+	const PL_NUM omega;
+	const PL_NUM  p0;				//constant mechanical load
+	const PL_NUM impRadSq;
 
-	int eq_num;				//number of equations in main system
+	const PL_NUM eps_0;
+	const PL_NUM eps_x;
+	const PL_NUM eps_x_0;
 
-	PL_NUM J0;
-	PL_NUM omega;
-	PL_NUM  p0;				//constant mechanical load
+	const PL_NUM hp;				//thickness of the plate
+	const PL_NUM ap;				//width of the plate
+	const PL_NUM bp;				//length of the plate
 
-	PL_NUM B11;
-	PL_NUM B22;
-	PL_NUM B12;
-	PL_NUM B66;
-	PL_NUM By0;
-	PL_NUM By1;                                      // in considered boundary-value problem
-	PL_NUM By2;   
+	const int Km;				//number of steps by space
+	const int nx;				//number of lines in Method of Lines
+	const int eq_num;				//number of equations in main system
+	const int varNum;		//number of variables on the whole line. equals eq_num * number_of_lines
 
-	PL_NUM eps_0;
-	PL_NUM eps_x;
-	PL_NUM eps_x_0;
-
-	int Km;				//number of steps by space
-	int nx;				//number of lines in Method of Lines
-
-	int varNum;
+	const int maxNewtonIt;
 	int newtonIt;
-	int maxNewtonIt;
 
-	PL_NUM dx;
-	PL_NUM dy;
+	const PL_NUM dx;
+	const PL_NUM dy;
 
-	PL_NUM al;			//some weird var for normalization. It is said that this will improve the numerical scheme. must be equal to density
-	PL_NUM betta;		//parameter at Newmark's time integration scheme
+	const PL_NUM dt;			//time step
+	PL_NUM cur_t;
+	int curTimeStep;
+
+	const PL_NUM al;			//some weird var for normalization. It is said that this will improve the numerical scheme. must be equal to density
 
 	vector<VarVect> mesh;		//2d mesh for solution.
 	//vector<vector<PL_NUM>> matr_A;		//matrix A for the nonlinear system at certain t and x
 	//vector<PL_NUM> vect_f;		//vector f on right part of nonlinear system at certain t and x
 	//vector<PL_NUM> newmark_A;
 	//vector<PL_NUM> newmark_B;
-	//PL_NUM matr_A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES];
 	PL_NUM matr_A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES];
 	PL_NUM vect_f[EQ_NUM * NUMBER_OF_LINES];		//vector f on right part of nonlinear system at certain t and x
 	PL_NUM newmark_A[EQ_NUM * NUMBER_OF_LINES];
@@ -110,7 +111,6 @@ private:
 	RungeKutta* rungeKutta;
 	OrthoBuilder* orthoBuilder;
 
-	void calcConsts();
 	void calc_Newmark_AB( int _x, int mode );		//don't really know why we need this stuff with mode need to FIX
 	void calc_system( int _x );
 	void walkthrough( int mode );

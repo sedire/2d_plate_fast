@@ -10,51 +10,41 @@ using std::endl;
 int main()
 {
 	cout << "hello\n";
-	omp_set_num_threads( NUM_OF_THREADS );
-	cout << "initializing...\n";
 
-	time_t beginTime = time( 0 );
-	time_t initTime;
+	omp_set_num_threads( NUM_OF_THREADS );
+	
+	time_t beginTime;
 	time_t endTime;
 
 	Solver* solver = new Solver();
-	solver->setTask();
-
-	initTime = time( 0 );
-	cout << "initialization done in " << float( initTime - beginTime ) / 60.0 << " min\n";
+	//solver->setTask();
 
 	cout << "\n doing pre_step...\n";
 	beginTime = time( 0 );
 	solver->pre_step();
 	endTime = time( 0 );
 
-	solver->cur_t += solver->dt;
-	++( solver->curTimeStep );
-	solver->dump_check_sol();
-	solver->dump_whole_sol( 4 );
-
 	cout << "\n pre_step done\n";
 	cout << "pre_step done in " << float( endTime - beginTime ) << " ~~\n";
 
-	while( solver->cur_t <= 0.01 )
+	while( solver->getCurTime() <= 0.01 )
 	{
 		for( int i = 0; i < 1; ++i )
 		{
 			beginTime = time( 0 );
 			solver->do_step();
 			endTime = time( 0 );
-			cout << "step " << solver->cur_t << " done in " << float( endTime - beginTime ) << " ~~\n";
+			cout << "step done in " << float( endTime - beginTime ) << " ~~\n";
 
-			solver->cur_t += solver->dt;
-			++( solver->curTimeStep );
-			cout << solver->cur_t << " -- step done\n";
+			solver->increaseTime();
+			cout << solver->getCurTime() << " -- step done\n";
 		}
 		solver->dump_whole_sol( 4 );
-		solver->dump_check_sol();
-		//solver->dump_border_vals();
+		solver->dump_check_sol2D();
+		//solver->dump_Amir_sol();
 	}
 	
-	free( solver );
+	delete( solver );
 
 	cout << ".........\n";
 	cout << "... done!\n";

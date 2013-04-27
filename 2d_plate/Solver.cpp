@@ -1,130 +1,161 @@
 #include "Solver.h"
 
-Solver::Solver()
-{
+Solver::Solver():
+	E1( 102970000000 ),
+	//E2( 7550000000 ),
+	E2( 102970000000 ),
+	nu21( 0.3 ),
+	nu23( 0.3 ),
+	rho( 1594 ),
+	G23( E2 / 2.0 / ( 1 + nu23 ) ),
 
+	B11( E1 * E1 / ( E1 - nu21 * nu21 * E2 ) ),
+	B22( E2 / ( 1 - nu21 * nu21 * E2 / E1 ) ),
+	B12( nu21 * E2 * E1 / ( E1 - nu21 * nu21 * E2 ) ),
+	B66( G23 ),
+	By0( 0.0 ),
+	By1( 2.0 * By0 ),
+	By2( 0.0 ),
+	betta( 0.25 ),
+
+	mu( 0.00000125664 ),
+	sigma_x( 39000 ),
+	sigma_x_mu( sigma_x * mu ),
+	sigma_y( sigma_x * 0.0001 ),
+	sigma_y_mu( sigma_y * mu ),
+	sigma_z( sigma_y ),
+
+	J0( 0.0 ),
+	omega( 314.16 ),
+	p0( 100.0 ),
+	impRadSq( 64.0 ),
+
+	eps_0( 0.000000000008854 ),
+	eps_x( 0.0000000002501502912 ),
+	eps_x_0( eps_x - eps_0 ),
+
+	hp( 0.0021 ),
+	ap( 0.1524 ),		//len
+	bp( 0.1524 ),		//width
+
+	Km( NODES_ON_Y ),
+	nx( NUMBER_OF_LINES ),
+	eq_num( EQ_NUM ),
+	varNum( nx * eq_num ),
+
+	maxNewtonIt( MAX_NEWTON_IT ),
+	newtonIt( 0 ),
+
+	dx( ap / ( nx + 1 ) ),
+	dy( bp / ( Km - 1 ) ),
+
+	dt( 0.0001 ),
+	cur_t( 0.0 ),
+	curTimeStep( 0 ),
+
+	al( 1.0 )
+{
+	setTask();
 }
 
 Solver::~Solver()
 {
 	if( rungeKutta != 0 )
 	{
-		free( rungeKutta );
+		delete( rungeKutta );
 	}
 	if( orthoBuilder != 0 )
 	{
-		free( orthoBuilder );
+		delete( orthoBuilder );
 	}
+}
+
+PL_NUM Solver::increaseTime()
+{
+	cur_t += dt;
+	++curTimeStep;
+	return cur_t;
+}
+
+PL_NUM Solver::getCurTime()
+{
+	return cur_t;
 }
 
 void Solver::setTask()
 {
-	cout << "set task begins\n";
-
 	ofstream of1( "test_sol.txt" );
 	of1.close();
-	ofstream of2( "sol_borders.txt" );
-	of2.close();
 
-	newtonIt = 0;
-
-	al = 1.0;
-	E1 = 102970000000;
-	E2 = E1;
+	//al = 1.0;
+	//E1 = 102970000000;
+	//E2 = E1;
 	//E2 = 7550000000;
-	nu21 = 0.3;
-	nu23 = 0.3;
-	rho = 1594;
-	hp = 0.0021;
-	ap = 0.1524 * 100.0;	//len
-	bp = 0.1524;	//width
+	//nu21 = 0.3;
+	//nu23 = 0.3;
+	//rho = 1594;
+	//hp = 0.0021;
+	//ap = 0.1524 * 100.0;	//len
+	//bp = 0.1524;	//width
 	//mu = 4 * _MMM_PI / 10000000;
-	mu = 0.00000125664;
-	sigma_x = 39000;
-	sigma_x_mu = sigma_x * mu;
-	sigma_y = sigma_x * 0.0001;
-	sigma_y_mu = sigma_y * mu;
-	sigma_z = sigma_y;
+	//mu = 0.00000125664;
+	//sigma_x = 39000;
+	//sigma_x_mu = sigma_x * mu;
+	//sigma_y = sigma_x * 0.0001;
+	//sigma_y_mu = sigma_y * mu;
+	//sigma_z = sigma_y;
 
-	cout << "len w " << ap << " " << bp << endl;
+	//eq_num = EQ_NUM;
+	//J0 = 0.0;
+	//omega = 314.16;
+	//p0 = 100.0;
+	//By0 = 0.0;
+	//eps_0 = 0.000000000008854;			// electric permittivity in the vacuum
+	//eps_x = 0.0000000002501502912;		// electric permittivity in the fiber direction
 
-	eq_num = EQ_NUM;
-	cur_t = 0.0;
-	curTimeStep = 0;
-
-	J0 = 0.0;
-	omega = 314.16;
-	p0 = 100.0;
-
-	By0 = 0.0;
-	eps_0 = 0.000000000008854;			// electric permittivity in the vacuum
-	eps_x = 0.0000000002501502912;		// electric permittivity in the fiber direction
-
-	Km = NODES_ON_Y;
-	nx = NUMBER_OF_LINES;
-
-	dt = 0.00005;
-	dx = ap / ( nx + 1 );
-	dy = bp / ( Km - 1 );
-
-	betta = 0.25;
-	maxNewtonIt = NEWTON_IT;
-
-	varNum = nx * eq_num;
-
-	cout << "vars initialized\n";
+	//Km = NODES_ON_Y;
+	//nx = NUMBER_OF_LINES;
+	//dt = 0.00005;
+	//dx = ap / ( nx + 1 );
+	//dy = bp / ( Km - 1 );
+	//betta = 0.25;
+	//varNum = nx * eq_num;
 
 	rungeKutta = new RungeKutta( varNum );
-	orthoBuilder = new OrthoBuilderGSh( varNum );
-	orthoBuilder->setParams( Km );			//NOTE: it takes a lot of time to initialize so much memory
-
-
-	cout << "orthobuilder set\n";
+	orthoBuilder = new OrthoBuilderGSh( varNum, Km );
+	orthoBuilder->setParams();			//NOTE: it takes a lot of time to initialize so much memory
 
 	mesh.resize( Km );
 	for( int i = 0; i < mesh.size(); ++i ){
 		mesh[i].setup( varNum );
 	}
 
-	cout << "mesh resized\n";
-
 	//matr_A.resize( varNum, vector<PL_NUM>( varNum, 0.0) );
 	//cout << "A resized\n";
 	/*vect_f.resize( varNum, 0.0 );
 	cout << "f resized\n";*/
 
-	for( int i = 0; i < NUMBER_OF_LINES * EQ_NUM; ++i )
+	for( int i = 0; i < nx * eq_num; ++i )
 	{
-		for( int j = 0; j < NUMBER_OF_LINES * EQ_NUM; ++j )
+		for( int j = 0; j < nx * eq_num; ++j )
 		{
 			matr_A[i][j] = 0.0;
 		}
 		vect_f[i] = 0.0;
 	}
-	//for( int i = 0; i < NUMBER_OF_LINES * EQ_NUM; ++i )
-	//{
-	//	vect_f[i] = 0.0;
-	//}
 
 	//newmark_A.resize( varNum, 0.0 );
 	//newmark_B.resize( varNum, 0.0 );
+	//cout << "newmark resized\n";
 
-	cout << "newmark resized\n";
-
-	calcConsts();
-}
-
-void Solver::calcConsts()
-{
-	B11 = E1 * E1 / ( E1 - nu21 * nu21 * E2 );
-	B22 = E2 / ( 1 - nu21 * nu21 * E2 / E1 );
-	B12 = nu21 * E2 * E1 / ( E1 - nu21 * nu21 * E2 );
-	G23 = E2 / 2.0 / ( 1 + nu23 );
-	B66 = G23;
-
-	By1 = 2.0 * By0;                                      // in considered boundary-value problem
-	By2 = 0.0;
-	eps_x_0 = eps_x - eps_0;
+	//B11 = E1 * E1 / ( E1 - nu21 * nu21 * E2 );
+	//B22 = E2 / ( 1 - nu21 * nu21 * E2 / E1 );
+	//B12 = nu21 * E2 * E1 / ( E1 - nu21 * nu21 * E2 );
+	//G23 = E2 / 2.0 / ( 1 + nu23 );
+	//B66 = G23;
+	//By1 = 2.0 * By0;                                      // in considered boundary-value problem
+	//By2 = 0.0;
+	//eps_x_0 = eps_x - eps_0;
 }
 
 void Solver::calc_Newmark_AB( int _x, int mode )
@@ -155,9 +186,9 @@ void Solver::calc_system( int _x )
 {
 	PL_NUM h = hp;
 	PL_NUM Btdt = 2 * dt * betta;
-	PL_NUM Jx = J0;
-	PL_NUM Pimp = p0;// * sin( 100.0 * _MMM_PI * ( cur_t + dt ) );
-	PL_NUM Rad2 = ap * ap / 64.0;
+	PL_NUM Jx = J0;// * exp( -( cur_t + dt ) / 0.01 ) * sin( omega * ( cur_t + dt ) );  
+	PL_NUM Pimp = p0 * sin( 100.0 * _MMM_PI * ( cur_t + dt ) );
+	PL_NUM Rad2 = ap * ap / impRadSq;
 
 	int i = 0;
 	int r = i + 1;
@@ -536,7 +567,7 @@ void Solver::calc_system( int _x )
 
 	for( int i = 1; i < nx - 1; ++i )
 	{
-		//Pimp = 0.0;//p0 * sin( 100.0 * _MMM_PI * ( cur_t + dt ) );
+		//Pimp = p0 * sin( 100.0 * _MMM_PI * ( cur_t + dt ) );
 		//PL_NUM rad2 = ( ( Km - 1 ) / 2 - _x ) * dy * ( ( Km - 1 ) / 2 - _x ) * dy + ( ( nx - 1 ) / 2 - i ) * dx * ( ( nx - 1 ) / 2 - i ) * dx;
 		//if( rad2 < Rad2 )
 		//{
@@ -868,6 +899,10 @@ void Solver::calc_system( int _x )
 
 void Solver::walkthrough( int mode )
 {
+	time_t tBeg, tEnd;
+	time_t rgkT = 0;
+	time_t orthoT = 0;
+
 	vector<PL_NUM> baseVect;
 	baseVect.resize( varNum, 0.0 );
 
@@ -894,15 +929,20 @@ void Solver::walkthrough( int mode )
 #pragma omp barrier
 		for( int vNum = begIt; vNum < endIt; ++vNum )
 		{
-			for( int i = 0; i < varNum; ++i )
-			{
-				baseVect[i] = orthoBuilder->solInfoMap[_x].zi[vNum][i];
-			}
-			rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 0, &baseVect );
-			for( int i = 0; i < varNum; ++i )
-			{
-				orthoBuilder->solInfoMap[_x + 1].zi[vNum][i] = baseVect[i];
-			}
+			//for( int i = 0; i < varNum; ++i )
+			//{
+			//	baseVect[i] = orthoBuilder->solInfoMap[_x].zi[vNum][i];
+			//}
+			//rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 0, &baseVect );
+			//for( int i = 0; i < varNum; ++i )
+			//{
+			//	orthoBuilder->solInfoMap[_x + 1].zi[vNum][i] = baseVect[i];
+			//}
+
+			//tBeg = time( 0 );
+			rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 0, orthoBuilder->solInfoMap[_x].zi[vNum], &( orthoBuilder->solInfoMap[_x + 1].zi[vNum] ) );
+			//tEnd = time( 0 );
+			//rgkT += tEnd - tBeg;
 		}
 #pragma omp barrier
 		//cout << "proc " << omp_get_thread_num() <<  " 2\n";
@@ -915,7 +955,10 @@ void Solver::walkthrough( int mode )
 				{
 					baseVect[i] = orthoBuilder->solInfoMap[_x + 1].zi[vNum][i];
 				}
+				tBeg = time( 0 );
 				orthoBuilder->orthonorm( vNum, _x, &baseVect );
+				tEnd = time( 0 );
+				orthoT += tEnd - tBeg;
 			}
 
 			for( int i = 0; i < varNum; ++i )
@@ -923,18 +966,15 @@ void Solver::walkthrough( int mode )
 				/*baseVect[i] = orthoBuilder->solInfoMap[_x].z5[i];*/
 				baseVect[i] = orthoBuilder->z5[_x][i];
 			}
+			//tBeg = time( 0 );
 			rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 1, &baseVect );
+			//tEnd = time( 0 );
+			//rgkT += tEnd - tBeg;
 
-			//cout << "last orthonorm\n";
+			tBeg = time( 0 );
 			orthoBuilder->orthonorm( varNum / 2, _x, &baseVect );
-
-			//if( _x == 0 || _x == Km - 2 )
-			//{
-			//	if( curTimeStep % 10 == 0 )
-			//	{
-			//		dumpMatrA( _x );
-			//	}
-			//}
+			tEnd = time( 0 );
+			orthoT += tEnd - tBeg;
 			++_x;
 		}
 		#pragma omp barrier		//may be this is redundant
@@ -947,6 +987,7 @@ void Solver::walkthrough( int mode )
 	{
 		orthoBuilder->flushO( _x );
 	}
+	//cout << " :: rgkT " << rgkT << " orthoT " << orthoT << endl;
 }
 
 void Solver::updateDerivs()
@@ -981,53 +1022,6 @@ void Solver::pre_step()
 	calc_system( 0 );
 
 	walkthrough( 0 );
-	//the first approximation is obtained
-
-	//TODO this (down) looks like just do_step()
-	int cont = 1;
-	while( cont == 1 )
-	{
-		cout << "walk\n";
-		calc_Newmark_AB( 0, 1 );
-		
-		for( int i = 0; i < varNum / 2; ++i ) 			//TODO check indexes
-		{
-			for( int j = 0; j < varNum; ++j )
-			{
-				orthoBuilder->solInfoMap[0].zi[i][j] = 0;
-			}
-		}
-		for( int i = 0; i < varNum; ++i ) 			//TODO check indexes
-		{
-			/*orthoBuilder->solInfoMap[0].z5[i] = 0;*/
-			orthoBuilder->z5[0][i] = 0;
-		}
-		for( int i = 0; i < nx; ++i )			//TODO check indexes
-		{
-			orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 0][i * eq_num + 2] = 1.0;
-			orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 1][i * eq_num + 3] = 1.0;
-			orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 2][i * eq_num + 5] = 1.0;
-			orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 3][i * eq_num + 7] = 1.0;
-			orthoBuilder->solInfoMap[0].zi[( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 2] = mesh[0].Nk1[i * eq_num + 1] / betta / 2.0 / dt + newmark_B[i * eq_num + 1];
-			orthoBuilder->solInfoMap[0].zi[( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 1] = -1.0;
-
-			//orthoBuilder->solInfoMap[0].z5[i * eq_num + 8] = newmark_B[i * eq_num + 1] * mesh[0].Nk1[i * eq_num + 9] - newmark_B[i * eq_num + 4] * By0;
-			//orthoBuilder->solInfoMap[0].z5[i * eq_num + 9] = -mesh[0].Nk1[i * eq_num + 9];
-			orthoBuilder->z5[0][i * eq_num + 8] = newmark_B[i * eq_num + 1] * mesh[0].Nk1[i * eq_num + 9] - newmark_B[i * eq_num + 4] * By0;
-			orthoBuilder->z5[0][i * eq_num + 9] = -mesh[0].Nk1[i * eq_num + 9];
-		}
-
-		for( int i = 0; i < Km; ++i )
-		{
-			for( int j = 0; j < varNum; ++j )
-			{
-				mesh[i].Nk[j] = mesh[i].Nk1[j];
-			}
-		}
-		walkthrough( 0 );
-		cont = checkConv();
-	}
-	updateDerivs();
 }
 
 
@@ -1234,33 +1228,20 @@ void Solver::dump_whole_sol( int var )
 	of1.close();
 }
 
-void Solver::testLUsolve()
+void Solver::dump_Amir_sol()
 {
-	int size = 4;
-	vector<vector<PL_NUM>> AA;
-	vector<PL_NUM> ff;
-	vector<PL_NUM> xx;
+	stringstream ss;
+	ss << "sol_Amir_" << curTimeStep << ".txt";
+	ofstream of1( ss.str() );
 
-	AA.resize( size, vector<PL_NUM>( size, 0.0 ) );
-	AA[0][0] = 1; AA[0][1] = 6; AA[0][2] = 8; AA[0][3] = 0.00000012;
-	AA[1][0] = 12; AA[1][1] = 7; AA[1][2] = 22; AA[1][3] = 12; 
-	AA[2][0] = 4; AA[2][1] = 5.5; AA[2][2] = 1; AA[2][3] = 8; 
-	AA[3][0] = 100100100.0; AA[3][1] = 23; AA[3][2] = 8; AA[3][3] = 6; 
+	const int y( Km / 2 );
 
-	ff.resize( size, 0.0 );
-	ff[0] = 45;
-	ff[1] = 43;
-	ff[2] = 6;
-	ff[3] = 0;
-
-	xx.resize( size, 0.0 );
-	orthoBuilder->LUsolve( AA, ff, &xx );
-
-	for( int i = 0; i < xx.size(); ++i )
+	for( int x = 0; x < nx; ++x )
 	{
-		cout << xx[i] << endl;
+		of1 << mesh[y].Nk1[3 + x * eq_num] << endl;
 	}
-	return;
+
+	of1.close();
 }
 
 void Solver::dumpMatrA( int _x )
