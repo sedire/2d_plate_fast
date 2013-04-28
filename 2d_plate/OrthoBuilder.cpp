@@ -347,204 +347,6 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, vector<PL_NUM>* NtoOrt )		//b
 	}
 }
 
-
-//void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
-//{
-//	vector<vector<PL_NUM>> M;
-//	vector<PL_NUM> f11;
-//
-//	vector<PL_NUM> x1;
-//	vector<PL_NUM> res;
-//	vector<PL_NUM> res2;
-//	vector<PL_NUM> dx1;
-//
-//	int msize = varNum / 2;						//caution here!
-//	M.resize( msize, vector<PL_NUM>( msize, 0.0) );
-//	f11.resize( msize, 0.0 );
-//	x1.resize( msize, 0.0 );
-//	res.resize( msize, 0.0 );
-//	res2.resize( msize, 0.0 );
-//	dx1.resize( msize, 0.0 );
-//	
-//	//simply supported plate NO CURRENT PASSING THROUGH THE BOUNDARY
-//
-//	int totLines = varNum / EQ_NUM;
-//	int _a = EQ_NUM / 2;
-//	for( int line = 0; line < totLines; ++line )
-//	{
-//		for( int vNum = 0; vNum < varNum / 2; ++vNum )
-//		{
-//			M[line * _a + 0][vNum] = solInfoMap[Km - 1].zi[vNum][line * EQ_NUM + 0];		//TODO potential lags here!
-//			M[line * _a + 1][vNum] = solInfoMap[Km - 1].zi[vNum][line * EQ_NUM + 1];
-//			M[line * _a + 2][vNum] = solInfoMap[Km - 1].zi[vNum][line * EQ_NUM + 4];
-//			M[line * _a + 3][vNum] = solInfoMap[Km - 1].zi[vNum][line * EQ_NUM + 6];
-//			M[line * _a + 4][vNum] = solInfoMap[Km - 1].zi[vNum][line * EQ_NUM + 8];
-//		}
-//		/*f11[line * _a + 0] = -solInfoMap[Km - 1].z5[line * EQ_NUM + 0];
-//		f11[line * _a + 1] = -solInfoMap[Km - 1].z5[line * EQ_NUM + 1];
-//		f11[line * _a + 2] = -solInfoMap[Km - 1].z5[line * EQ_NUM + 4];
-//		f11[line * _a + 3] = -solInfoMap[Km - 1].z5[line * EQ_NUM + 6];
-//		f11[line * _a + 4] = -solInfoMap[Km - 1].z5[line * EQ_NUM + 8];*/
-//		f11[line * _a + 0] = -z5[Km - 1][line * EQ_NUM + 0];
-//		f11[line * _a + 1] = -z5[Km - 1][line * EQ_NUM + 1];
-//		f11[line * _a + 2] = -z5[Km - 1][line * EQ_NUM + 4];
-//		f11[line * _a + 3] = -z5[Km - 1][line * EQ_NUM + 6];
-//		f11[line * _a + 4] = -z5[Km - 1][line * EQ_NUM + 8];
-//	}
-//
-//	LUsolve( M, f11, &x1 );
-//
-//	//refinement. I do not know the theoretical source of this procedure yet. just rewrote it
-//	//TODO test this
-//	for( int i = 0; i < varNum / 2; ++i )
-//	{
-//		res[i] = f11[i];
-//		for( int j = 0; j < varNum / 2; ++j )
-//		{
-//			res[i] -= M[i][j] * x1[j];
-//		}
-//	}
-//
-//	LUsolve( M, res, &dx1 );
-//
-//	for( int i = 0; i < varNum / 2; ++i )
-//	{
-//		x1[i] += dx1[i];
-//	}
-//
-//	PL_NUM nx = 0.0;
-//	PL_NUM ndx = 0.0;
-//	PL_NUM ndx2 = 0.0;
-//	PL_NUM temp;
-//
-//
-//	ndx = fabs( dx1[0] );
-//	for( int i = 1; i < varNum / 2; ++i )
-//	{
-//		if( fabs( dx1[i] ) > ndx )
-//		{
-//			ndx = fabs( dx1[i] );
-//		}
-//	}
-//	//for( int i = 0; i < varNum / 2; ++i )
-//	//{
-//	//	ndx += dx1[i] * dx1[i];
-//	//}
-//	temp = ndx;							//FIXME may be we don't need temp
-//	int iterCount = 0;
-//	do//while( fabs( ndx - ndx2 ) > ALMOST_ZERO )		//FIXME may be > DELTA ??
-//	{
-//		iterCount++;
-//		ndx = temp;						//may be just ndx = ndx2
-//		for( int i = 0; i < varNum / 2; ++i )
-//		{
-//			res2[i] = res[i];				//FIXME may be we do not need res2 here. use just res
-//			for( int j = 0; j < varNum / 2; ++j )
-//			{
-//				res2[i] -= M[i][j] * dx1[j];
-//			}
-//			res[i] = res2[i];
-//		}
-//		LUsolve( M, res2, &dx1 );
-//		for( int i = 0; i < varNum / 2; ++i )
-//		{
-//			x1[i] += dx1[i];
-//		}
-//
-//		for( int i = 0; i < varNum / 2; ++i )
-//		{
-//			res2[i] = res[i];
-//			for( int j = 0; j < varNum / 2; ++j )
-//			{
-//				res2[i] -= M[i][j] * dx1[j];
-//			}
-//			res[i] = res2[i];
-//		}
-//		LUsolve( M, res2, &dx1 );
-//		for( int i = 0; i < varNum / 2; ++i )
-//		{
-//			x1[i] += dx1[i];
-//		}
-//
-//		nx = fabs( x1[0] );
-//		for( int i = 1; i < varNum / 2; ++i )
-//		{
-//			if( fabs( x1[i] ) > nx )
-//			{
-//				nx = fabs( x1[i] );
-//			}
-//		}
-//		//ndx2 = 0.0;
-//		//for( int i = 0; i < varNum / 2; ++i )
-//		//{
-//		//	ndx2 += dx1[i] * dx1[i];
-//		//}
-//		ndx2 = fabs( dx1[0] );
-//		for( int i = 1; i < varNum / 2; ++i )
-//		{
-//			if( fabs( dx1[i] ) > ndx2 )
-//			{
-//				ndx2 = fabs( dx1[i] );
-//			}
-//		}
-//		temp = ndx2;
-//	} while( ndx2 < 0.9 * ndx && ndx2 / nx >= 2 * EPS_W );
-//	cout << iterCount << " refinement iterations\n";
-//	//refinement is over
-//
-//				for( int i = 0; i < x1.size(); ++i )
-//	{
-//		cout << x1[i] << " ";
-//	}
-//	cout << endl;
-//
-//	//now we determine coefficients for base solutions
-//	//the right-hand side:
-//	for( int i = 0; i < varNum / 2; ++i )
-//	{
-//		solInfoMap[Km - 1].C[i] = x1[i];
-//	}
-//	//all the other points:
-//	for( int _x = Km - 2; _x >= 0; --_x )
-//	{
-//		for( int i = varNum / 2 - 1; i >= 0; --i )
-//		{
-//			solInfoMap[_x].C[i] = solInfoMap[_x + 1].C[i] - solInfoMap[_x + 1].o[varNum / 2 * ( varNum / 2 + 1 ) / 2 + i];
-//			for( int j = varNum / 2 - 1; j > i; --j )
-//			{
-//				solInfoMap[_x].C[i] -= solInfoMap[_x + 1].o[j * ( j + 1 ) / 2 + i] * solInfoMap[_x].C[j];
-//			}
-//			solInfoMap[_x].C[i] /= solInfoMap[_x + 1].o[i * ( i + 1 ) / 2 + i];
-//		}
-//	}
-//
-//	//now using the coefficients we write down the solution
-//	for( int _x = 0; _x < Km; ++_x )
-//	{
-//		for( int i = 0; i < varNum; ++i )
-//		{
-//			(*_mesh)[_x].Nk1[i] = 0.0;
-//			for( int vNum = 0; vNum < varNum / 2; ++vNum )
-//			{
-//				(*_mesh)[_x].Nk1[i] += solInfoMap[_x].C[vNum] * solInfoMap[_x].zi[vNum][i];			//FIXME lags may happen here
-//			}
-//			/*(*_mesh)[_x].Nk1[i] += solInfoMap[_x].z5[i];*/
-//			(*_mesh)[_x].Nk1[i] += z5[_x][i];
-//		}
-//	}
-//
-//	//force the BCs to be zero at y == a/2
-//	//TODO why do we need this??
-//	for( int line = 0; line < varNum / EQ_NUM; ++line )
-//	{
-//		(*_mesh)[Km - 1].Nk1[line * EQ_NUM + 0] = 0.0;
-//		(*_mesh)[Km - 1].Nk1[line * EQ_NUM + 1] = 0.0;
-//		(*_mesh)[Km - 1].Nk1[line * EQ_NUM + 4] = 0.0;
-//		(*_mesh)[Km - 1].Nk1[line * EQ_NUM + 6] = 0.0;
-//		(*_mesh)[Km - 1].Nk1[line * EQ_NUM + 8] = 0.0;
-//	}
-//}
-
 void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 {
 	static const int msize = NUMBER_OF_LINES * EQ_NUM / 2;
@@ -567,20 +369,6 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 		res2( i ) = 0.0;
 		dx1( i ) = 0.0;
 	}
-	//vector<vector<PL_NUM>> M;
-	//vector<PL_NUM> f11;
-	//vector<PL_NUM> x1;
-	//vector<PL_NUM> res;
-	//vector<PL_NUM> res2;
-	//vector<PL_NUM> dx1;
-
-	//int msize = varNum / 2;						//caution here!
-	//M.resize( msize, vector<PL_NUM>( msize, 0.0) );
-	//f11.resize( msize, 0.0 );
-	//x1.resize( msize, 0.0 );
-	//res.resize( msize, 0.0 );
-	//res2.resize( msize, 0.0 );
-	//dx1.resize( msize, 0.0 );
 	
 	//simply supported plate NO CURRENT PASSING THROUGH THE BOUNDARY
 
@@ -596,16 +384,11 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 			M( line * _a + 3, vNum ) = solInfoMap[Km - 1].zi[vNum][line * EQ_NUM + 6];
 			M( line * _a + 4, vNum ) = solInfoMap[Km - 1].zi[vNum][line * EQ_NUM + 8];
 		}
-		/*f11[line * _a + 0] = -solInfoMap[Km - 1].z5[line * EQ_NUM + 0];
-		f11[line * _a + 1] = -solInfoMap[Km - 1].z5[line * EQ_NUM + 1];
-		f11[line * _a + 2] = -solInfoMap[Km - 1].z5[line * EQ_NUM + 4];
-		f11[line * _a + 3] = -solInfoMap[Km - 1].z5[line * EQ_NUM + 6];
-		f11[line * _a + 4] = -solInfoMap[Km - 1].z5[line * EQ_NUM + 8];*/
-		f11[line * _a + 0] = -z5[Km - 1][line * EQ_NUM + 0];
-		f11[line * _a + 1] = -z5[Km - 1][line * EQ_NUM + 1];
-		f11[line * _a + 2] = -z5[Km - 1][line * EQ_NUM + 4];
-		f11[line * _a + 3] = -z5[Km - 1][line * EQ_NUM + 6];
-		f11[line * _a + 4] = -z5[Km - 1][line * EQ_NUM + 8];
+		f11( line * _a + 0 ) = -z5[Km - 1][line * EQ_NUM + 0];
+		f11( line * _a + 1 ) = -z5[Km - 1][line * EQ_NUM + 1];
+		f11( line * _a + 2 ) = -z5[Km - 1][line * EQ_NUM + 4];
+		f11( line * _a + 3 ) = -z5[Km - 1][line * EQ_NUM + 6];
+		f11( line * _a + 4 ) = -z5[Km - 1][line * EQ_NUM + 8];
 	}
 
 	EigenSolver<Matrix<PL_NUM, msize, msize, RowMajor>> es( M );
@@ -628,30 +411,13 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 		}
 		cout << "cond number is " << maxL / minL << endl;
 	}
-
 	x1 = M.fullPivLu().solve( f11 );
-	//LUsolve( M, f11, &x1 );
 
 	//refinement. I do not know the theoretical source of this procedure yet. just rewrote it
 	//TODO test this
 	res = f11 - M * x1;
-	//for( int i = 0; i < varNum / 2; ++i )
-	//{
-	//	res[i] = f11[i];
-	//	for( int j = 0; j < varNum / 2; ++j )
-	//	{
-	//		res[i] -= M[i][j] * x1[j];
-	//	}
-	//}
-
 	dx1 = M.fullPivLu().solve( res );
-	//LUsolve( M, res, &dx1 );
-
 	x1 = x1 + dx1;
-	//for( int i = 0; i < varNum / 2; ++i )
-	//{
-	//	x1[i] += dx1[i];
-	//}
 
 	PL_NUM nx = 0.0;
 	PL_NUM ndx = 0.0;
@@ -659,89 +425,27 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 	PL_NUM temp;
 
 	ndx = dx1.lpNorm<Infinity>();
-
-	//ndx = fabs( dx1[0] );
-	//for( int i = 1; i < varNum / 2; ++i )
-	//{
-	//	if( fabs( dx1[i] ) > ndx )
-	//	{
-	//		ndx = fabs( dx1[i] );
-	//	}
-	//}
-
-	//for( int i = 0; i < varNum / 2; ++i )
-	//{
-	//	ndx += dx1[i] * dx1[i];
-	//}
 	temp = ndx;							//FIXME may be we don't need temp
 	int iterCount = 0;
-	do //while( fabs( ndx - ndx2 ) > ALMOST_ZERO )		//FIXME may be > DELTA ??
+
+	do
 	{
-		ndx = temp;						//may be just ndx = ndx2
+		ndx = temp;
 		++iterCount;
 
 		res2 = res - M * dx1;
 		res = res2;
-
-		//for( int i = 0; i < varNum / 2; ++i )
-		//{
-		//	res2[i] = res[i];				//FIXME may be we do not need res2 here. use just res
-		//	for( int j = 0; j < varNum / 2; ++j )
-		//	{
-		//		res2[i] -= M[i][j] * dx1[j];
-		//	}
-		//	res[i] = res2[i];
-		//}
 		dx1 = M.fullPivLu().solve( res2 );
-		//LUsolve( M, res2, &dx1 );
 		x1 = x1 + dx1;
-		//for( int i = 0; i < varNum / 2; ++i )
-		//{
-		//	x1[i] += dx1[i];
-		//}
+
 
 		res2 = res - M * dx1;
 		res = res2;
-		//for( int i = 0; i < varNum / 2; ++i )
-		//{
-		//	res2[i] = res[i];
-		//	for( int j = 0; j < varNum / 2; ++j )
-		//	{
-		//		res2[i] -= M[i][j] * dx1[j];
-		//	}
-		//	res[i] = res2[i];
-		//}
 		dx1 = M.fullPivLu().solve( res2 );
-		//LUsolve( M, res2, &dx1 );
-		//for( int i = 0; i < varNum / 2; ++i )
-		//{
-		//	x1[i] += dx1[i];
-		//}
 		x1 = x1 + dx1;
 
 		nx = x1.lpNorm<Infinity>();
-		//nx = fabs( x1[0] );
-		//for( int i = 1; i < varNum / 2; ++i )
-		//{
-		//	if( fabs( x1[i] ) > nx )
-		//	{
-		//		nx = fabs( x1[i] );
-		//	}
-		//}
-		//ndx2 = 0.0;
-		//for( int i = 0; i < varNum / 2; ++i )
-		//{
-		//	ndx2 += dx1[i] * dx1[i];
-		//}
 		ndx2 = dx1.lpNorm<Infinity>();
-		//ndx2 = fabs( dx1[0] );
-		//for( int i = 1; i < varNum / 2; ++i )
-		//{
-		//	if( fabs( dx1[i] ) > ndx2 )
-		//	{
-		//		ndx2 = fabs( dx1[i] );
-		//	}
-		//}
 		temp = ndx2;
 	} while( ndx2 < 0.9 * ndx && ndx2 / nx >= 2 * EPS_W );
 	cout << iterCount << " refinement iterations\n";
