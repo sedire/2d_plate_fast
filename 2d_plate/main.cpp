@@ -27,7 +27,7 @@ int main()
 	cout << "\n pre_step done\n";
 	cout << "pre_step done in " << float( endTime - beginTime ) << " ~~\n";
 
-	while( solver->getCurTime() <= 0.01 )
+	while( solver->getCurTime() <= 0.05 )
 	{
 		for( int i = 0; i < 1; ++i )
 		{
@@ -39,8 +39,8 @@ int main()
 			solver->increaseTime();
 			cout << solver->getCurTime() << " -- step done\n";
 		}
-		solver->dump_whole_sol( 4 );
-		solver->dump_check_sol2D();
+		//solver->dump_whole_sol( 4 );
+		solver->dump_check_sol();
 		//solver->dump_Amir_sol();
 	}
 	

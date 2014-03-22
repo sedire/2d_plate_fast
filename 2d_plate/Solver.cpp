@@ -2,8 +2,8 @@
 
 Solver::Solver():
 	E1( 102970000000 ),
-	//E2( 7550000000 ),
-	E2( 102970000000 ),
+	E2( 7550000000 ),
+	//E2( 102970000000 ),
 	nu21( 0.3 ),
 	nu23( 0.3 ),
 	rho( 1594 ),
@@ -13,21 +13,27 @@ Solver::Solver():
 	B22( E2 / ( 1 - nu21 * nu21 * E2 / E1 ) ),
 	B12( nu21 * E2 * E1 / ( E1 - nu21 * nu21 * E2 ) ),
 	B66( G23 ),
+
 	By0( 0.0 ),
 	By1( 2.0 * By0 ),
 	By2( 0.0 ),
+
 	betta( 0.25 ),
 
 	mu( 0.00000125664 ),
 	sigma_x( 39000 ),
 	sigma_x_mu( sigma_x * mu ),
 	sigma_y( sigma_x * 0.0001 ),
+	//sigma_y( sigma_x ),
 	sigma_y_mu( sigma_y * mu ),
 	sigma_z( sigma_y ),
 
+	//J0( 100000.0 ),
 	J0( 0.0 ),
-	omega( 314.16 ),
-	p0( 100.0 ),
+	omega( 0.0 ),
+	tauC( 0.01 ),
+	tauP( 0.01 ),
+	p0( 1000000.0 ),
 	impRadSq( 64.0 ),
 
 	eps_0( 0.000000000008854 ),
@@ -35,8 +41,8 @@ Solver::Solver():
 	eps_x_0( eps_x - eps_0 ),
 
 	hp( 0.0021 ),
-	ap( 0.1524 ),		//len
-	bp( 0.1524 ),		//width
+	ap( 0.1524 * 10 ),		//len in x-dir
+	bp( 0.1524 ),		//width in y-dir
 
 	Km( NODES_ON_Y ),
 	nx( NUMBER_OF_LINES ),
@@ -53,7 +59,10 @@ Solver::Solver():
 	cur_t( 0.0 ),
 	curTimeStep( 0 ),
 
-	al( 1.0 )
+	al( 1.0 ),
+
+	rungeKutta( 0 ),
+	orthoBuilder( 0 )
 {
 	setTask();
 }
@@ -87,6 +96,7 @@ void Solver::setTask()
 	ofstream of1( "test_sol.txt" );
 	of1.close();
 
+	omega = _MMM_PI / tauC;
 	//al = 1.0;
 	//E1 = 102970000000;
 	//E2 = E1;
@@ -186,8 +196,16 @@ void Solver::calc_system( int _x )
 {
 	PL_NUM h = hp;
 	PL_NUM Btdt = 2 * dt * betta;
-	PL_NUM Jx = J0;// * exp( -( cur_t + dt ) / 0.01 ) * sin( omega * ( cur_t + dt ) );  
-	PL_NUM Pimp = p0 * sin( 100.0 * _MMM_PI * ( cur_t + dt ) );
+	PL_NUM Jx = J0 * exp( -( cur_t + dt ) / tauC ) * sin( omega * ( cur_t + dt ) );  
+	PL_NUM Pimp = 0.0;//p0;// * sin( 100.0 * _MMM_PI * ( cur_t ) );
+
+	//strip load
+	PL_NUM cur_X = _x * dy - bp / 2.0;
+	if( fabs( cur_X ) <= h / 10.0 && cur_t + dt <= tauP )
+	{
+		Pimp = p0 * sqrt( 1.0 - cur_X / h * 10.0 * cur_X / h * 10.0 ) * sin( _MMM_PI * ( cur_t + dt ) / tauP );
+	}
+
 	PL_NUM Rad2 = ap * ap / impRadSq;
 
 	int i = 0;
@@ -198,7 +216,7 @@ void Solver::calc_system( int _x )
 	
 	//for the left line:
 	matr_A[0 + i * eq_num][1 + r * eq_num] = -1.0 / ( 2.0 * dx ) / al;
-	matr_A[0 + i * eq_num][2 + i * eq_num] = 1.0 / ( h * B66 ) / al;
+	matr_A[0 + i * eq_num][2 + i * eq_num] = 1.0 / ( h  *B66 ) / al;
 
 	matr_A[1 + i * eq_num][0 + r * eq_num] = - B12 / ( B22 * 2.0 * dx ) / al;
 	matr_A[1 + i * eq_num][3 + i * eq_num] = 1.0 / ( h * B22 ) / al;
@@ -919,6 +937,22 @@ void Solver::walkthrough( int mode )
 			calc_system( _x );
 		}
 
+		
+		/*for( int i = 0; i < EQ_NUM * NUMBER_OF_LINES; ++i )
+		{
+			for( int j = 0; j < EQ_NUM * NUMBER_OF_LINES; ++j )
+			{
+				Ma( i, j ) = matr_A[i][j];
+			}
+		}
+		EigenSolver<Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES, RowMajor> > eigSol( Ma );
+		if( eigSol.info() != Success )
+		{
+			cout << "can't find eigenvalues! exiting..\n";
+			std::cin.ignore( std::numeric_limits<std::streamsize>::max(), '\n' );
+			exit( 1 );
+		}*/
+
 		int begIt = omp_get_thread_num() * ( varNum / 2 / NUM_OF_THREADS + 1 );
 		int endIt = begIt + varNum / 2 / NUM_OF_THREADS + 1;
 		if( omp_get_thread_num() == NUM_OF_THREADS - 1 )
@@ -982,7 +1016,6 @@ void Solver::walkthrough( int mode )
 	}
 	orthoBuilder->buildSolution( &mesh );
 
-#pragma omp parallel for
 	for( int _x = 0; _x < Km; ++_x )
 	{
 		orthoBuilder->flushO( _x );
@@ -992,7 +1025,6 @@ void Solver::walkthrough( int mode )
 
 void Solver::updateDerivs()
 {
-#pragma omp parallel for
 	for( int i = 0; i < Km; ++i )
 	{
 		for( int j = 0; j < varNum; ++j )
@@ -1071,41 +1103,41 @@ void Solver::do_step()
 
 int Solver::checkConv()
 {
-	if( newtonIt >= maxNewtonIt )
-	{
-		newtonIt = 0;
-		return 0;
-	}
-	else
-	{
-		int i = 15;
-		cout << " newton iteration " << newtonIt << endl;
-		cout << " divergence in " << Km / 2 << " " << i << " " << fabsl( ( mesh[Km / 2].Nk1[i] - mesh[Km / 2].Nk[i] ) / mesh[Km / 2].Nk[i] ) << endl;
-		++newtonIt;
-		return 1;
-	}
-	//for( int x = 0; x < Km; ++x )
+	//if( newtonIt >= maxNewtonIt )
 	//{
-	//	for( int i = 0; i < varNum; ++i )
-	//	{
-	//		if( mesh[x].Nk[i] != 0.0 )
-	//		{
-	//			if( fabsl( ( mesh[x].Nk1[i] - mesh[x].Nk[i] ) / mesh[x].Nk[i] ) < ALMOST_ZERO )
-	//			{
-	//				cout << " divergence " << x << " " << i << " " << fabsl( ( mesh[x].Nk1[i] - mesh[x].Nk[i] ) / mesh[x].Nk[i] ) << " delta is " << ALMOST_ZERO << endl;
-	//				return 0;
-	//			}
-	//		}
-	//		else
-	//		{
-	//			if( fabsl( mesh[x].Nk1[i] ) < ALMOST_ZERO )
-	//			{
-	//				cout << " divergence " << x << " " << i << " " << fabsl( mesh[x].Nk1[i] ) << " delta is " << ALMOST_ZERO << endl;
-	//				return 0;
-	//			}
-	//		}
-	//	}
+	//	newtonIt = 0;
+	//	return 0;
 	//}
+	//else
+	//{
+	//	int i = 15;
+	//	cout << " newton iteration " << newtonIt << endl;
+	//	cout << " divergence in " << Km / 2 << " " << i << " " << fabsl( ( mesh[Km / 2].Nk1[i] - mesh[Km / 2].Nk[i] ) / mesh[Km / 2].Nk[i] ) << endl;
+	//	++newtonIt;
+	//	return 1;
+	//}
+	for( int x = 0; x < Km; ++x )
+	{
+		for( int i = 0; i < varNum; ++i )
+		{
+			if( mesh[x].Nk[i] != 0.0 )
+			{
+				if( fabsl( ( mesh[x].Nk1[i] - mesh[x].Nk[i] ) / mesh[x].Nk[i] ) < ALMOST_ZERO )
+				{
+					cout << " divergence " << x << " " << i << " " << fabsl( ( mesh[x].Nk1[i] - mesh[x].Nk[i] ) / mesh[x].Nk[i] ) << " delta is " << ALMOST_ZERO << endl;
+					return 0;
+				}
+			}
+			else
+			{
+				if( fabsl( mesh[x].Nk1[i] ) < ALMOST_ZERO )
+				{
+					cout << " divergence " << x << " " << i << " " << fabsl( mesh[x].Nk1[i] ) << " delta is " << ALMOST_ZERO << endl;
+					return 0;
+				}
+			}
+		}
+	}
 	return 1;
 }
 
@@ -1140,16 +1172,17 @@ void Solver::dump_check_sol()
 
 	int minusOne = -1;
 
-	for( int i = 0; i <= 1000000; ++i )
+	/*for( int i = 0; i <= 1000000; ++i )
 	{
 		PL_NUM omg = _MMM_PI * _MMM_PI * ( 2 * i + 1 ) * ( 2 * i + 1 ) * h / 2 / a / a * sqrtl( B22 / 3 / rho );
 
 		minusOne = -minusOne;
 
 		sum = sum + minusOne / ( 2 * i + 1 ) / ( 2 * i + 1 ) / ( 2 * i + 1 ) / ( 2 * i + 1 ) / ( 2 * i + 1 ) * cosl( omg * t );
-	}
+	}*/
 	PL_NUM wTheor;
 	wTheor = - p0 * a * a * a * a / h / h / h / B22 * ( 5.0 / 32.0 - 48.0 / _MMM_PI / _MMM_PI / _MMM_PI / _MMM_PI / _MMM_PI * sum );
+	wTheor = 1.0;
 
 	ofstream of1( "test_sol.txt", ofstream::app );
 	of1 << t << " ; " << mesh[ ( Km - 1 ) / 2 ].Nk1[4 + (nx-1)/2 * eq_num] << " ; " << wTheor << " ; " << fabs( ( wTheor - mesh[ ( Km - 1 ) / 2 ].Nk1[4 + (nx-1)/2 * eq_num] ) / wTheor ) << endl;

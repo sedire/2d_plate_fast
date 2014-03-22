@@ -13,6 +13,7 @@
 #include <sstream>
 #include <iomanip>
 #include <omp.h>
+#include <Eigen/Eigen>
 
 using std::cout;
 using std::vector;
@@ -69,7 +70,9 @@ private:
 	const PL_NUM sigma_z;
 
 	const PL_NUM J0;
-	const PL_NUM omega;
+	const PL_NUM tauC;
+	const PL_NUM tauP;
+	PL_NUM omega;
 	const PL_NUM  p0;				//constant mechanical load
 	const PL_NUM impRadSq;
 
@@ -107,6 +110,8 @@ private:
 	PL_NUM vect_f[EQ_NUM * NUMBER_OF_LINES];		//vector f on right part of nonlinear system at certain t and x
 	PL_NUM newmark_A[EQ_NUM * NUMBER_OF_LINES];
 	PL_NUM newmark_B[EQ_NUM * NUMBER_OF_LINES];
+
+	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES, RowMajor> Ma;
 
 	RungeKutta* rungeKutta;
 	OrthoBuilder* orthoBuilder;

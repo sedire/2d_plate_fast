@@ -327,7 +327,7 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, vector<PL_NUM>* NtoOrt )		//b
 	}
 	else
 	{
-		//look at the oroginal. m.b. there is a misake here
+		//look at the original. m.b. there is a misake here
 		for( int bvIt = 0; bvIt < varNum / 2; ++bvIt )
 		{
 			for( int k = 0; k < varNum; ++k )
