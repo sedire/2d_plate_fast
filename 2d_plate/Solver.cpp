@@ -2,8 +2,8 @@
 
 Solver::Solver():
 	E1( 102970000000 ),
-	E2( 7550000000 ),
-	//E2( 102970000000 ),
+	//E2( 7550000000 ),
+	E2( 102970000000 ),
 	nu21( 0.3 ),
 	nu23( 0.3 ),
 	rho( 1594 ),
@@ -41,7 +41,7 @@ Solver::Solver():
 	eps_x_0( eps_x - eps_0 ),
 
 	hp( 0.0021 ),
-	ap( 0.1524 * 10 ),		//len in x-dir
+	ap( 0.1524 ),		//len in x-dir
 	bp( 0.1524 ),		//width in y-dir
 
 	Km( NODES_ON_Y ),
@@ -196,15 +196,15 @@ void Solver::calc_system( int _x )
 {
 	PL_NUM h = hp;
 	PL_NUM Btdt = 2 * dt * betta;
-	PL_NUM Jx = J0 * exp( -( cur_t + dt ) / tauC ) * sin( omega * ( cur_t + dt ) );  
-	PL_NUM Pimp = 0.0;//p0;// * sin( 100.0 * _MMM_PI * ( cur_t ) );
+	PL_NUM Jx = J0 * exp( -( cur_t ) / tauC ) * sin( omega * ( cur_t ) );  
+	PL_NUM Pimp = p0 * sin( 100.0 * _MMM_PI * ( cur_t ) );
 
 	//strip load
-	PL_NUM cur_X = _x * dy - bp / 2.0;
-	if( fabs( cur_X ) <= h / 10.0 && cur_t + dt <= tauP )
-	{
-		Pimp = p0 * sqrt( 1.0 - cur_X / h * 10.0 * cur_X / h * 10.0 ) * sin( _MMM_PI * ( cur_t + dt ) / tauP );
-	}
+	//PL_NUM cur_X = _x * dy - bp / 2.0;
+	//if( fabs( cur_X ) <= h / 10.0 && cur_t + dt <= tauP )
+	//{
+	//	Pimp = p0 * sqrt( 1.0 - cur_X / h * 10.0 * cur_X / h * 10.0 ) * sin( _MMM_PI * ( cur_t + dt ) / tauP );
+	//}
 
 	PL_NUM Rad2 = ap * ap / impRadSq;
 
@@ -585,11 +585,11 @@ void Solver::calc_system( int _x )
 
 	for( int i = 1; i < nx - 1; ++i )
 	{
-		//Pimp = p0 * sin( 100.0 * _MMM_PI * ( cur_t + dt ) );
+		//Pimp = p0 * sin( 100.0 * _MMM_PI * ( cur_t ) );
 		//PL_NUM rad2 = ( ( Km - 1 ) / 2 - _x ) * dy * ( ( Km - 1 ) / 2 - _x ) * dy + ( ( nx - 1 ) / 2 - i ) * dx * ( ( nx - 1 ) / 2 - i ) * dx;
 		//if( rad2 < Rad2 )
 		//{
-		//	Pimp = p0 * sqrt( 1 - rad2 / Rad2 ) * sin( 100.0 * _MMM_PI * ( cur_t + dt ) );
+		//	Pimp = p0 * sqrt( 1 - rad2 / Rad2 ) * sin( 100.0 * _MMM_PI * ( cur_t ) );
 		//}
 		//else if( _x == ( Km - 1 ) / 2 )
 		//{
@@ -935,6 +935,8 @@ void Solver::walkthrough( int mode )
 			//cout << " " << _x << endl;
 			calc_Newmark_AB( _x, mode );
 			calc_system( _x );
+
+			tBeg = time( 0 );
 		}
 
 		
@@ -973,47 +975,36 @@ void Solver::walkthrough( int mode )
 			//	orthoBuilder->solInfoMap[_x + 1].zi[vNum][i] = baseVect[i];
 			//}
 
-			//tBeg = time( 0 );
 			rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 0, orthoBuilder->solInfoMap[_x].zi[vNum], &( orthoBuilder->solInfoMap[_x + 1].zi[vNum] ) );
-			//tEnd = time( 0 );
-			//rgkT += tEnd - tBeg;
 		}
 #pragma omp barrier
 		//cout << "proc " << omp_get_thread_num() <<  " 2\n";
 
 		if( omp_get_thread_num() == 0 )
 		{
+			rgkT += time( 0 ) - tBeg;
+
 			for( int vNum = 0; vNum < varNum / 2; ++vNum )
 			{
 				for( int i = 0; i < varNum; ++i )
 				{
 					baseVect[i] = orthoBuilder->solInfoMap[_x + 1].zi[vNum][i];
 				}
-				tBeg = time( 0 );
 				orthoBuilder->orthonorm( vNum, _x, &baseVect );
-				tEnd = time( 0 );
-				orthoT += tEnd - tBeg;
 			}
 
 			for( int i = 0; i < varNum; ++i )
 			{
-				/*baseVect[i] = orthoBuilder->solInfoMap[_x].z5[i];*/
 				baseVect[i] = orthoBuilder->z5[_x][i];
 			}
-			//tBeg = time( 0 );
 			rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 1, &baseVect );
-			//tEnd = time( 0 );
-			//rgkT += tEnd - tBeg;
-
-			tBeg = time( 0 );
 			orthoBuilder->orthonorm( varNum / 2, _x, &baseVect );
-			tEnd = time( 0 );
-			orthoT += tEnd - tBeg;
 			++_x;
 		}
 		#pragma omp barrier		//may be this is redundant
 	}
 	}
+
 	orthoBuilder->buildSolution( &mesh );
 
 	for( int _x = 0; _x < Km; ++_x )
@@ -1070,7 +1061,6 @@ void Solver::do_step()
 			{
 				orthoBuilder->solInfoMap[0].zi[j][i] = 0;			//TODO lags here
 			}
-			/*orthoBuilder->solInfoMap[0].z5[i] = 0;*/
 			orthoBuilder->z5[0][i] = 0;
 		}
 		for( int i = 0; i < nx; ++i )			//TODO check indexes
@@ -1103,7 +1093,7 @@ void Solver::do_step()
 
 int Solver::checkConv()
 {
-	//if( newtonIt >= maxNewtonIt )
+	//if( newtonIt >= maxNewtonIt )		//stopping criterion with a fixed number of iterations
 	//{
 	//	newtonIt = 0;
 	//	return 0;
@@ -1116,7 +1106,8 @@ int Solver::checkConv()
 	//	++newtonIt;
 	//	return 1;
 	//}
-	for( int x = 0; x < Km; ++x )
+
+	for( int x = 0; x < Km; ++x ) //old and weird stopping criterion. I think it works only because 1-2 iterations are almost always suffice. otherwise this doed not make sense to me
 	{
 		for( int i = 0; i < varNum; ++i )
 		{
@@ -1139,6 +1130,31 @@ int Solver::checkConv()
 		}
 	}
 	return 1;
+
+	//for( int x = 0; x < Km; ++x ) //new stopping criterion: the max of the absolute value of the relative difference + just the abs value check
+	//{
+	//	for( int i = 0; i < varNum; ++i )
+	//	{
+	//		if( fabsl( mesh[x].Nk[i] ) > ALMOST_ZERO * 1000.0 )
+	//		{
+	//			if( fabsl( ( mesh[x].Nk1[i] - mesh[x].Nk[i] ) / mesh[x].Nk[i] ) > QUASILIN_CHECK && fabsl( mesh[x].Nk1[i] - mesh[x].Nk[i] ) > QUASILIN_CHECK )
+	//			{
+	//				cout << " :: divergence " << x << " " << i << " " << fabsl( ( mesh[x].Nk1[i] - mesh[x].Nk[i] ) / mesh[x].Nk[i] ) << " delta is " << QUASILIN_CHECK << endl;
+	//				cout << " :: " << mesh[x].Nk1[i] << " " << mesh[x].Nk[i] << endl;
+	//				return 1;
+	//			}
+	//		}
+	//		else
+	//		{
+	//			if( fabsl( mesh[x].Nk1[i] ) > ALMOST_ZERO * 1000.0 )
+	//			{
+	//				cout << " :: divergence -- 0 -- " << x << " " << i << " " << fabsl( mesh[x].Nk1[i] ) << " delta is " << QUASILIN_CHECK << endl;
+	//				return 1;
+	//			}
+	//		}
+	//	}
+	//}
+	//return 0;
 }
 
 void Solver::dump_sol()
@@ -1163,12 +1179,12 @@ void Solver::dump_sol()
 	return;
 }
 
-void Solver::dump_check_sol()
+void Solver::dump_check_sol()	//dump numerical soln + the soln obtained analytically for 1d case
 {
 	PL_NUM sum = 0.0;
 	PL_NUM h = hp;
 	PL_NUM a = bp;
-	PL_NUM t = cur_t;
+	PL_NUM t = cur_t - dt;
 
 	int minusOne = -1;
 
@@ -1189,13 +1205,13 @@ void Solver::dump_check_sol()
 	of1.close();
 }
 
-void Solver::dump_check_sol2D()
+void Solver::dump_check_sol2D()		//dump numerical soln + the soln obtained analytically for 2d case. WARNING: the plate should be square-shaped and isotropic !!!
 {
 	PL_NUM sum = 0.0;
 	PL_NUM sum0 = 0.0;
 	PL_NUM h = hp;
 	PL_NUM a = bp;
-	PL_NUM t = cur_t;
+	PL_NUM t = cur_t - dt;
 
 	PL_NUM DD = E1 * h * h * h / 12 / ( 1 - nu21 * nu21 );
 	PL_NUM Om = 100.0 * _MMM_PI;

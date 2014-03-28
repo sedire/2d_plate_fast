@@ -391,26 +391,26 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 		f11( line * _a + 4 ) = -z5[Km - 1][line * EQ_NUM + 8];
 	}
 
-	EigenSolver<Matrix<PL_NUM, msize, msize, RowMajor>> es( M );
-	if( es.info() == Success )
-	{
-		Matrix< complex<PL_NUM>, msize, 1> eigv = es.eigenvalues();
+	//EigenSolver<Matrix<PL_NUM, msize, msize, RowMajor>> es( M );
+	//if( es.info() == Success )
+	//{
+	//	Matrix< complex<PL_NUM>, msize, 1> eigv = es.eigenvalues();
 
-		PL_NUM minL = sqrt( eigv( 0 ).imag() * eigv( 0 ).imag() + eigv( 0 ).real() * eigv( 0 ).real() );
-		PL_NUM maxL = sqrt( eigv( 0 ).imag() * eigv( 0 ).imag() + eigv( 0 ).real() * eigv( 0 ).real() );
-		for( int ii = 1; ii < eigv.size(); ++ii )
-		{
-			if( sqrt( eigv( ii ).imag() * eigv( ii ).imag() + eigv( ii ).real() * eigv( ii ).real() ) > maxL )
-			{
-				maxL = sqrt( eigv( ii ).imag() * eigv( ii ).imag() + eigv( ii ).real() * eigv( ii ).real() );
-			}
-			if( sqrt( eigv( ii ).imag() * eigv( ii ).imag() + eigv( ii ).real() * eigv( ii ).real() ) < minL )
-			{
-				minL = sqrt( eigv( ii ).imag() * eigv( ii ).imag() + eigv( ii ).real() * eigv( ii ).real() );
-			}
-		}
-		cout << "cond number is " << maxL / minL << endl;
-	}
+	//	PL_NUM minL = sqrt( eigv( 0 ).imag() * eigv( 0 ).imag() + eigv( 0 ).real() * eigv( 0 ).real() );
+	//	PL_NUM maxL = sqrt( eigv( 0 ).imag() * eigv( 0 ).imag() + eigv( 0 ).real() * eigv( 0 ).real() );
+	//	for( int ii = 1; ii < eigv.size(); ++ii )
+	//	{
+	//		if( sqrt( eigv( ii ).imag() * eigv( ii ).imag() + eigv( ii ).real() * eigv( ii ).real() ) > maxL )
+	//		{
+	//			maxL = sqrt( eigv( ii ).imag() * eigv( ii ).imag() + eigv( ii ).real() * eigv( ii ).real() );
+	//		}
+	//		if( sqrt( eigv( ii ).imag() * eigv( ii ).imag() + eigv( ii ).real() * eigv( ii ).real() ) < minL )
+	//		{
+	//			minL = sqrt( eigv( ii ).imag() * eigv( ii ).imag() + eigv( ii ).real() * eigv( ii ).real() );
+	//		}
+	//	}
+	//	cout << "cond number is " << maxL / minL << endl;
+	//}
 	x1 = M.fullPivLu().solve( f11 );
 
 	//refinement. I do not know the theoretical source of this procedure yet. just rewrote it
@@ -448,8 +448,8 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 		ndx2 = dx1.lpNorm<Infinity>();
 		temp = ndx2;
 	} while( ndx2 < 0.9 * ndx && ndx2 / nx >= 2 * EPS_W );
-	cout << iterCount << " refinement iterations\n";
-	cout << " relative error is " << (PL_NUM)( ( M * x1 - f11 ).norm() / f11.norm() ) << endl;
+	cout << " " << iterCount << " refnmt iterations\n";
+	cout << " refnmt relative error is " << (PL_NUM)( ( M * x1 - f11 ).norm() / f11.norm() ) << endl;
 	//refinement is over
 
 	//now we determine coefficients for base solutions
