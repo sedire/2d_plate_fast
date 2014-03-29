@@ -5,7 +5,7 @@
 
 #define PL_NUM long double
 #define EQ_NUM 10
-#define NUMBER_OF_LINES 31
+#define NUMBER_OF_LINES 15
 #define NODES_ON_Y 10001
 #define MAX_NEWTON_IT 1
 #define ALMOST_ZERO 0.0000000000001

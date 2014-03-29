@@ -6,7 +6,7 @@ SolInfo::~SolInfo() {}
 void SolInfo::setup( int _varNum )
 {
 	o.resize( ( _varNum / 2 + 1 ) * ( _varNum / 2 + 2 ) / 2, 0.0 );		//the matrix is diagonal. such size is to store less  TODO: maybe I can make the size smaller by 1
-	zi.resize( _varNum / 2, vector< PL_NUM>( _varNum, 0.0 ) );
+	//zi.resize( _varNum / 2, vector< PL_NUM>( _varNum, 0.0 ) );
 	//z5.resize( _varNum, 0.0 );
 	C.resize( _varNum / 2, 0.0 );				//FIXME may be another size here
 }
@@ -22,7 +22,9 @@ void SolInfo::flushO()
 OrthoBuilder::~OrthoBuilder() {}
 OrthoBuilder::OrthoBuilder( const int _varNum, const int _Km ) :
 	varNum( _varNum ),
-	Km( _Km ) 
+	Km( _Km ),
+	zi( NODES_ON_Y, vector<vector<PL_NUM> >( EQ_NUM * NUMBER_OF_LINES / 2, vector<PL_NUM>( EQ_NUM * NUMBER_OF_LINES, 0.0 ) ) ),
+	z5( NODES_ON_Y, vector<PL_NUM>( EQ_NUM * NUMBER_OF_LINES, 0.0 ) )
 {
 
 }
@@ -203,9 +205,9 @@ void OrthoBuilder::LUsolve( vector<vector<PL_NUM>>& AA, vector<PL_NUM>& ff, vect
 }
 
 
-void OrthoBuilderGodunov::orthonorm( int baseV, int n, vector<PL_NUM>* NtoOrt )
+void OrthoBuilderGodunov::orthonorm( int baseV, int n, PL_NUM* NtoOrt )
 {
-
+	cout << "Warning: I am void\n";
 }
 
 void OrthoBuilderGodunov::buildSolution( vector<VarVect>* _mesh )
@@ -213,91 +215,68 @@ void OrthoBuilderGodunov::buildSolution( vector<VarVect>* _mesh )
 	cout << "WARNING: OrthoBuilderGodunov is void\n";
 }
 
-void OrthoBuilderGSh::calcScalarProdsPar( int baseV, int n, vector<PL_NUM>* NtoOrt )
+//void OrthoBuilderGSh::calcScalarProdsPar( int baseV, int n, vector<PL_NUM>* NtoOrt )
+//{
+//	int begIt = omp_get_thread_num() * ( varNum / NUM_OF_THREADS + 1 );
+//	int endIt = begIt + varNum / NUM_OF_THREADS + 1;
+//	if( omp_get_thread_num() == NUM_OF_THREADS - 1 )
+//	{
+//		endIt = varNum;
+//	}
+//
+//	omegaPar[omp_get_thread_num()] = (*NtoOrt)[begIt] * solInfoMap[n + 1].zi[baseV][begIt];
+//	for( int k = begIt + 1; k < endIt; ++k )
+//	{
+//		omegaPar[omp_get_thread_num()] += (*NtoOrt)[k] * solInfoMap[n + 1].zi[baseV][k];
+//	}
+//}
+
+//void OrthoBuilderGSh::calcScalarProdsPar2( int baseV, int n, vector<PL_NUM>* NtoOrt )
+//{
+//	int begIt = omp_get_thread_num() * ( varNum / NUM_OF_THREADS + 1 );
+//	int endIt = begIt + varNum / NUM_OF_THREADS + 1;
+//	if( omp_get_thread_num() == NUM_OF_THREADS - 1 )
+//	{
+//		endIt = varNum;
+//	}
+//
+//	omegaPar[omp_get_thread_num()] = solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] * solInfoMap[n + 1].zi[baseV][begIt];
+//	for( int k = begIt + 1; k < endIt; ++k )
+//	{
+//		omegaPar[omp_get_thread_num()] = solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] * solInfoMap[n + 1].zi[baseV][begIt];
+//	}
+//}
+
+void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are from 0 to varNum / 2 (including), varNum = 10 * nx. 10 is the number of basic variables, nx is the number of lines
 {
-	int begIt = omp_get_thread_num() * ( varNum / NUM_OF_THREADS + 1 );
-	int endIt = begIt + varNum / NUM_OF_THREADS + 1;
-	if( omp_get_thread_num() == NUM_OF_THREADS - 1 )
-	{
-		endIt = varNum;
-	}
-
-	omegaPar[omp_get_thread_num()] = (*NtoOrt)[begIt] * solInfoMap[n + 1].zi[baseV][begIt];
-	for( int k = begIt + 1; k < endIt; ++k )
-	{
-		omegaPar[omp_get_thread_num()] += (*NtoOrt)[k] * solInfoMap[n + 1].zi[baseV][k];
-	}
-}
-
-void OrthoBuilderGSh::calcScalarProdsPar2( int baseV, int n, vector<PL_NUM>* NtoOrt )
-{
-	int begIt = omp_get_thread_num() * ( varNum / NUM_OF_THREADS + 1 );
-	int endIt = begIt + varNum / NUM_OF_THREADS + 1;
-	if( omp_get_thread_num() == NUM_OF_THREADS - 1 )
-	{
-		endIt = varNum;
-	}
-
-	omegaPar[omp_get_thread_num()] = solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] * solInfoMap[n + 1].zi[baseV][begIt];
-	for( int k = begIt + 1; k < endIt; ++k )
-	{
-		omegaPar[omp_get_thread_num()] = solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] * solInfoMap[n + 1].zi[baseV][begIt];
-	}
-}
-
-void OrthoBuilderGSh::orthonorm( int baseV, int n, vector<PL_NUM>* NtoOrt )		//baseV are from 0 to varNum / 2 (including), varNum = 10 * nx. 10 is the number of basic variables, nx is the number of lines
-{
-	//PL_NUM k11 = 1.414213562373095;
-	//PL_NUM norm = 0;
-	//vector<PL_NUM> omega2;
-	//omega2.resize( varNum * varNum, 0.0 );
-
 	//theory is on p.45-46 of Scott, Watts article
 	if( baseV < varNum / 2 )
 	{
-		int begIt = omp_get_thread_num() * ( varNum / NUM_OF_THREADS + 1 );
-		int endIt = begIt + varNum / NUM_OF_THREADS + 1;
-		if( omp_get_thread_num() == NUM_OF_THREADS - 1 )
-		{
-			endIt = varNum;
-		}
-
-		//norm = 0.0;
-		//for( int i = 0; i < varNum; ++i )
-		//{
-			//norm += (*NtoOrt)[i] * (*NtoOrt)[i];
-			//omega2[i] = 0.0;			//CAUTION IF GOING TO USE ITERATIVE METHOD
-		//}
-		//norm = sqrtf( norm );
 		for( int bvIt = 0; bvIt < baseV; ++bvIt )
 		{
 			for( int k = 0; k < varNum; ++k )
 			{
-				solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += solInfoMap[n + 1].zi[baseV][k] * solInfoMap[n + 1].zi[bvIt][k];			//problems here
+				//solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += solInfoMap[n + 1].zi[baseV][k] * solInfoMap[n + 1].zi[bvIt][k];			//problems here
+				solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += NtoOrt[k] * zi[n + 1][bvIt][k];			//problems here
 			}
 			for( int k = 0; k < varNum; ++k )
 			{
-				solInfoMap[n + 1].zi[baseV][k] -= solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] * solInfoMap[n + 1].zi[bvIt][k];
+				NtoOrt[k] -= solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] * zi[n + 1][bvIt][k];
 			}
 		}
+
 		for( int k = 0; k < varNum; ++k )
 		{
-			solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] += solInfoMap[n + 1].zi[baseV][k] * solInfoMap[n + 1].zi[baseV][k];			//problems here
+			solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] += NtoOrt[k] * NtoOrt[k];			//problems here
 		}
 		solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] = sqrtl( fabs( solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] ) );
 
-		if( 1/*norm / solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] <= k11*/ )
+
+		for( int k = 0; k < varNum; ++k )
 		{
-			for( int k = 0; k < varNum; ++k )
-			{
-				solInfoMap[n + 1].zi[baseV][k] = solInfoMap[n + 1].zi[baseV][k] / solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV];
-	//			(*NtoOrt)[k] = solInfoMap[n + 1].zi[baseV][k];
-			}
+			zi[n + 1][baseV][k] = NtoOrt[k] / solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV];
 		}
-		else
-		{
-			//caution: previously there was a k11-procedure possibly from the modified gram-schmidt
-		}
+		//caution: previously there was a k11-procedure possibly from the modified gram-schmidt
 	}
 	else
 	{
@@ -306,16 +285,16 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, vector<PL_NUM>* NtoOrt )		//b
 		{
 			for( int k = 0; k < varNum; ++k )
 			{
-				solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += (*NtoOrt)[k] * solInfoMap[n + 1].zi[bvIt][k];
+				solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += NtoOrt[k] * zi[n + 1][bvIt][k];
 			}
 			for( int k = 0; k < varNum; ++k )
 			{
-				(*NtoOrt)[k] -= solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] * solInfoMap[n + 1].zi[bvIt][k];
+				NtoOrt[k] -= solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] * zi[n + 1][bvIt][k];
 			}
 		}
-		for( int i = 0; i < varNum; ++i )
+		for( int k = 0; k < varNum; ++k )
 		{
-			z5[n + 1][i] = (*NtoOrt)[i];
+			z5[n + 1][k] = NtoOrt[k];
 		}
 	}
 }
@@ -351,11 +330,11 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 	{
 		for( int vNum = 0; vNum < varNum / 2; ++vNum )
 		{
-			M( line * _a + 0, vNum ) = solInfoMap[Km - 1].zi[vNum][line * EQ_NUM + 0];		//TODO potential lags here!
-			M( line * _a + 1, vNum ) = solInfoMap[Km - 1].zi[vNum][line * EQ_NUM + 1];
-			M( line * _a + 2, vNum ) = solInfoMap[Km - 1].zi[vNum][line * EQ_NUM + 4];
-			M( line * _a + 3, vNum ) = solInfoMap[Km - 1].zi[vNum][line * EQ_NUM + 6];
-			M( line * _a + 4, vNum ) = solInfoMap[Km - 1].zi[vNum][line * EQ_NUM + 8];
+			M( line * _a + 0, vNum ) = zi[Km - 1][vNum][line * EQ_NUM + 0];		//TODO potential lags here!
+			M( line * _a + 1, vNum ) = zi[Km - 1][vNum][line * EQ_NUM + 1];
+			M( line * _a + 2, vNum ) = zi[Km - 1][vNum][line * EQ_NUM + 4];
+			M( line * _a + 3, vNum ) = zi[Km - 1][vNum][line * EQ_NUM + 6];
+			M( line * _a + 4, vNum ) = zi[Km - 1][vNum][line * EQ_NUM + 8];
 		}
 		f11( line * _a + 0 ) = -z5[Km - 1][line * EQ_NUM + 0];
 		f11( line * _a + 1 ) = -z5[Km - 1][line * EQ_NUM + 1];
@@ -453,7 +432,7 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 			(*_mesh)[_x].Nk1[i] = 0.0;
 			for( int vNum = 0; vNum < varNum / 2; ++vNum )
 			{
-				(*_mesh)[_x].Nk1[i] += solInfoMap[_x].C[vNum] * solInfoMap[_x].zi[vNum][i];			//FIXME lags may happen here
+				(*_mesh)[_x].Nk1[i] += solInfoMap[_x].C[vNum] * zi[_x][vNum][i];			//FIXME lags may happen here
 			}
 			/*(*_mesh)[_x].Nk1[i] += solInfoMap[_x].z5[i];*/
 			(*_mesh)[_x].Nk1[i] += z5[_x][i];

@@ -15,8 +15,10 @@ class RungeKutta
 public:
 	RungeKutta( int _varNum );
 	~RungeKutta();
-	void calc( /*const vector<vector<PL_NUM>>& A*/PL_NUM A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES], PL_NUM *f, PL_NUM dx, int thrNum, int hom, vector<PL_NUM>* x );			//method for solving a system of ODE like dy/dx = Ax + f
-	void calc( /*const vector<vector<PL_NUM>>& A*/PL_NUM A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES], PL_NUM *f, PL_NUM dx, int thrNum, int hom, const vector<PL_NUM>& x, vector<PL_NUM>* x1 );
+	//void calc( /*const vector<vector<PL_NUM>>& A*/PL_NUM A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES], PL_NUM *f, PL_NUM dx, int thrNum, int hom, const vector<PL_NUM>& x, vector<PL_NUM>* x1 );			//method for solving a system of ODE like dy/dx = Ax + f
+	void calc( /*const vector<vector<PL_NUM>>& A*/PL_NUM A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES], PL_NUM *f, PL_NUM dx, int thrNum, int hom, const vector<PL_NUM>& x, PL_NUM* x1 );
+
+	//void calc( /*const vector<vector<PL_NUM>>& A*/PL_NUM A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES], PL_NUM *f, PL_NUM dx, int thrNum, int hom, vector<PL_NUM>* x );
 
 private:
 	RungeKutta();

@@ -932,28 +932,9 @@ void Solver::walkthrough( int mode )
 	{
 		if( omp_get_thread_num() == 0 )
 		{
-			//cout << " " << _x << endl;
 			calc_Newmark_AB( _x, mode );
 			calc_system( _x );
-
-			tBeg = time( 0 );
 		}
-
-		
-		/*for( int i = 0; i < EQ_NUM * NUMBER_OF_LINES; ++i )
-		{
-			for( int j = 0; j < EQ_NUM * NUMBER_OF_LINES; ++j )
-			{
-				Ma( i, j ) = matr_A[i][j];
-			}
-		}
-		EigenSolver<Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES, RowMajor> > eigSol( Ma );
-		if( eigSol.info() != Success )
-		{
-			cout << "can't find eigenvalues! exiting..\n";
-			std::cin.ignore( std::numeric_limits<std::streamsize>::max(), '\n' );
-			exit( 1 );
-		}*/
 
 		int begIt = omp_get_thread_num() * ( varNum / 2 / NUM_OF_THREADS + 1 );
 		int endIt = begIt + varNum / 2 / NUM_OF_THREADS + 1;
@@ -962,47 +943,24 @@ void Solver::walkthrough( int mode )
 			endIt = varNum / 2;
 		}
 
-#pragma omp barrier
-		for( int vNum = begIt; vNum < endIt; ++vNum )
+		#pragma omp for
+		for( int vNum = 0; vNum < varNum / 2; ++vNum )
 		{
-			//for( int i = 0; i < varNum; ++i )
-			//{
-			//	baseVect[i] = orthoBuilder->solInfoMap[_x].zi[vNum][i];
-			//}
-			//rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 0, &baseVect );
-			//for( int i = 0; i < varNum; ++i )
-			//{
-			//	orthoBuilder->solInfoMap[_x + 1].zi[vNum][i] = baseVect[i];
-			//}
-
-			rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 0, orthoBuilder->solInfoMap[_x].zi[vNum], &( orthoBuilder->solInfoMap[_x + 1].zi[vNum] ) );
+			//rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 0, orthoBuilder->zi[_x][vNum], &( orthoBuilder->zi[_x + 1][vNum] ) );
+			rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 0, orthoBuilder->zi[_x][vNum], decompVect[vNum] );
 		}
-#pragma omp barrier
-		//cout << "proc " << omp_get_thread_num() <<  " 2\n";
+		#pragma omp barrier
 
 		if( omp_get_thread_num() == 0 )
 		{
-			rgkT += time( 0 ) - tBeg;
-
 			for( int vNum = 0; vNum < varNum / 2; ++vNum )
 			{
-				//for( int i = 0; i < varNum; ++i )
-				//{
-				//	baseVect[i] = orthoBuilder->solInfoMap[_x + 1].zi[vNum][i];
-				//}
-				orthoBuilder->orthonorm( vNum, _x, &baseVect );
+				orthoBuilder->orthonorm( vNum, _x, decompVect[vNum] );
 			}
 
-			for( int i = 0; i < varNum; ++i )
-			{
-				baseVect[i] = orthoBuilder->z5[_x][i];
-			}
-			rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 1, &baseVect );
-			for( int i = 0; i < varNum; ++i )
-			{
-				orthoBuilder->z5[_x][i] = baseVect[i];
-			}
-			orthoBuilder->orthonorm( varNum / 2, _x, &baseVect );
+			//rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 1, orthoBuilder->z5[_x], &( orthoBuilder->z5[_x + 1] ) );
+			rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 1, orthoBuilder->z5[_x], decompVect[varNum / 2] );
+			orthoBuilder->orthonorm( varNum / 2, _x, decompVect[varNum / 2] );
 			++_x;
 		}
 		#pragma omp barrier		//may be this is redundant
@@ -1015,7 +973,6 @@ void Solver::walkthrough( int mode )
 	{
 		orthoBuilder->flushO( _x );
 	}
-	//cout << " :: rgkT " << rgkT << " orthoT " << orthoT << endl;
 }
 
 void Solver::updateDerivs()
@@ -1037,11 +994,11 @@ void Solver::pre_step()
 {
 	for( int i = 0; i < nx; ++i )			//TODO check indexes
 	{
-		orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 0][i * eq_num + 2] = 1.0;
-		orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 1][i * eq_num + 3] = 1.0;
-		orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 2][i * eq_num + 5] = 1.0;
-		orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 3][i * eq_num + 7] = 1.0;
-		orthoBuilder->solInfoMap[0].zi[( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 1] = -1.0;
+		orthoBuilder->zi[0][i * eq_num / 2 + 0][i * eq_num + 2] = 1.0;
+		orthoBuilder->zi[0][i * eq_num / 2 + 1][i * eq_num + 3] = 1.0;
+		orthoBuilder->zi[0][i * eq_num / 2 + 2][i * eq_num + 5] = 1.0;
+		orthoBuilder->zi[0][i * eq_num / 2 + 3][i * eq_num + 7] = 1.0;
+		orthoBuilder->zi[0][( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 1] = -1.0;
 	}
 	//z5s are already zeros
 
@@ -1063,18 +1020,18 @@ void Solver::do_step()
 		{
 			for( int j = 0; j < varNum / 2; ++j )
 			{
-				orthoBuilder->solInfoMap[0].zi[j][i] = 0;			//TODO lags here
+				orthoBuilder->zi[0][j][i] = 0;			//TODO lags here
 			}
 			orthoBuilder->z5[0][i] = 0;
 		}
 		for( int i = 0; i < nx; ++i )			//TODO check indexes
 		{
-			orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 0][i * eq_num + 2] = 1.0;
-			orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 1][i * eq_num + 3] = 1.0;
-			orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 2][i * eq_num + 5] = 1.0;
-			orthoBuilder->solInfoMap[0].zi[i * eq_num / 2 + 3][i * eq_num + 7] = 1.0;
-			orthoBuilder->solInfoMap[0].zi[( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 2] = mesh[0].Nk1[i * eq_num + 1] / betta / 2.0 / dt + newmark_B[i * eq_num + 1];
-			orthoBuilder->solInfoMap[0].zi[( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 1] = -1.0;
+			orthoBuilder->zi[0][i * eq_num / 2 + 0][i * eq_num + 2] = 1.0;
+			orthoBuilder->zi[0][i * eq_num / 2 + 1][i * eq_num + 3] = 1.0;
+			orthoBuilder->zi[0][i * eq_num / 2 + 2][i * eq_num + 5] = 1.0;
+			orthoBuilder->zi[0][i * eq_num / 2 + 3][i * eq_num + 7] = 1.0;
+			orthoBuilder->zi[0][( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 2] = mesh[0].Nk1[i * eq_num + 1] / betta / 2.0 / dt + newmark_B[i * eq_num + 1];
+			orthoBuilder->zi[0][( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 1] = -1.0;
 
 			//orthoBuilder->solInfoMap[0].z5[i * eq_num + 8] = newmark_B[i * eq_num + 1] * mesh[0].Nk1[i * eq_num + 9] - newmark_B[i * eq_num + 4] * By0;
 			//orthoBuilder->solInfoMap[0].z5[i * eq_num + 9] = -mesh[0].Nk1[i * eq_num + 9];

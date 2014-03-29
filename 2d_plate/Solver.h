@@ -110,6 +110,7 @@ private:
 	PL_NUM vect_f[EQ_NUM * NUMBER_OF_LINES];		//vector f on right part of nonlinear system at certain t and x
 	PL_NUM newmark_A[EQ_NUM * NUMBER_OF_LINES];
 	PL_NUM newmark_B[EQ_NUM * NUMBER_OF_LINES];
+	PL_NUM decompVect[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES];
 
 	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES, RowMajor> Ma;
 
