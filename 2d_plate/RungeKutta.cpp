@@ -99,7 +99,7 @@ void RungeKutta::calc( /*const vector<vector<PL_NUM>>& A*/PL_NUM A[EQ_NUM * NUMB
 	}
 }
 
-void RungeKutta::calc( PL_NUM A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES], PL_NUM *f, PL_NUM dx, int thrNum, int hom, const vector<PL_NUM>& x, vector<PL_NUM>* x1 )
+void RungeKutta::calc( PL_NUM A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES], PL_NUM *f, PL_NUM dx, int thrNum, int hom, const vector<PL_NUM>& x, vector<PL_NUM>* x1 )	//this one is optimized to take into accout matrix block structure
 {
 	//if( A.size() != varNum || 
 	//	A[0].size() != varNum ||

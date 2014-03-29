@@ -986,10 +986,10 @@ void Solver::walkthrough( int mode )
 
 			for( int vNum = 0; vNum < varNum / 2; ++vNum )
 			{
-				for( int i = 0; i < varNum; ++i )
-				{
-					baseVect[i] = orthoBuilder->solInfoMap[_x + 1].zi[vNum][i];
-				}
+				//for( int i = 0; i < varNum; ++i )
+				//{
+				//	baseVect[i] = orthoBuilder->solInfoMap[_x + 1].zi[vNum][i];
+				//}
 				orthoBuilder->orthonorm( vNum, _x, &baseVect );
 			}
 
@@ -998,6 +998,10 @@ void Solver::walkthrough( int mode )
 				baseVect[i] = orthoBuilder->z5[_x][i];
 			}
 			rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 1, &baseVect );
+			for( int i = 0; i < varNum; ++i )
+			{
+				orthoBuilder->z5[_x][i] = baseVect[i];
+			}
 			orthoBuilder->orthonorm( varNum / 2, _x, &baseVect );
 			++_x;
 		}

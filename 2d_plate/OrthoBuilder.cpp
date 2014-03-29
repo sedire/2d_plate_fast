@@ -273,16 +273,16 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, vector<PL_NUM>* NtoOrt )		//b
 		{
 			for( int k = 0; k < varNum; ++k )
 			{
-				solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += (*NtoOrt)[k] * solInfoMap[n + 1].zi[bvIt][k];			//problems here
+				solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += solInfoMap[n + 1].zi[baseV][k] * solInfoMap[n + 1].zi[bvIt][k];			//problems here
 			}
 			for( int k = 0; k < varNum; ++k )
 			{
-				(*NtoOrt)[k] -= solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] * solInfoMap[n + 1].zi[bvIt][k];
+				solInfoMap[n + 1].zi[baseV][k] -= solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] * solInfoMap[n + 1].zi[bvIt][k];
 			}
 		}
 		for( int k = 0; k < varNum; ++k )
 		{
-			solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] += (*NtoOrt)[k] * (*NtoOrt)[k];			//problems here
+			solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] += solInfoMap[n + 1].zi[baseV][k] * solInfoMap[n + 1].zi[baseV][k];			//problems here
 		}
 		solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] = sqrtl( fabs( solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] ) );
 
@@ -290,39 +290,13 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, vector<PL_NUM>* NtoOrt )		//b
 		{
 			for( int k = 0; k < varNum; ++k )
 			{
-				solInfoMap[n + 1].zi[baseV][k] = (*NtoOrt)[k] / solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV];
+				solInfoMap[n + 1].zi[baseV][k] = solInfoMap[n + 1].zi[baseV][k] / solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV];
 	//			(*NtoOrt)[k] = solInfoMap[n + 1].zi[baseV][k];
 			}
 		}
 		else
 		{
-			cout << " !! no ortho!\n";
-	//		for( int bvIt = 0; bvIt < baseV; ++bvIt )
-	//		{
-	//			for( int k = 0; k < varNum; ++k )
-	//			{
-	//				omega2[bvIt] += (*NtoOrt)[k] * solInfoMap[n + 1].zi[bvIt][k];
-	//			}
-	//			for( int k = 0; k < varNum; ++k )
-	//			{
-	//				(*NtoOrt)[k] -= omega2[bvIt] * solInfoMap[n + 1].zi[bvIt][k];
-	//			}
-	//		}
-	//		for( int k = 0; k < varNum; ++k )
-	//		{
-	//			omega2[baseV] += (*NtoOrt)[k] * (*NtoOrt)[k];
-	//		}
-	//		omega2[baseV] = sqrtl( fabs( omega2[baseV] ) );
-	//		for( int k = 0; k < varNum; ++k )
-	//		{
-	//			solInfoMap[n + 1].zi[baseV][k] = (*NtoOrt)[k] / omega2[baseV];
-	////			(*NtoOrt)[k] = solInfoMap[n + 1].zi[baseV][k];
-	//		}
-	//		for( int bvIt = 0; bvIt < baseV; ++bvIt )
-	//		{
-	//			solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += omega2[bvIt];
-	//		}
-	//		solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] = omega2[baseV];
+			//caution: previously there was a k11-procedure possibly from the modified gram-schmidt
 		}
 	}
 	else
@@ -339,10 +313,9 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, vector<PL_NUM>* NtoOrt )		//b
 				(*NtoOrt)[k] -= solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] * solInfoMap[n + 1].zi[bvIt][k];
 			}
 		}
-		for( int k = 0; k < varNum; ++k )
+		for( int i = 0; i < varNum; ++i )
 		{
-			//solInfoMap[n + 1].z5[k] = (*NtoOrt)[k];
-			z5[n + 1][k] = (*NtoOrt)[k];
+			z5[n + 1][i] = (*NtoOrt)[i];
 		}
 	}
 }
