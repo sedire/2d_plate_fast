@@ -249,9 +249,20 @@ void OrthoBuilderGodunov::buildSolution( vector<VarVect>* _mesh )
 
 void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are from 0 to varNum / 2 (including), varNum = 10 * nx. 10 is the number of basic variables, nx is the number of lines
 {
+	PL_NUM k11 = 1.414213562373095;
+	PL_NUM norm( 0.0 );
+
 	//theory is on p.45-46 of Scott, Watts article
 	if( baseV < varNum / 2 )
 	{
+		norm = 0.0;
+		for( int i = 0; i < varNum; ++i )
+		{
+			norm += NtoOrt[i] * NtoOrt[i];
+			omega2[i] = 0.0;
+		}
+		norm = sqrtf( norm );
+
 		for( int bvIt = 0; bvIt < baseV; ++bvIt )
 		{
 			for( int k = 0; k < varNum; ++k )
@@ -271,10 +282,42 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are
 		}
 		solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] = sqrtl( fabs( solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] ) );
 
-
-		for( int k = 0; k < varNum; ++k )
+		if( norm / solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] <= k11 )
 		{
-			zi[n + 1][baseV][k] = NtoOrt[k] / solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV];
+			for( int k = 0; k < varNum; ++k )
+			{
+				zi[n + 1][baseV][k] = NtoOrt[k] / solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV];
+			}
+		}
+		else
+		{
+			//cout << " === no ortho!!\n";
+			for( int bvIt = 0; bvIt < baseV; ++bvIt )
+			{
+				for( int k = 0; k < varNum; ++k )
+				{
+					omega2[bvIt] += NtoOrt[k] * zi[n + 1][bvIt][k];
+				}
+				for( int k = 0; k < varNum; ++k )
+				{
+					NtoOrt[k] -= omega2[bvIt] * zi[n + 1][bvIt][k];
+				}
+			}
+			for( int k = 0; k < varNum; ++k )
+			{
+				omega2[baseV] += NtoOrt[k] * NtoOrt[k];
+			}
+			omega2[baseV] = sqrtl( fabs( omega2[baseV] ) );
+			for( int k = 0; k < varNum; ++k )
+			{
+				zi[n + 1][baseV][k] = NtoOrt[k] / omega2[baseV];
+				//	(*NtoOrt)[k] = solInfoMap[n + 1].zi[baseV][k];
+			}
+			for( int bvIt = 0; bvIt < baseV; ++bvIt )
+			{
+				solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += omega2[bvIt];
+			}
+			solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] = omega2[baseV];
 		}
 		//caution: previously there was a k11-procedure possibly from the modified gram-schmidt
 	}

@@ -53,7 +53,7 @@ protected:
 	const int Km;
 	vector<vector<PL_NUM>> LL;
 	vector<vector<PL_NUM>> UU;
-	//PL_NUM omega2[EQ_NUM * NUMBER_OF_LINES];
+	PL_NUM omega2[EQ_NUM * NUMBER_OF_LINES];
 	PL_NUM omegaPar[NUM_OF_THREADS];
 private:
 	OrthoBuilder();

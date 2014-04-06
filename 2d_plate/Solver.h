@@ -91,6 +91,7 @@ private:
 
 	const int maxNewtonIt;
 	int newtonIt;
+	PL_NUM prevVectDiff;
 
 	const PL_NUM dx;
 	const PL_NUM dy;

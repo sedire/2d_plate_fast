@@ -2,8 +2,8 @@
 
 Solver::Solver():
 	E1( 102970000000 ),
-	//E2( 7550000000 ),
-	E2( 102970000000 ),
+	E2( 7550000000 ),
+	//E2( 102970000000 ),
 	nu21( 0.3 ),
 	nu23( 0.3 ),
 	rho( 1594 ),
@@ -28,12 +28,12 @@ Solver::Solver():
 	sigma_y_mu( sigma_y * mu ),
 	sigma_z( sigma_y ),
 
-	//J0( 100000.0 ),
 	J0( 0.0 ),
+	//J0( 0.0 ),
 	omega( 0.0 ),
 	tauC( 0.01 ),
 	tauP( 0.01 ),
-	p0( 1000000.0 ),
+	p0( 40000.0 ),
 	impRadSq( 64.0 ),
 
 	eps_0( 0.000000000008854 ),
@@ -51,6 +51,7 @@ Solver::Solver():
 
 	maxNewtonIt( MAX_NEWTON_IT ),
 	newtonIt( 0 ),
+	prevVectDiff( 0.0 ),
 
 	dx( ap / ( nx + 1 ) ),
 	dy( bp / ( Km - 1 ) ),
@@ -197,7 +198,7 @@ void Solver::calc_system( int _x )
 	PL_NUM h = hp;
 	PL_NUM Btdt = 2 * dt * betta;
 	PL_NUM Jx = J0 * exp( -( cur_t ) / tauC ) * sin( omega * ( cur_t ) );  
-	PL_NUM Pimp = p0 * sin( 100.0 * _MMM_PI * ( cur_t ) );
+	PL_NUM Pimp = 0.0;//p0 * sin( 100.0 * _MMM_PI * ( cur_t ) );
 
 	//strip load
 	//PL_NUM cur_X = _x * dy - bp / 2.0;
@@ -206,7 +207,7 @@ void Solver::calc_system( int _x )
 	//	Pimp = p0 * sqrt( 1.0 - cur_X / h * 10.0 * cur_X / h * 10.0 ) * sin( _MMM_PI * ( cur_t + dt ) / tauP );
 	//}
 
-	PL_NUM Rad2 = ap * ap / impRadSq;
+	PL_NUM Rad2 = bp * bp / impRadSq;
 
 	int i = 0;
 	int r = i + 1;
@@ -586,15 +587,15 @@ void Solver::calc_system( int _x )
 	for( int i = 1; i < nx - 1; ++i )
 	{
 		//Pimp = p0 * sin( 100.0 * _MMM_PI * ( cur_t ) );
-		//PL_NUM rad2 = ( ( Km - 1 ) / 2 - _x ) * dy * ( ( Km - 1 ) / 2 - _x ) * dy + ( ( nx - 1 ) / 2 - i ) * dx * ( ( nx - 1 ) / 2 - i ) * dx;
-		//if( rad2 < Rad2 )
-		//{
-		//	Pimp = p0 * sqrt( 1 - rad2 / Rad2 ) * sin( 100.0 * _MMM_PI * ( cur_t ) );
-		//}
-		//else if( _x == ( Km - 1 ) / 2 )
-		//{
-		//	cout << " == line " << i << " is out\n";
-		//}
+		PL_NUM rad2 = ( ( Km - 1 ) / 2 - _x ) * dy * ( ( Km - 1 ) / 2 - _x ) * dy + ( ( nx - 1 ) / 2 - i ) * dx * ( ( nx - 1 ) / 2 - i ) * dx;
+		if( rad2 < Rad2 && cur_t < tauP )
+		{
+			Pimp = p0 * sqrt( 1 - rad2 / Rad2 ) * sin( _MMM_PI * ( cur_t ) / tauP );
+		}
+		else if( _x == ( Km - 1 ) / 2 )
+		{
+			//cout << " == line " << i << " is out\n";
+		}
 
 		r = i + 1;
 		rr = i + 2;
@@ -917,16 +918,18 @@ void Solver::calc_system( int _x )
 
 void Solver::walkthrough( int mode )
 {
-	time_t tBeg, tEnd;
+	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2> orthoCheck1;
+
+	time_t tBeg;
 	time_t rgkT = 0;
 	time_t orthoT = 0;
 
-	vector<PL_NUM> baseVect;
-	baseVect.resize( varNum, 0.0 );
+	//vector<PL_NUM> baseVect;
+	//baseVect.resize( varNum, 0.0 );
 
 	//integrate and orthonorm
 	int _x = 0;
-#pragma omp parallel firstprivate( baseVect )
+#pragma omp parallel //firstprivate( baseVect )
 	{
 	for( _x; _x < Km - 1; )
 	{
@@ -934,14 +937,15 @@ void Solver::walkthrough( int mode )
 		{
 			calc_Newmark_AB( _x, mode );
 			calc_system( _x );
+			tBeg = time( 0 );
 		}
 
-		int begIt = omp_get_thread_num() * ( varNum / 2 / NUM_OF_THREADS + 1 );
-		int endIt = begIt + varNum / 2 / NUM_OF_THREADS + 1;
-		if( omp_get_thread_num() == NUM_OF_THREADS - 1 )
-		{
-			endIt = varNum / 2;
-		}
+		//int begIt = omp_get_thread_num() * ( varNum / 2 / NUM_OF_THREADS + 1 );
+		//int endIt = begIt + varNum / 2 / NUM_OF_THREADS + 1;
+		//if( omp_get_thread_num() == NUM_OF_THREADS - 1 )
+		//{
+		//	endIt = varNum / 2;
+		//}
 
 		#pragma omp for
 		for( int vNum = 0; vNum < varNum / 2; ++vNum )
@@ -953,19 +957,44 @@ void Solver::walkthrough( int mode )
 
 		if( omp_get_thread_num() == 0 )
 		{
+			rgkT += time( 0 ) - tBeg;
 			for( int vNum = 0; vNum < varNum / 2; ++vNum )
 			{
+				tBeg = time( 0 );
 				orthoBuilder->orthonorm( vNum, _x, decompVect[vNum] );
+				orthoT += time( 0 ) - tBeg;
 			}
 
+			//ortho check
+			//for( int i = 0; i < varNum / 2; ++i )
+			//{
+			//	for( int j = 0; j < varNum; ++j )
+			//	{
+			//		orthoCheck1( j, i ) = orthoBuilder->zi[_x + 1][i][j];
+			//	}
+			//}
+			//PL_NUM basisNorm = ( orthoCheck1.transpose() * orthoCheck1 - Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES / 2, EQ_NUM * NUMBER_OF_LINES / 2>::Identity() ).norm();
+			//if( basisNorm > 1e-17 )
+			//{
+			//	//cout << " ---- ortho norm is " << basisNorm << "  ; y = " << _x << endl;
+			//}
+			//ortho check done
+
 			//rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 1, orthoBuilder->z5[_x], &( orthoBuilder->z5[_x + 1] ) );
+			tBeg = time( 0 );
 			rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 1, orthoBuilder->z5[_x], decompVect[varNum / 2] );
+			rgkT += time( 0 ) - tBeg;
+			tBeg = time( 0 );
 			orthoBuilder->orthonorm( varNum / 2, _x, decompVect[varNum / 2] );
+			orthoT += time( 0 ) - tBeg;
 			++_x;
 		}
-		#pragma omp barrier		//may be this is redundant
+		#pragma omp barrier
 	}
 	}
+
+	cout << " == rgkT \t" << rgkT << endl;
+	cout << " == orthoT \t" << orthoT << endl;
 
 	orthoBuilder->buildSolution( &mesh );
 
@@ -1012,6 +1041,7 @@ void Solver::pre_step()
 void Solver::do_step()
 {	
 	int cont = 1;
+	prevVectDiff = -1.0;
 	while( cont == 1 )
 	{
 		cout << " = walk\n";
@@ -1092,24 +1122,53 @@ int Solver::checkConv()
 	}
 	return 1;
 
-	//for( int x = 0; x < Km; ++x ) //new stopping criterion: the max of the absolute value of the relative difference + just the abs value check
+	//PL_NUM maxDiff = fabsl( mesh[0].Nk1[0] - mesh[0].Nk[0] );
+	//for( int y = 1; y < Km; ++y )
 	//{
 	//	for( int i = 0; i < varNum; ++i )
 	//	{
-	//		if( fabsl( mesh[x].Nk[i] ) > ALMOST_ZERO * 1000.0 )
+	//		if( fabsl( mesh[y].Nk1[i] - mesh[y].Nk[i] ) > maxDiff )
 	//		{
-	//			if( fabsl( ( mesh[x].Nk1[i] - mesh[x].Nk[i] ) / mesh[x].Nk[i] ) > QUASILIN_CHECK && fabsl( mesh[x].Nk1[i] - mesh[x].Nk[i] ) > QUASILIN_CHECK )
+	//			maxDiff = fabsl( mesh[y].Nk1[i] - mesh[y].Nk[i] );
+	//		}
+	//	}
+	//}
+	//if( prevVectDiff < 0.0 )
+	//{
+	//	prevVectDiff = maxDiff;
+	//}
+	//else
+	//{
+	//	PL_NUM ratio = maxDiff / prevVectDiff;
+	//	if( ratio > 0.99 )
+	//	{
+	//		cout << " --- diverging: " << ratio << endl;
+	//	}
+	//	else
+	//	{
+	//		cout << " --- converging: " << ratio << endl;
+	//	}
+	//	prevVectDiff = maxDiff;
+	//}
+
+	//for( int y = 0; y < Km; ++y ) //new stopping criterion: the max of the absolute value of the relative difference + just the abs value check
+	//{
+	//	for( int i = 0; i < varNum; ++i )
+	//	{
+	//		if( fabsl( mesh[y].Nk[i] ) > ALMOST_ZERO * 1000.0 )
+	//		{
+	//			if( fabsl( ( mesh[y].Nk1[i] - mesh[y].Nk[i] ) / mesh[y].Nk[i] ) > QUASILIN_CHECK && fabsl( mesh[y].Nk1[i] - mesh[y].Nk[i] ) > QUASILIN_CHECK )
 	//			{
-	//				cout << " :: divergence " << x << " " << i << " " << fabsl( ( mesh[x].Nk1[i] - mesh[x].Nk[i] ) / mesh[x].Nk[i] ) << " delta is " << QUASILIN_CHECK << endl;
-	//				cout << " :: " << mesh[x].Nk1[i] << " " << mesh[x].Nk[i] << endl;
+	//				cout << " :: divergence " << y << " " << i << " " << fabsl( ( mesh[y].Nk1[i] - mesh[y].Nk[i] ) / mesh[y].Nk[i] ) << " delta is " << QUASILIN_CHECK << endl;
+	//				cout << " :: " << mesh[y].Nk1[i] << " " << mesh[y].Nk[i] << endl;
 	//				return 1;
 	//			}
 	//		}
 	//		else
 	//		{
-	//			if( fabsl( mesh[x].Nk1[i] ) > ALMOST_ZERO * 1000.0 )
+	//			if( fabsl( mesh[y].Nk1[i] ) > ALMOST_ZERO * 1000.0 )
 	//			{
-	//				cout << " :: divergence -- 0 -- " << x << " " << i << " " << fabsl( mesh[x].Nk1[i] ) << " delta is " << QUASILIN_CHECK << endl;
+	//				cout << " :: divergence -- 0 -- " << y << " " << i << " " << fabsl( mesh[y].Nk1[i] ) << " delta is " << QUASILIN_CHECK << endl;
 	//				return 1;
 	//			}
 	//		}
