@@ -129,6 +129,12 @@ private:
 											//n - spatial node (i.e, x coordinate). this orthonormalizes N1, ... , N5 and builds Omega
 	//void buildSolution();					//builds solution for the current time step
 	int checkConv();
+
+	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, 1> newSol;
+	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, 1> oldSol;
+
+	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, 1> newf;
+	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, 1> oldf;
 };
 
 #endif

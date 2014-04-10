@@ -2,8 +2,8 @@
 
 Solver::Solver():
 	E1( 102970000000 ),
-	E2( 7550000000 ),
-	//E2( 102970000000 ),
+	//E2( 7550000000 ),
+	E2( 102970000000 ),
 	nu21( 0.3 ),
 	nu23( 0.3 ),
 	rho( 1594 ),
@@ -14,7 +14,7 @@ Solver::Solver():
 	B12( nu21 * E2 * E1 / ( E1 - nu21 * nu21 * E2 ) ),
 	B66( G23 ),
 
-	By0( 0.0 ),
+	By0( 0 ),
 	By1( 2.0 * By0 ),
 	By2( 0.0 ),
 
@@ -28,12 +28,12 @@ Solver::Solver():
 	sigma_y_mu( sigma_y * mu ),
 	sigma_z( sigma_y ),
 
-	J0( 0.0 ),
-	//J0( 0.0 ),
+	//J0( 1000000.0 ),
+	J0( 0 ),
 	omega( 0.0 ),
 	tauC( 0.01 ),
 	tauP( 0.01 ),
-	p0( 40000.0 ),
+	p0( 30000.0 ),
 	impRadSq( 64.0 ),
 
 	eps_0( 0.000000000008854 ),
@@ -198,7 +198,7 @@ void Solver::calc_system( int _x )
 	PL_NUM h = hp;
 	PL_NUM Btdt = 2 * dt * betta;
 	PL_NUM Jx = J0 * exp( -( cur_t ) / tauC ) * sin( omega * ( cur_t ) );  
-	PL_NUM Pimp = 0.0;//p0 * sin( 100.0 * _MMM_PI * ( cur_t ) );
+	PL_NUM Pimp = p0 * sin( 100.0 * _MMM_PI * ( cur_t ) );
 
 	//strip load
 	//PL_NUM cur_X = _x * dy - bp / 2.0;
@@ -587,15 +587,15 @@ void Solver::calc_system( int _x )
 	for( int i = 1; i < nx - 1; ++i )
 	{
 		//Pimp = p0 * sin( 100.0 * _MMM_PI * ( cur_t ) );
-		PL_NUM rad2 = ( ( Km - 1 ) / 2 - _x ) * dy * ( ( Km - 1 ) / 2 - _x ) * dy + ( ( nx - 1 ) / 2 - i ) * dx * ( ( nx - 1 ) / 2 - i ) * dx;
-		if( rad2 < Rad2 && cur_t < tauP )
-		{
-			Pimp = p0 * sqrt( 1 - rad2 / Rad2 ) * sin( _MMM_PI * ( cur_t ) / tauP );
-		}
-		else if( _x == ( Km - 1 ) / 2 )
-		{
-			//cout << " == line " << i << " is out\n";
-		}
+		//PL_NUM rad2 = ( ( Km - 1 ) / 2 - _x ) * dy * ( ( Km - 1 ) / 2 - _x ) * dy + ( ( nx - 1 ) / 2 - i ) * dx * ( ( nx - 1 ) / 2 - i ) * dx;
+		//if( rad2 < Rad2 && cur_t < tauP )
+		//{
+		//	Pimp = p0 * sqrt( 1 - rad2 / Rad2 ) * sin( _MMM_PI * ( cur_t ) / tauP );
+		//}
+		//else if( _x == ( Km - 1 ) / 2 )
+		//{
+		//	//cout << " == line " << i << " is out\n";
+		//}
 
 		r = i + 1;
 		rr = i + 2;
@@ -914,11 +914,21 @@ void Solver::calc_system( int _x )
 		vect_f[9 + i * eq_num] = -( ( mu * sigma_x * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num] ) / ( 2 * betta * dt ) ) + ( By1 * mu * sigma_x 
 			* mesh[_x].Nk[4 + i * eq_num] ) / ( 4 * betta * dt ) - ( 1 / 2 ) * By1 * mu * sigma_x * ( newmark_B[4 + i * eq_num] + mesh[_x].Nk[4 + i * eq_num] / ( 2 * betta * dt ) );
 	}
+
+	//if( _x == Km - 2 )
+	//{
+	//	oldf = newf;
+	//	for( int i = 0; i < varNum; ++i )
+	//	{
+	//		newf( i ) = vect_f[i];
+	//	}
+	//	cout << " diff betw rhss is " << ( newf - oldf ).lpNorm<Infinity>() << endl;
+	//}
 }
 
 void Solver::walkthrough( int mode )
 {
-	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2> orthoCheck1;
+	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1> orthoCheck1;
 
 	time_t tBeg;
 	time_t rgkT = 0;
@@ -965,6 +975,23 @@ void Solver::walkthrough( int mode )
 				orthoT += time( 0 ) - tBeg;
 			}
 
+			//rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 1, orthoBuilder->z5[_x], &( orthoBuilder->z5[_x + 1] ) );
+			tBeg = time( 0 );
+			if( _x == 0 )
+			{
+				orthoBuilder->solInfoMap[_x].o[varNum / 2 * ( varNum / 2 + 1 ) / 2 + varNum / 2] = 1.0;
+			}
+			for( int i = 0; i < varNum; ++i )
+			{
+				vect_f[i] /= orthoBuilder->solInfoMap[_x].o[varNum / 2 * ( varNum / 2 + 1 ) / 2 + varNum / 2];
+			}
+
+			rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 1, orthoBuilder->z5[_x], decompVect[varNum / 2] );
+			rgkT += time( 0 ) - tBeg;
+			tBeg = time( 0 );
+			orthoBuilder->orthonorm( varNum / 2, _x, decompVect[varNum / 2] );
+			orthoT += time( 0 ) - tBeg;
+
 			//ortho check
 			//for( int i = 0; i < varNum / 2; ++i )
 			//{
@@ -973,21 +1000,67 @@ void Solver::walkthrough( int mode )
 			//		orthoCheck1( j, i ) = orthoBuilder->zi[_x + 1][i][j];
 			//	}
 			//}
-			//PL_NUM basisNorm = ( orthoCheck1.transpose() * orthoCheck1 - Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES / 2, EQ_NUM * NUMBER_OF_LINES / 2>::Identity() ).norm();
-			//if( basisNorm > 1e-17 )
+			//for( int j = 0; j < varNum; ++j )
 			//{
-			//	//cout << " ---- ortho norm is " << basisNorm << "  ; y = " << _x << endl;
+			//	orthoCheck1( j, varNum / 2 ) = orthoBuilder->z5[_x + 1][j];
+			//}
+			//PL_NUM basisNorm = ( orthoCheck1.transpose() * orthoCheck1 - Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES / 2 + 1, EQ_NUM * NUMBER_OF_LINES / 2 + 1>::Identity() ).norm();
+			//if( basisNorm > 1e-15 )
+			//{
+			//	cout << " ---- ortho norm is " << basisNorm << "  ; y = " << _x << endl;
+			//}
+
+			//if( _x == 10 )
+			//{
+			//	for( int i = 0; i < varNum / 2; ++i )
+			//	{
+			//		PL_NUM proj = 0.0;
+			//		for( int j = 0; j < varNum; ++j )
+			//		{
+			//			proj += orthoBuilder->zi[_x + 1][i][j] * orthoBuilder->z5[_x + 1][j];
+			//		}
+			//		cout << " the proj is " << proj << endl;
+			//	}
 			//}
 			//ortho check done
 
-			//rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 1, orthoBuilder->z5[_x], &( orthoBuilder->z5[_x + 1] ) );
-			tBeg = time( 0 );
-			rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 1, orthoBuilder->z5[_x], decompVect[varNum / 2] );
-			rgkT += time( 0 ) - tBeg;
-			tBeg = time( 0 );
-			orthoBuilder->orthonorm( varNum / 2, _x, decompVect[varNum / 2] );
-			orthoT += time( 0 ) - tBeg;
 			++_x;
+
+			//if( _x == 1000 )
+			//{
+			//	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, 1> partSoln;
+			//	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, 1> homSoln;
+			//	PL_NUM maxNorm = -1.0;
+			//	for( int i = 0; i < varNum / 2; ++i )
+			//	{
+			//		for( int j = 0; j < varNum; ++j )
+			//		{
+			//			homSoln( j ) = orthoBuilder->zi[_x + 1][i][j];
+			//		}
+			//		PL_NUM newNorm = homSoln.lpNorm<2>();
+			//		//cout << " new norm: " << newNorm << endl;
+			//		if( newNorm > maxNorm )
+			//		{
+			//			maxNorm = newNorm;
+			//		}
+			//	}
+			//	for( int j = 0; j < varNum; ++j )
+			//	{
+			//		partSoln( j ) = orthoBuilder->z5[_x + 1][j];
+			//	}
+			//	PL_NUM partNorm = partSoln.lpNorm<2>();
+			//	cout << " norms: " << maxNorm << " " << partNorm << endl;
+			//}
+
+			//if( _x == Km - 1 )
+			//{
+			//	oldSol = newSol;
+			//	for( int i = 0; i < varNum; ++i )
+			//	{
+			//		newSol( i ) = orthoBuilder->z5[_x][i];
+			//	}
+			//	cout << " diff betw inhom solns " << ( oldSol - newSol ).lpNorm<Infinity>() << endl;
+			//}
 		}
 		#pragma omp barrier
 	}
@@ -997,6 +1070,30 @@ void Solver::walkthrough( int mode )
 	cout << " == orthoT \t" << orthoT << endl;
 
 	orthoBuilder->buildSolution( &mesh );
+
+	//calc_Newmark_AB( 0, mode );
+	//Matrix<PL_NUM, 5, 10> Pl = Matrix<PL_NUM, 5, 10>::Zero();
+	//Matrix<PL_NUM, 10, 1> gk1 = Matrix<PL_NUM, 10, 1>::Zero();
+	//Matrix<PL_NUM, 5, 1> pl = Matrix<PL_NUM, 5, 1>::Zero();
+
+	//Pl( 0, 0 ) = 1.0;
+	//Pl( 1, 1 ) = 1.0;
+	//Pl( 2, 4 ) = 1.0;
+	//Pl( 3, 6 ) = 1.0;
+	//Pl( 4, 8 ) = 1.0;
+	//for( int line = 0; line < NUMBER_OF_LINES; ++line )
+	//{
+	//	Pl( 4, 1 ) = mesh[0].Nk[line * EQ_NUM + 9] / 2.0 / betta / dt;
+	//	Pl( 4, 4 ) = -By0 / 2.0 / betta / dt;
+	//	Pl( 4, 9 ) = mesh[0].Nk[line * EQ_NUM + 1] / 2.0 / betta / dt + newmark_B[line * EQ_NUM + 1];
+
+	//	pl( 4 ) = -By0 * newmark_B[line * EQ_NUM + 4] - mesh[0].Nk[line * EQ_NUM + 1] * mesh[0].Nk[line * EQ_NUM + 9] / 2.0 / betta / dt;
+	//	for( int i = 0; i < EQ_NUM; ++i )
+	//	{
+	//		gk1( i ) = mesh[0].Nk1[line * EQ_NUM + i];
+	//	}
+	//	cout << " **** line " << line << " L-bndry diff is " << ( Pl * gk1 - pl ).lpNorm<2>() << endl;
+	//}
 
 	for( int _x = 0; _x < Km; ++_x )
 	{
@@ -1084,43 +1181,43 @@ void Solver::do_step()
 
 int Solver::checkConv()
 {
-	//if( newtonIt >= maxNewtonIt )		//stopping criterion with a fixed number of iterations
-	//{
-	//	newtonIt = 0;
-	//	return 0;
-	//}
-	//else
-	//{
-	//	int i = 15;
-	//	cout << " newton iteration " << newtonIt << endl;
-	//	cout << " divergence in " << Km / 2 << " " << i << " " << fabsl( ( mesh[Km / 2].Nk1[i] - mesh[Km / 2].Nk[i] ) / mesh[Km / 2].Nk[i] ) << endl;
-	//	++newtonIt;
-	//	return 1;
-	//}
-
-	for( int x = 0; x < Km; ++x ) //old and weird stopping criterion. I think it works only because 1-2 iterations are almost always suffice. otherwise this doed not make sense to me
+	if( newtonIt >= maxNewtonIt )		//stopping criterion with a fixed number of iterations
 	{
-		for( int i = 0; i < varNum; ++i )
-		{
-			if( mesh[x].Nk[i] != 0.0 )
-			{
-				if( fabsl( ( mesh[x].Nk1[i] - mesh[x].Nk[i] ) / mesh[x].Nk[i] ) < ALMOST_ZERO )
-				{
-					cout << " divergence " << x << " " << i << " " << fabsl( ( mesh[x].Nk1[i] - mesh[x].Nk[i] ) / mesh[x].Nk[i] ) << " delta is " << ALMOST_ZERO << endl;
-					return 0;
-				}
-			}
-			else
-			{
-				if( fabsl( mesh[x].Nk1[i] ) < ALMOST_ZERO )
-				{
-					cout << " divergence " << x << " " << i << " " << fabsl( mesh[x].Nk1[i] ) << " delta is " << ALMOST_ZERO << endl;
-					return 0;
-				}
-			}
-		}
+		newtonIt = 0;
+		return 0;
 	}
-	return 1;
+	else
+	{
+		int i = 15;
+		cout << " newton iteration " << newtonIt << endl;
+		cout << " divergence in " << Km / 2 << " " << i << " " << fabsl( ( mesh[Km / 2].Nk1[i] - mesh[Km / 2].Nk[i] ) / mesh[Km / 2].Nk[i] ) << endl;
+		++newtonIt;
+		return 1;
+	}
+
+	//for( int x = 0; x < Km; ++x ) //old and weird stopping criterion. I think it works only because 1-2 iterations are almost always suffice. otherwise this doed not make sense to me
+	//{
+	//	for( int i = 0; i < varNum; ++i )
+	//	{
+	//		if( mesh[x].Nk[i] != 0.0 )
+	//		{
+	//			if( fabsl( ( mesh[x].Nk1[i] - mesh[x].Nk[i] ) / mesh[x].Nk[i] ) < ALMOST_ZERO )
+	//			{
+	//				cout << " divergence " << x << " " << i << " " << fabsl( ( mesh[x].Nk1[i] - mesh[x].Nk[i] ) / mesh[x].Nk[i] ) << " delta is " << ALMOST_ZERO << endl;
+	//				return 0;
+	//			}
+	//		}
+	//		else
+	//		{
+	//			if( fabsl( mesh[x].Nk1[i] ) < ALMOST_ZERO )
+	//			{
+	//				cout << " divergence " << x << " " << i << " " << fabsl( mesh[x].Nk1[i] ) << " delta is " << ALMOST_ZERO << endl;
+	//				return 0;
+	//			}
+	//		}
+	//	}
+	//}
+	//return 1;
 
 	//PL_NUM maxDiff = fabsl( mesh[0].Nk1[0] - mesh[0].Nk[0] );
 	//for( int y = 1; y < Km; ++y )

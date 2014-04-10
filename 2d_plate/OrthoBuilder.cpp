@@ -282,6 +282,11 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are
 		}
 		solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] = sqrtl( fabs( solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] ) );
 
+		if( solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] < 0.000001 * norm )
+		{
+			cout << " +++ orthon is required for " << n << endl;
+		}
+
 		if( norm / solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] <= k11 )
 		{
 			for( int k = 0; k < varNum; ++k )
@@ -337,8 +342,24 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are
 		}
 		for( int k = 0; k < varNum; ++k )
 		{
-			z5[n + 1][k] = NtoOrt[k];
+			solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] += NtoOrt[k] * NtoOrt[k];			//problems here
 		}
+		solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] = sqrtl( fabs( solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] ) );
+		if( fabs( solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] ) < EPS_W )
+		{
+			solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] = 1.0;
+		}
+
+		for( int k = 0; k < varNum; ++k )
+		{
+			z5[n + 1][k] = NtoOrt[k] / solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV];
+		}
+
+		if( n == 0 )
+		{
+			solInfoMap[n].o[baseV * ( baseV + 1 ) / 2 + baseV] = 1.0;
+		}
+		solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] *= solInfoMap[n].o[baseV * ( baseV + 1 ) / 2 + baseV];
 	}
 }
 
@@ -385,6 +406,7 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 		f11( line * _a + 3 ) = -z5[Km - 1][line * EQ_NUM + 6];
 		f11( line * _a + 4 ) = -z5[Km - 1][line * EQ_NUM + 8];
 	}
+	f11 *= solInfoMap[Km - 1].o[varNum / 2 * ( varNum / 2 + 1 ) / 2 + varNum / 2];
 
 	//EigenSolver<Matrix<PL_NUM, msize, msize, RowMajor>> es( M );
 	//if( es.info() == Success )
@@ -407,6 +429,7 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 	//	cout << "cond number is " << maxL / minL << endl;
 	//}
 	x1 = M.fullPivLu().solve( f11 );
+	cout << " ---- " << x1.lpNorm<Infinity>() << endl;
 
 	//refinement. I do not know the theoretical source of this procedure yet. just rewrote it
 	//TODO test this
@@ -443,8 +466,8 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 		ndx2 = dx1.lpNorm<Infinity>();
 		temp = ndx2;
 	} while( ndx2 < 0.9 * ndx && ndx2 / nx >= 2 * EPS_W );
-	cout << " " << iterCount << " refnmt iterations\n";
-	cout << " refnmt relative error is " << (PL_NUM)( ( M * x1 - f11 ).norm() / f11.norm() ) << endl;
+	//cout << " " << iterCount << " refnmt iterations\n";
+	//cout << " refnmt relative error is " << (PL_NUM)( ( M * x1 - f11 ).norm() / f11.norm() ) << endl;
 	//refinement is over
 
 	//now we determine coefficients for base solutions
@@ -458,7 +481,7 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 	{
 		for( int i = varNum / 2 - 1; i >= 0; --i )
 		{
-			solInfoMap[_x].C[i] = solInfoMap[_x + 1].C[i] - solInfoMap[_x + 1].o[varNum / 2 * ( varNum / 2 + 1 ) / 2 + i];
+			solInfoMap[_x].C[i] = solInfoMap[_x + 1].C[i] - solInfoMap[_x + 1].o[varNum / 2 * ( varNum / 2 + 1 ) / 2 + i] * solInfoMap[_x].o[varNum / 2 * ( varNum / 2 + 1 ) / 2 + varNum / 2];
 			for( int j = varNum / 2 - 1; j > i; --j )
 			{
 				solInfoMap[_x].C[i] -= solInfoMap[_x + 1].o[j * ( j + 1 ) / 2 + i] * solInfoMap[_x].C[j];
@@ -468,17 +491,16 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 	}
 
 	//now using the coefficients we write down the solution
+	//solInfoMap[Km - 1].o[varNum / 2 * ( varNum / 2 + 1 ) / 2 + varNum / 2] = 1.0;
 	for( int _x = 0; _x < Km; ++_x )
 	{
 		for( int i = 0; i < varNum; ++i )
 		{
-			(*_mesh)[_x].Nk1[i] = 0.0;
+			(*_mesh)[_x].Nk1[i] = z5[_x][i] * solInfoMap[_x].o[varNum / 2 * ( varNum / 2 + 1 ) / 2 + varNum / 2];
 			for( int vNum = 0; vNum < varNum / 2; ++vNum )
 			{
 				(*_mesh)[_x].Nk1[i] += solInfoMap[_x].C[vNum] * zi[_x][vNum][i];			//FIXME lags may happen here
 			}
-			/*(*_mesh)[_x].Nk1[i] += solInfoMap[_x].z5[i];*/
-			(*_mesh)[_x].Nk1[i] += z5[_x][i];
 		}
 	}
 
