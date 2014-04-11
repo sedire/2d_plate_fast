@@ -278,14 +278,15 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are
 
 		for( int k = 0; k < varNum; ++k )
 		{
-			solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] += NtoOrt[k] * NtoOrt[k];			//problems here
+			solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] += NtoOrt[k] * NtoOrt[k];
 		}
 		solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] = sqrtl( fabs( solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] ) );
 
-		if( solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] < 0.000001 * norm )
-		{
-			cout << " +++ orthon is required for " << n << endl;
-		}
+		//if( solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] < 0.00001 * norm )
+		//{
+		//	cout << " +++ orthon is required for " << n << endl;
+		//	std::cin.get();
+		//}
 
 		if( norm / solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] <= k11 )
 		{
@@ -316,7 +317,6 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are
 			for( int k = 0; k < varNum; ++k )
 			{
 				zi[n + 1][baseV][k] = NtoOrt[k] / omega2[baseV];
-				//	(*NtoOrt)[k] = solInfoMap[n + 1].zi[baseV][k];
 			}
 			for( int bvIt = 0; bvIt < baseV; ++bvIt )
 			{
@@ -324,11 +324,17 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are
 			}
 			solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] = omega2[baseV];
 		}
-		//caution: previously there was a k11-procedure possibly from the modified gram-schmidt
 	}
 	else
 	{
-		//look at the original. m.b. there is a misake here
+		norm = 0.0;
+		for( int i = 0; i < varNum; ++i )
+		{
+			norm += NtoOrt[i] * NtoOrt[i];
+			omega2[i] = 0.0;
+		}
+		norm = sqrtf( norm );
+
 		for( int bvIt = 0; bvIt < varNum / 2; ++bvIt )
 		{
 			for( int k = 0; k < varNum; ++k )
@@ -342,13 +348,18 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are
 		}
 		for( int k = 0; k < varNum; ++k )
 		{
-			solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] += NtoOrt[k] * NtoOrt[k];			//problems here
+			solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] += NtoOrt[k] * NtoOrt[k];
 		}
 		solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] = sqrtl( fabs( solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] ) );
 		if( fabs( solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] ) < EPS_W )
 		{
 			solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] = 1.0;
 		}
+
+		//if( solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] < 0.000001 * norm )
+		//{
+		//	cout << " +++ orthon is required for particular " << n << endl;
+		//}
 
 		for( int k = 0; k < varNum; ++k )
 		{
@@ -429,7 +440,6 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 	//	cout << "cond number is " << maxL / minL << endl;
 	//}
 	x1 = M.fullPivLu().solve( f11 );
-	cout << " ---- " << x1.lpNorm<Infinity>() << endl;
 
 	//refinement. I do not know the theoretical source of this procedure yet. just rewrote it
 	//TODO test this
