@@ -9,6 +9,7 @@ using std::endl;
 
 int main()
 {
+	//HELLO IDSGO
 	cout << "hello\n";
 
 	omp_set_num_threads( NUM_OF_THREADS );
