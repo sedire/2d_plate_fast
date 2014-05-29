@@ -45,7 +45,7 @@ void RungeKutta::buildBorders()
 	}
 }
 
-//void RungeKutta::calc( PL_NUM A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES], PL_NUM *f, PL_NUM dx, int thrNum, int hom, const vector<PL_NUM>& x, vector<PL_NUM>* x1 )	//this one is optimized to take into accout matrix block structure
+//void RungeKutta::calc( PL_NUM A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES], PL_NUM *f, PL_NUM dx, int thrNum, int hom, const vector<PL_NUM>& x, PL_NUM *x1 )	//this one is optimized to take into accout matrix block structure
 //{
 //	//if( A.size() != varNum || 
 //	//	A[0].size() != varNum ||
@@ -123,7 +123,7 @@ void RungeKutta::buildBorders()
 //	}
 //
 //	for( int i = 0; i < sizeOfF; ++i ) {
-//		(*x1)[i] = (x)[i] + rgk_C1 * f1[thrNum][i] + rgk_C2 * f2[thrNum][i] + rgk_C3 * f3[thrNum][i] + rgk_C4 * f4[thrNum][i];
+//		(x1)[i] = (x)[i] + rgk_C1 * f1[thrNum][i] + rgk_C2 * f2[thrNum][i] + rgk_C3 * f3[thrNum][i] + rgk_C4 * f4[thrNum][i];
 //	}
 //}
 

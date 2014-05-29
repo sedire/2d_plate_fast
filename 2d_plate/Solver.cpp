@@ -14,7 +14,7 @@ Solver::Solver():
 	B12( nu21 * E2 * E1 / ( E1 - nu21 * nu21 * E2 ) ),
 	B66( G23 ),
 
-	By0( 0.0 ),
+	By0( 1.0 ),
 	By1( 2.0 * By0 ),
 	By2( 0.0 ),
 
@@ -28,12 +28,12 @@ Solver::Solver():
 	sigma_y_mu( sigma_y * mu ),
 	sigma_z( sigma_y ),
 
-	J0( 0.0 ),
+	J0( 1000000.0 ),
 	//J0( 0.0 ),
 	omega( 0.0 ),
 	tauC( 0.01 ),
 	tauP( 0.01 ),
-	p0( 40000.0 ),
+	p0( 30000.0 ),
 	impRadSq( 64.0 ),
 
 	eps_0( 0.000000000008854 ),
@@ -41,7 +41,7 @@ Solver::Solver():
 	eps_x_0( eps_x - eps_0 ),
 
 	hp( 0.0021 ),
-	ap( 0.1524 ),		//len in x-dir
+	ap( 0.1524 * 2.0 ),		//len in x-dir
 	bp( 0.1524 ),		//width in y-dir
 
 	Km( NODES_ON_Y ),
@@ -207,7 +207,7 @@ void Solver::calc_system( int _x )
 	//	Pimp = p0 * sqrt( 1.0 - cur_X / h * 10.0 * cur_X / h * 10.0 ) * sin( _MMM_PI * ( cur_t + dt ) / tauP );
 	//}
 
-	PL_NUM Rad2 = bp * bp / impRadSq;
+	PL_NUM Rad2 = ap * ap / impRadSq;
 
 	int i = 0;
 	int r = i + 1;
@@ -586,6 +586,7 @@ void Solver::calc_system( int _x )
 
 	for( int i = 1; i < nx - 1; ++i )
 	{
+		Pimp = 0.0;
 		//Pimp = p0 * sin( 100.0 * _MMM_PI * ( cur_t ) );
 		PL_NUM rad2 = ( ( Km - 1 ) / 2 - _x ) * dy * ( ( Km - 1 ) / 2 - _x ) * dy + ( ( nx - 1 ) / 2 - i ) * dx * ( ( nx - 1 ) / 2 - i ) * dx;
 		if( rad2 < Rad2 && cur_t < tauP )
