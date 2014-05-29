@@ -2,8 +2,8 @@
 
 Solver::Solver():
 	E1( 102970000000 ),
-	//E2( 7550000000 ),
-	E2( 102970000000 ),
+	E2( 7550000000 ),
+	//E2( 102970000000 ),
 	nu21( 0.3 ),
 	nu23( 0.3 ),
 	rho( 1594 ),
@@ -14,7 +14,7 @@ Solver::Solver():
 	B12( nu21 * E2 * E1 / ( E1 - nu21 * nu21 * E2 ) ),
 	B66( G23 ),
 
-	By0( 0 ),
+	By0( 1.0 ),
 	By1( 2.0 * By0 ),
 	By2( 0.0 ),
 
@@ -28,8 +28,8 @@ Solver::Solver():
 	sigma_y_mu( sigma_y * mu ),
 	sigma_z( sigma_y ),
 
-	//J0( 1000000.0 ),
-	J0( 0 ),
+	J0( 1000000.0 ),
+	//J0( 0 ),
 	omega( 0.0 ),
 	tauC( 0.01 ),
 	tauP( 0.01 ),
@@ -65,6 +65,9 @@ Solver::Solver():
 	rungeKutta( 0 ),
 	orthoBuilder( 0 )
 {
+	cout << " sigma x " << sigma_x << endl;
+	cout << " sigma x mu " << sigma_x_mu << endl;
+	cout << " sigma y " << sigma_y << endl;
 	setTask();
 }
 
@@ -207,7 +210,7 @@ void Solver::calc_system( int _x )
 	//	Pimp = p0 * sqrt( 1.0 - cur_X / h * 10.0 * cur_X / h * 10.0 ) * sin( _MMM_PI * ( cur_t + dt ) / tauP );
 	//}
 
-	PL_NUM Rad2 = bp * bp / impRadSq;
+	PL_NUM Rad2 = ap * ap / impRadSq;
 
 	int i = 0;
 	int r = i + 1;
@@ -586,21 +589,11 @@ void Solver::calc_system( int _x )
 
 	for( int i = 1; i < nx - 1; ++i )
 	{
-		//Pimp = p0 * sin( 100.0 * _MMM_PI * ( cur_t ) );
-		//PL_NUM rad2 = ( ( Km - 1 ) / 2 - _x ) * dy * ( ( Km - 1 ) / 2 - _x ) * dy + ( ( nx - 1 ) / 2 - i ) * dx * ( ( nx - 1 ) / 2 - i ) * dx;
-		//if( rad2 < Rad2 && cur_t < tauP )
-		//{
-		//	Pimp = p0 * sqrt( 1 - rad2 / Rad2 ) * sin( _MMM_PI * ( cur_t ) / tauP );
-		//}
-		//else if( _x == ( Km - 1 ) / 2 )
-		//{
-		//	//cout << " == line " << i << " is out\n";
-		//}
-
-		if( cur_t < tauP && _x == ( Km - 1 ) / 2 && i == ( nx - 1 ) / 2 )
+		Pimp = 0.0;//p0 * sin( 100.0 * _MMM_PI * ( cur_t ) );
+		PL_NUM rad2 = ( ( Km - 1 ) / 2 - _x ) * dy * ( ( Km - 1 ) / 2 - _x ) * dy + ( ( nx - 1 ) / 2 - i ) * dx * ( ( nx - 1 ) / 2 - i ) * dx;
+		if( rad2 < Rad2 && cur_t < tauP )
 		{
-			cout << " -------------\n";
-			Pimp = p0 * 100.0 * sin( _MMM_PI * ( cur_t ) / tauP );
+			Pimp = p0 * sqrt( 1 - rad2 / Rad2 ) * sin( _MMM_PI * ( cur_t ) / tauP );
 		}
 		else if( _x == ( Km - 1 ) / 2 )
 		{
@@ -1356,14 +1349,8 @@ void Solver::dump_check_sol2D()		//dump numerical soln + the soln obtained analy
 	PL_NUM wTheor = sum;
 
 	ofstream of1( "test_sol.txt", ofstream::app );
-	of1 << t;
-	for( int i = 0; i < nx; ++i )
-	{
-		of1 << " ; " << mesh[ ( Km - 1 ) / 2 ].Nk1[4 + i * eq_num];
-	}
-	of1 << endl;
 
-	//of1 << t << " ; " << mesh[ ( Km - 1 ) / 2 ].Nk1[4 + (nx-1)/2 * eq_num] << " ; " << wTheor << " ; " << fabsl( ( wTheor - mesh[ ( Km - 1 ) / 2 ].Nk1[4 + (nx-1)/2 * eq_num] ) / wTheor ) << endl;
+	of1 << t << " ; " << mesh[ ( Km - 1 ) / 2 ].Nk1[4 + (nx-1)/2 * eq_num] << " ; " << wTheor << " ; " << fabsl( ( wTheor - mesh[ ( Km - 1 ) / 2 ].Nk1[4 + (nx-1)/2 * eq_num] ) / wTheor ) << endl;
 	of1.close();
 }
 
