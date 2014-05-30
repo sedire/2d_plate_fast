@@ -327,14 +327,6 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are
 	}
 	else
 	{
-		norm = 0.0;
-		for( int i = 0; i < varNum; ++i )
-		{
-			norm += NtoOrt[i] * NtoOrt[i];
-			omega2[i] = 0.0;
-		}
-		norm = sqrtf( norm );
-
 		for( int bvIt = 0; bvIt < varNum / 2; ++bvIt )
 		{
 			for( int k = 0; k < varNum; ++k )
@@ -348,29 +340,8 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are
 		}
 		for( int k = 0; k < varNum; ++k )
 		{
-			solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] += NtoOrt[k] * NtoOrt[k];
+			z5[n + 1][k] = NtoOrt[k];
 		}
-		solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] = sqrtl( fabs( solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] ) );
-		if( fabs( solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] ) < EPS_W )
-		{
-			solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] = 1.0;
-		}
-
-		//if( solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] < 0.000001 * norm )
-		//{
-		//	cout << " +++ orthon is required for particular " << n << endl;
-		//}
-
-		for( int k = 0; k < varNum; ++k )
-		{
-			z5[n + 1][k] = NtoOrt[k] / solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV];
-		}
-
-		if( n == 0 )
-		{
-			solInfoMap[n].o[baseV * ( baseV + 1 ) / 2 + baseV] = 1.0;
-		}
-		solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] *= solInfoMap[n].o[baseV * ( baseV + 1 ) / 2 + baseV];
 	}
 }
 
@@ -417,7 +388,6 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 		f11( line * _a + 3 ) = -z5[Km - 1][line * EQ_NUM + 6];
 		f11( line * _a + 4 ) = -z5[Km - 1][line * EQ_NUM + 8];
 	}
-	f11 *= solInfoMap[Km - 1].o[varNum / 2 * ( varNum / 2 + 1 ) / 2 + varNum / 2];
 
 	//EigenSolver<Matrix<PL_NUM, msize, msize, RowMajor>> es( M );
 	//if( es.info() == Success )
@@ -491,7 +461,7 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 	{
 		for( int i = varNum / 2 - 1; i >= 0; --i )
 		{
-			solInfoMap[_x].C[i] = solInfoMap[_x + 1].C[i] - solInfoMap[_x + 1].o[varNum / 2 * ( varNum / 2 + 1 ) / 2 + i] * solInfoMap[_x].o[varNum / 2 * ( varNum / 2 + 1 ) / 2 + varNum / 2];
+			solInfoMap[_x].C[i] = solInfoMap[_x + 1].C[i] - solInfoMap[_x + 1].o[varNum / 2 * ( varNum / 2 + 1 ) / 2 + i];
 			for( int j = varNum / 2 - 1; j > i; --j )
 			{
 				solInfoMap[_x].C[i] -= solInfoMap[_x + 1].o[j * ( j + 1 ) / 2 + i] * solInfoMap[_x].C[j];
@@ -506,7 +476,7 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 	{
 		for( int i = 0; i < varNum; ++i )
 		{
-			(*_mesh)[_x].Nk1[i] = z5[_x][i] * solInfoMap[_x].o[varNum / 2 * ( varNum / 2 + 1 ) / 2 + varNum / 2];
+			(*_mesh)[_x].Nk1[i] = z5[_x][i];
 			for( int vNum = 0; vNum < varNum / 2; ++vNum )
 			{
 				(*_mesh)[_x].Nk1[i] += solInfoMap[_x].C[vNum] * zi[_x][vNum][i];			//FIXME lags may happen here

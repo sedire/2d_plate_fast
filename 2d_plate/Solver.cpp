@@ -980,15 +980,6 @@ void Solver::walkthrough( int mode )
 
 			//rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 1, orthoBuilder->z5[_x], &( orthoBuilder->z5[_x + 1] ) );
 			tBeg = time( 0 );
-			if( _x == 0 )
-			{
-				orthoBuilder->solInfoMap[_x].o[varNum / 2 * ( varNum / 2 + 1 ) / 2 + varNum / 2] = 1.0;
-			}
-			for( int i = 0; i < varNum; ++i )
-			{
-				vect_f[i] /= orthoBuilder->solInfoMap[_x].o[varNum / 2 * ( varNum / 2 + 1 ) / 2 + varNum / 2];
-			}
-
 			rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 1, orthoBuilder->z5[_x], decompVect[varNum / 2] );
 			rgkT += time( 0 ) - tBeg;
 			tBeg = time( 0 );
