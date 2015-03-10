@@ -109,9 +109,13 @@ private:
 	//vector<PL_NUM> newmark_B;
 	PL_NUM matr_A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES];
 	PL_NUM vect_f[EQ_NUM * NUMBER_OF_LINES];		//vector f on right part of nonlinear system at certain t and x
+	PL_NUM matr_A_prev[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES];	//to look back in Rgk
+	PL_NUM vect_f_prev[EQ_NUM * NUMBER_OF_LINES];		//vector f on right part of nonlinear system at certain t and x, to look back in Rgk
+
 	PL_NUM newmark_A[EQ_NUM * NUMBER_OF_LINES];
 	PL_NUM newmark_B[EQ_NUM * NUMBER_OF_LINES];
 	PL_NUM decompVect[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES];
+	PL_NUM decompVectOrtho[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES];
 
 	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES, RowMajor> Ma;
 

@@ -63,6 +63,8 @@ void OrthoBuilder::setParams()
 		std::abort();
 	}
 
+	orthoDone.resize( Km - 1, 0 );
+
 	for( int i = 0; i < NODES_ON_Y; ++i )
 	{
 		for( int j = 0; j < EQ_NUM * NUMBER_OF_LINES; ++j )
@@ -75,6 +77,11 @@ void OrthoBuilder::setParams()
 void OrthoBuilder::setInitVects( const vector<PL_NUM>& N1, const vector<PL_NUM>& N2, const vector<PL_NUM>& N3, const vector<PL_NUM>& N4, const vector<PL_NUM>& N5 )
 {
 	cout << "Warning! I am void!\n";
+}
+
+void setOrthoDoneInfo( int y )
+{
+	orthoDone[y] = true;
 }
 
 void OrthoBuilder::LUsolve( vector<vector<PL_NUM>>& AA, vector<PL_NUM>& ff, vector<PL_NUM>* xx )

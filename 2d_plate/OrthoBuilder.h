@@ -44,6 +44,8 @@ public:
 	virtual void buildSolution( vector<VarVect>* _mesh ) {};
 	virtual void flushO( int x );
 	virtual void setInitVects( const vector<PL_NUM>& N1, const vector<PL_NUM>& N2, const vector<PL_NUM>& N3, const vector<PL_NUM>& N4, const vector<PL_NUM>& N5 );
+	virtual void setOrthoDoneInfo( int y );
+
 	void LUsolve( vector<vector<PL_NUM>>& AA, vector<PL_NUM>& ff, vector<PL_NUM>* xx );
 	//PL_NUM zi[NODES_ON_Y][EQ_NUM * NUMBER_OF_LINES / 2][EQ_NUM * NUMBER_OF_LINES];
 	vector<vector<vector<PL_NUM> > > zi;
@@ -53,6 +55,7 @@ protected:
 	const int Km;
 	vector<vector<PL_NUM>> LL;
 	vector<vector<PL_NUM>> UU;
+	vector<bool> orthoDone;
 	PL_NUM omega2[EQ_NUM * NUMBER_OF_LINES];
 	PL_NUM omegaPar[NUM_OF_THREADS];
 private:

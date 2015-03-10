@@ -14,7 +14,7 @@ Solver::Solver():
 	B12( nu21 * E2 * E1 / ( E1 - nu21 * nu21 * E2 ) ),
 	B66( G23 ),
 
-	By0( 1.0 ),
+	By0( 0.0 ),
 	By1( 2.0 * By0 ),
 	By2( 0.0 ),
 
@@ -28,8 +28,8 @@ Solver::Solver():
 	sigma_y_mu( sigma_y * mu ),
 	sigma_z( sigma_y ),
 
-	J0( 1000000.0 ),
-	//J0( 0.0 ),
+	//J0( 1000000.0 ),
+	J0( 0.0 ),
 	omega( 0.0 ),
 	tauC( 0.01 ),
 	tauP( 0.01 ),
@@ -151,8 +151,10 @@ void Solver::setTask()
 		for( int j = 0; j < nx * eq_num; ++j )
 		{
 			matr_A[i][j] = 0.0;
+			matr_A_prev[i][j] = 0.0;
 		}
 		vect_f[i] = 0.0;
+		vect_f_prev[i] = 0.0;
 	}
 
 	//newmark_A.resize( varNum, 0.0 );
@@ -483,7 +485,7 @@ void Solver::calc_system( int _x )
              +(h*h*h/12.0*(B11-B12*B12/B22)/dx/dx/dx/dx)/al;
 		
 		//( h * h * h / 3.0 * ( 2.0 * B66 * B12 / B22 ) / dx / dx / dx / dx ) / al
-			//	 + ( h * h * h / 3.0 * ( -B11 + B12 * B12 / B22 ) / dx / dx / dx / dx ) / al;			//CAUTION: ANOTHER THING IN AMIR'S VERSION
+				 //+ ( h * h * h / 3.0 * ( -B11 + B12 * B12 / B22 ) / dx / dx / dx / dx ) / al;			//CAUTION: ANOTHER THING IN AMIR'S VERSION
 	matr_A[7 + i * eq_num][4 + ( jj - 1 ) * eq_num] = 
 				-(h*h*h/12.0*(2.0*B66*B12/B22)/dx/dx/dx/dx)/al ;
 		
@@ -919,14 +921,14 @@ void Solver::calc_system( int _x )
 
 void Solver::walkthrough( int mode )
 {
-	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2> orthoCheck1;
+	//Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2> orthoCheck1;
 
 	time_t tBeg;
 	time_t rgkT = 0;
 	time_t orthoT = 0;
 
-	//vector<PL_NUM> baseVect;
-	//baseVect.resize( varNum, 0.0 );
+	calc_Newmark_AB( 0, mode );
+	calc_system( 0 );
 
 	//integrate and orthonorm
 	int _x = 0;
@@ -936,10 +938,20 @@ void Solver::walkthrough( int mode )
 	{
 		if( omp_get_thread_num() == 0 )
 		{
-			calc_Newmark_AB( _x, mode );
-			calc_system( _x );
+			for( int i = 0; i < EQ_NUM * NUMBER_OF_LINES; ++i )
+			{
+				for( int j = 0; j < EQ_NUM * NUMBER_OF_LINES; ++j )
+				{
+					matr_A_prev[i][j] = matr_A[i][j];
+				}
+				vect_f_prev[i] = vect_f[i];
+			}
+
+			calc_Newmark_AB( _x + 1, mode );
+			calc_system( _x + 1 );
 			tBeg = time( 0 );
 		}
+		#pragma omp barrier
 
 		//int begIt = omp_get_thread_num() * ( varNum / 2 / NUM_OF_THREADS + 1 );
 		//int endIt = begIt + varNum / 2 / NUM_OF_THREADS + 1;
@@ -951,40 +963,33 @@ void Solver::walkthrough( int mode )
 		#pragma omp for
 		for( int vNum = 0; vNum < varNum / 2; ++vNum )
 		{
-			//rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 0, orthoBuilder->zi[_x][vNum], &( orthoBuilder->zi[_x + 1][vNum] ) );
-			rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 0, orthoBuilder->zi[_x][vNum], decompVect[vNum] );
+			//rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 0, orthoBuilder->zi[_x][vNum], decompVect[vNum] );
+			rungeKutta->calc3( matr_A_prev, matr_A, vect_f_prev, vect_f, dy, omp_get_thread_num(), 0, orthoBuilder->zi[_x][vNum], decompVect[vNum] );
 		}
 		#pragma omp barrier
 
 		if( omp_get_thread_num() == 0 )
 		{
 			rgkT += time( 0 ) - tBeg;
+			tBeg = time( 0 );
+			rungeKutta->calc3( matr_A_prev, matr_A, vect_f_prev, vect_f, dy, omp_get_thread_num(), 1, orthoBuilder->z5[_x], decompVect[varNum / 2] );
+			rgkT += time( 0 ) - tBeg;
+
+
+			for( int i = 0; i < EQ_NUM * NUMBER_OF_LINES / 2 + 1; ++i )
+			{
+				for( int j = 0; j < EQ_NUM * NUMBER_OF_LINES; ++j )
+				{
+					decompVectOrtho[i][j] = decompVect[i][j];
+				}
+			}
+
 			for( int vNum = 0; vNum < varNum / 2; ++vNum )
 			{
 				tBeg = time( 0 );
 				orthoBuilder->orthonorm( vNum, _x, decompVect[vNum] );
 				orthoT += time( 0 ) - tBeg;
 			}
-
-			//ortho check
-			//for( int i = 0; i < varNum / 2; ++i )
-			//{
-			//	for( int j = 0; j < varNum; ++j )
-			//	{
-			//		orthoCheck1( j, i ) = orthoBuilder->zi[_x + 1][i][j];
-			//	}
-			//}
-			//PL_NUM basisNorm = ( orthoCheck1.transpose() * orthoCheck1 - Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES / 2, EQ_NUM * NUMBER_OF_LINES / 2>::Identity() ).norm();
-			//if( basisNorm > 1e-17 )
-			//{
-			//	//cout << " ---- ortho norm is " << basisNorm << "  ; y = " << _x << endl;
-			//}
-			//ortho check done
-
-			//rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 1, orthoBuilder->z5[_x], &( orthoBuilder->z5[_x + 1] ) );
-			tBeg = time( 0 );
-			rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 1, orthoBuilder->z5[_x], decompVect[varNum / 2] );
-			rgkT += time( 0 ) - tBeg;
 			tBeg = time( 0 );
 			orthoBuilder->orthonorm( varNum / 2, _x, decompVect[varNum / 2] );
 			orthoT += time( 0 ) - tBeg;
