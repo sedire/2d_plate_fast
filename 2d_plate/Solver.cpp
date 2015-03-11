@@ -2,8 +2,8 @@
 
 Solver::Solver():
 	E1( 102970000000 ),
-	E2( 7550000000 ),
-	//E2( 102970000000 ),
+	//E2( 7550000000 ),
+	E2( 102970000000 ),
 	nu21( 0.3 ),
 	nu23( 0.3 ),
 	rho( 1594 ),
@@ -41,7 +41,7 @@ Solver::Solver():
 	eps_x_0( eps_x - eps_0 ),
 
 	hp( 0.0021 ),
-	ap( 0.1524 * 2.0 ),		//len in x-dir
+	ap( 0.1524 * 1.0 ),		//len in x-dir
 	bp( 0.1524 ),		//width in y-dir
 
 	Km( NODES_ON_Y ),
@@ -589,16 +589,16 @@ void Solver::calc_system( int _x )
 	for( int i = 1; i < nx - 1; ++i )
 	{
 		Pimp = 0.0;
-		//Pimp = p0 * sin( 100.0 * _MMM_PI * ( cur_t ) );
-		PL_NUM rad2 = ( ( Km - 1 ) / 2 - _x ) * dy * ( ( Km - 1 ) / 2 - _x ) * dy + ( ( nx - 1 ) / 2 - i ) * dx * ( ( nx - 1 ) / 2 - i ) * dx;
-		if( rad2 < Rad2 && cur_t < tauP )
-		{
-			Pimp = p0 * sqrt( 1 - rad2 / Rad2 ) * sin( _MMM_PI * ( cur_t ) / tauP );
-		}
-		else if( _x == ( Km - 1 ) / 2 )
-		{
-			//cout << " == line " << i << " is out\n";
-		}
+		Pimp = p0 * sin( 100.0 * _MMM_PI * ( cur_t ) );
+		//PL_NUM rad2 = ( ( Km - 1 ) / 2 - _x ) * dy * ( ( Km - 1 ) / 2 - _x ) * dy + ( ( nx - 1 ) / 2 - i ) * dx * ( ( nx - 1 ) / 2 - i ) * dx;
+		//if( rad2 < Rad2 && cur_t < tauP )
+		//{
+		//	Pimp = p0 * sqrt( 1 - rad2 / Rad2 ) * sin( _MMM_PI * ( cur_t ) / tauP );
+		//}
+		//else if( _x == ( Km - 1 ) / 2 )
+		//{
+		//	//cout << " == line " << i << " is out\n";
+		//}
 
 		r = i + 1;
 		rr = i + 2;
@@ -930,6 +930,8 @@ void Solver::walkthrough( int mode )
 	calc_Newmark_AB( 0, mode );
 	calc_system( 0 );
 
+	orthoBuilder->resetOrthoDoneInfo();
+
 	//integrate and orthonorm
 	int _x = 0;
 #pragma omp parallel //firstprivate( baseVect )
@@ -987,12 +989,31 @@ void Solver::walkthrough( int mode )
 			for( int vNum = 0; vNum < varNum / 2; ++vNum )
 			{
 				tBeg = time( 0 );
-				orthoBuilder->orthonorm( vNum, _x, decompVect[vNum] );
+				orthoBuilder->orthonorm( vNum, _x, decompVectOrtho[vNum] );
 				orthoT += time( 0 ) - tBeg;
 			}
 			tBeg = time( 0 );
-			orthoBuilder->orthonorm( varNum / 2, _x, decompVect[varNum / 2] );
+			orthoBuilder->orthonorm( varNum / 2, _x, decompVectOrtho[varNum / 2] );
 			orthoT += time( 0 ) - tBeg;
+
+			if( orthoBuilder->checkOrtho( _x, decompVectOrtho, decompVect ) == 1 )			
+			{
+				for( int i = 0; i < EQ_NUM * NUMBER_OF_LINES / 2 + 1; ++i )
+				{
+					for( int j = 0; j < EQ_NUM * NUMBER_OF_LINES; ++j )
+					{
+						decompVect[i][j] = decompVectOrtho[i][j];
+					}
+				}
+				orthoBuilder->setOrthoDoneInfo( _x );
+				cout << " --- at x = " << _x << " ortho is needed\n";
+			}
+			else
+			{
+				orthoBuilder->setNextSolVects( _x, decompVect );
+			}
+
+
 			++_x;
 		}
 		#pragma omp barrier

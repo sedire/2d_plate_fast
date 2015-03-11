@@ -39,9 +39,9 @@ int main()
 			solver->increaseTime();
 			cout << solver->getCurTime() << " -- step done\n";
 		}
-		solver->dump_whole_sol( 4 );
+		//solver->dump_whole_sol( 4 );
 		//solver->dump_check_sol();
-		//solver->dump_check_sol2D();
+		solver->dump_check_sol2D();
 	}
 	
 	delete( solver );

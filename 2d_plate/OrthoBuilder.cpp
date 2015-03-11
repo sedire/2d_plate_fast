@@ -79,9 +79,17 @@ void OrthoBuilder::setInitVects( const vector<PL_NUM>& N1, const vector<PL_NUM>&
 	cout << "Warning! I am void!\n";
 }
 
-void setOrthoDoneInfo( int y )
+void OrthoBuilder::setOrthoDoneInfo( int y )
 {
 	orthoDone[y] = true;
+}
+
+void OrthoBuilder::resetOrthoDoneInfo()
+{
+	for( int y = 0; y < orthoDone.size(); ++y )
+	{
+		orthoDone[y] = false;
+	}
 }
 
 void OrthoBuilder::LUsolve( vector<vector<PL_NUM>>& AA, vector<PL_NUM>& ff, vector<PL_NUM>* xx )
@@ -253,6 +261,71 @@ void OrthoBuilderGodunov::buildSolution( vector<VarVect>* _mesh )
 //		omegaPar[omp_get_thread_num()] = solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] * solInfoMap[n + 1].zi[baseV][begIt];
 //	}
 //}
+
+inline void OrthoBuilderGSh::setNextSolVects( int n, const PL_NUM decompVect[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] )
+{
+	for( int vNum = 0; vNum < EQ_NUM * NUMBER_OF_LINES / 2; ++vNum )
+	{
+		for( int j = 0; j < EQ_NUM * NUMBER_OF_LINES; ++j )
+		{
+			zi[n + 1][vNum][j] = decompVect[vNum][j];
+		}
+	}
+	for( int j = 0; j < EQ_NUM * NUMBER_OF_LINES; ++j )
+	{
+		z5[n + 1][j] = decompVect[EQ_NUM * NUMBER_OF_LINES / 2][j];
+	}
+}
+
+inline PL_NUM OrthoBuilder::getInfNorm( PL_NUM* vect, int vectSize )
+{
+	if( vect != 0 )
+	{
+		PL_NUM ret = fabs( vect[0] );
+		for( int i = 1; i < vectSize; ++i )
+		{
+			if( fabs( vect[i] ) > ret )
+			{
+				ret = fabs( vect[i] );
+			}
+		}
+		return ret;
+	}
+	else
+	{
+		return -1;
+	}
+}
+
+inline int OrthoBuilderGSh::checkOrtho( int n, 
+									PL_NUM vectSetOrtho[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES], 
+									PL_NUM vectSetOrig[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] )
+{
+	int ret = 0;
+	PL_NUM eps = ORTHONORM_CHECK_EPS;
+
+	//check for the main basis vectors
+	for( int vNum = 1; vNum < EQ_NUM * NUMBER_OF_LINES / 2; ++vNum )
+	{
+		if( getInfNorm( vectSetOrtho[vNum], EQ_NUM * NUMBER_OF_LINES ) * solInfoMap[n + 1].o[vNum * ( vNum + 1 ) / 2 + vNum] <
+			eps * getInfNorm( vectSetOrig[vNum], EQ_NUM * NUMBER_OF_LINES ) )
+		{
+			ret = 1;
+			break;
+		}
+	}
+
+	if( ret != 1 )	//check for the vector of particular solution
+	{
+		if( getInfNorm( vectSetOrtho[EQ_NUM * NUMBER_OF_LINES / 2], EQ_NUM * NUMBER_OF_LINES ) <
+			eps * getInfNorm( vectSetOrig[EQ_NUM * NUMBER_OF_LINES / 2], EQ_NUM * NUMBER_OF_LINES ) )
+		{
+			ret = 1;
+		}
+	}
+
+	return ret;
+}
 
 void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are from 0 to varNum / 2 (including), varNum = 10 * nx. 10 is the number of basic variables, nx is the number of lines
 {
