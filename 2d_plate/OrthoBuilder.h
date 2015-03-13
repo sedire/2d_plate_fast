@@ -27,7 +27,7 @@ public:
 	//vector<vector<PL_NUM>> zi;		//basis vectors of the solution, orthonormalized
 	//vector<PL_NUM> z5;
 
-	vector<PL_NUM> C;
+	//vector<PL_NUM> C;
 
 	void setup( int _varNum );
 	void flushO();
@@ -64,6 +64,8 @@ protected:
 	vector<bool> orthoDone;
 	PL_NUM omega2[EQ_NUM * NUMBER_OF_LINES];
 	PL_NUM omegaPar[NUM_OF_THREADS];
+	PL_NUM Cx[EQ_NUM * NUMBER_OF_LINES / 2];
+	PL_NUM Cx1[EQ_NUM * NUMBER_OF_LINES / 2];
 private:
 	OrthoBuilder();
 };

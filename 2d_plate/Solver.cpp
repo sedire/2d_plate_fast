@@ -2,8 +2,8 @@
 
 Solver::Solver():
 	E1( 102970000000 ),
-	//E2( 7550000000 ),
-	E2( 102970000000 ),
+	E2( 7550000000 ),
+	//E2( 102970000000 ),
 	nu21( 0.3 ),
 	nu23( 0.3 ),
 	rho( 1594 ),
@@ -14,7 +14,7 @@ Solver::Solver():
 	B12( nu21 * E2 * E1 / ( E1 - nu21 * nu21 * E2 ) ),
 	B66( G23 ),
 
-	By0( 0.0 ),
+	By0( 1.0 ),
 	By1( 2.0 * By0 ),
 	By2( 0.0 ),
 
@@ -28,8 +28,8 @@ Solver::Solver():
 	sigma_y_mu( sigma_y * mu ),
 	sigma_z( sigma_y ),
 
-	//J0( 1000000.0 ),
-	J0( 0.0 ),
+	J0( 1000000.0 ),
+	//J0( 0.0 ),
 	omega( 0.0 ),
 	tauC( 0.01 ),
 	tauP( 0.01 ),
@@ -41,7 +41,7 @@ Solver::Solver():
 	eps_x_0( eps_x - eps_0 ),
 
 	hp( 0.0021 ),
-	ap( 0.1524 * 1.0 ),		//len in x-dir
+	ap( 0.1524 * 2.0 ),		//len in x-dir
 	bp( 0.1524 ),		//width in y-dir
 
 	Km( NODES_ON_Y ),
@@ -589,16 +589,16 @@ void Solver::calc_system( int _x )
 	for( int i = 1; i < nx - 1; ++i )
 	{
 		Pimp = 0.0;
-		Pimp = p0 * sin( 100.0 * _MMM_PI * ( cur_t ) );
-		//PL_NUM rad2 = ( ( Km - 1 ) / 2 - _x ) * dy * ( ( Km - 1 ) / 2 - _x ) * dy + ( ( nx - 1 ) / 2 - i ) * dx * ( ( nx - 1 ) / 2 - i ) * dx;
-		//if( rad2 < Rad2 && cur_t < tauP )
-		//{
-		//	Pimp = p0 * sqrt( 1 - rad2 / Rad2 ) * sin( _MMM_PI * ( cur_t ) / tauP );
-		//}
-		//else if( _x == ( Km - 1 ) / 2 )
-		//{
-		//	//cout << " == line " << i << " is out\n";
-		//}
+		//Pimp = p0 * sin( 100.0 * _MMM_PI * ( cur_t ) );
+		PL_NUM rad2 = ( ( Km - 1 ) / 2 - _x ) * dy * ( ( Km - 1 ) / 2 - _x ) * dy + ( ( nx - 1 ) / 2 - i ) * dx * ( ( nx - 1 ) / 2 - i ) * dx;
+		if( rad2 < Rad2 && cur_t < tauP )
+		{
+			Pimp = p0 * sqrt( 1 - rad2 / Rad2 ) * sin( _MMM_PI * ( cur_t ) / tauP );
+		}
+		else if( _x == ( Km - 1 ) / 2 )
+		{
+			//cout << " == line " << i << " is out\n";
+		}
 
 		r = i + 1;
 		rr = i + 2;
@@ -932,8 +932,12 @@ void Solver::walkthrough( int mode )
 
 	orthoBuilder->resetOrthoDoneInfo();
 
+	int active = 1;		//how many nodes in a row we have, on which orthonormalization was not performed. 
+						//We need this to know whem we can switch to ABM method
+
 	//integrate and orthonorm
 	int _x = 0;
+	int PhiInd = 0;
 #pragma omp parallel //firstprivate( baseVect )
 	{
 	for( _x; _x < Km - 1; )
@@ -954,28 +958,147 @@ void Solver::walkthrough( int mode )
 			tBeg = time( 0 );
 		}
 		#pragma omp barrier
-
-		//int begIt = omp_get_thread_num() * ( varNum / 2 / NUM_OF_THREADS + 1 );
-		//int endIt = begIt + varNum / 2 / NUM_OF_THREADS + 1;
-		//if( omp_get_thread_num() == NUM_OF_THREADS - 1 )
-		//{
-		//	endIt = varNum / 2;
-		//}
-
-		#pragma omp for
+		
+		#pragma omp for		//calculating new Phi's for ABM method
 		for( int vNum = 0; vNum < varNum / 2; ++vNum )
 		{
-			//rungeKutta->calc( matr_A, vect_f, dy, omp_get_thread_num(), 0, orthoBuilder->zi[_x][vNum], decompVect[vNum] );
-			rungeKutta->calc3( matr_A_prev, matr_A, vect_f_prev, vect_f, dy, omp_get_thread_num(), 0, orthoBuilder->zi[_x][vNum], decompVect[vNum] );
+			for( int i = 0; i < varNum; ++i )
+			{
+				PL_NUM sum = 0.0;
+				for( int j = 0; j < varNum; ++j )
+				{
+					sum += matr_A_prev[i][j] * orthoBuilder->zi[_x][vNum][j];
+				}
+				tempPhi[vNum][i] = sum;
+			}
+		}
+		#pragma omp barrier
+		if( omp_get_thread_num() == 0 )
+		{
+			for( int i = 0; i < varNum; ++i )
+			{
+				PL_NUM sum = 0.0;
+				for( int j = 0; j < varNum; ++j )
+				{
+					sum += matr_A_prev[i][j] * orthoBuilder->z5[_x][j];
+				}
+				tempPhi[varNum / 2][i] = sum + vect_f_prev[i];
+			}
+
+
+			PhiInd = 0;
+			if( active <= ABM_STAGE_NUM )
+			{
+				PhiInd = active - 1;
+			}
+			else
+			{
+				for( int stage = 0; stage < ABM_STAGE_NUM - 1; ++stage )
+				{
+					for( int vNum = 0; vNum < varNum / 2 + 1; ++vNum )
+					{
+						for( int j = 0; j < varNum; ++j )
+						{
+							Phi[stage][vNum][j] = Phi[stage + 1][vNum][j];
+						}
+					}
+				}
+				PhiInd = ABM_STAGE_NUM - 1;
+			}
+		}
+		#pragma omp barrier
+		#pragma omp for
+		for( int vNum = 0; vNum < varNum / 2 + 1; ++vNum )
+		{
+			for( int i = 0; i < varNum; ++i )
+			{
+				Phi[PhiInd][vNum][i] = tempPhi[vNum][i];
+			}
+		}
+		#pragma omp barrier
+
+		#pragma omp for
+		for( int vNum = 0; vNum < varNum / 2 + 1; ++vNum )
+		{
+			if( active >= ABM_STAGE_NUM )
+			{
+				//use ABM method
+				//predictor
+				if( vNum < varNum / 2 )
+				{
+					for( int i = 0; i < varNum; ++i )
+					{
+						/*decompVect[vNum][i]*/tempPhi[vNum][i] = orthoBuilder->zi[_x][vNum][i]  + dy / 24.0l
+													* ( 55.0l * Phi[3][vNum][i] - 59.0l * Phi[2][vNum][i] + 37.0l * Phi[1][vNum][i] - 9.0l * Phi[0][vNum][i] );
+					}
+				}
+				else
+				{
+					for( int i = 0; i < varNum; ++i )
+					{
+						/*decompVect[vNum][i]*/tempPhi[vNum][i] = orthoBuilder->z5[_x][i]  + dy / 24.0l
+													* ( 55.0l * Phi[3][vNum][i] - 59.0l * Phi[2][vNum][i] + 37.0l * Phi[1][vNum][i] - 9.0l * Phi[0][vNum][i] );
+					}
+				}
+				//corrector
+				for( int i = 0; i < varNum; ++i )
+				{
+					tempPhi2[vNum][i] = 0.0;
+					for( int j = 0; j < varNum; ++j )
+					{
+						tempPhi2[vNum][i] += matr_A[i][j] * tempPhi[vNum][j];
+					}
+					if( vNum == varNum / 2 )
+					{
+						tempPhi2[vNum][i] += vect_f[i];
+					}
+				}
+				if( vNum < varNum / 2 )
+				{
+					for( int i = 0; i < varNum; ++i )
+					{
+						decompVect[vNum][i] = orthoBuilder->zi[_x][vNum][i]  + dy / 24.0l
+													* ( 9.0l * tempPhi2[vNum][i] + 19.0l * Phi[3][vNum][i] - 5.0l * Phi[2][vNum][i] + Phi[1][vNum][i] );
+					}
+				}
+				else
+				{
+					for( int i = 0; i < varNum; ++i )
+					{
+						decompVect[vNum][i] = orthoBuilder->z5[_x][i]  + dy / 24.0l
+													* ( 9.0l * tempPhi2[vNum][i] + 19.0l * Phi[3][vNum][i] - 5.0l * Phi[2][vNum][i] + Phi[1][vNum][i] );
+					}
+				}
+			}
+			else
+			{
+				if( vNum < varNum / 2 )		//for general basis solutions
+				{	
+					rungeKutta->calc3( matr_A_prev, matr_A, vect_f_prev, vect_f, dy, omp_get_thread_num(), 0, orthoBuilder->zi[_x][vNum], decompVect[vNum] );
+				}
+				else	//for particular solution
+				{
+					rungeKutta->calc3( matr_A_prev, matr_A, vect_f_prev, vect_f, dy, omp_get_thread_num(), 1, orthoBuilder->z5[_x], decompVect[varNum / 2] );
+				}
+			}
 		}
 		#pragma omp barrier
 
 		if( omp_get_thread_num() == 0 )
 		{
-			rgkT += time( 0 ) - tBeg;
-			tBeg = time( 0 );
-			rungeKutta->calc3( matr_A_prev, matr_A, vect_f_prev, vect_f, dy, omp_get_thread_num(), 1, orthoBuilder->z5[_x], decompVect[varNum / 2] );
-			rgkT += time( 0 ) - tBeg;
+			//rgkT += time( 0 ) - tBeg;
+			//tBeg = time( 0 );
+			//if( active >= 4 )
+			//{
+			//	//use ABM method
+			//	//predictor:
+	
+			//}
+			//else
+			//{
+			//	rungeKutta->calc3( matr_A_prev, matr_A, vect_f_prev, vect_f, dy, omp_get_thread_num(), 1, orthoBuilder->z5[_x], decompVect[varNum / 2] );
+			//}
+			//rgkT += time( 0 ) - tBeg;
 
 
 			for( int i = 0; i < EQ_NUM * NUMBER_OF_LINES / 2 + 1; ++i )
@@ -986,18 +1109,19 @@ void Solver::walkthrough( int mode )
 				}
 			}
 
-			for( int vNum = 0; vNum < varNum / 2; ++vNum )
+			for( int vNum = 0; vNum < varNum / 2 + 1; ++vNum )
 			{
 				tBeg = time( 0 );
 				orthoBuilder->orthonorm( vNum, _x, decompVectOrtho[vNum] );
 				orthoT += time( 0 ) - tBeg;
 			}
-			tBeg = time( 0 );
-			orthoBuilder->orthonorm( varNum / 2, _x, decompVectOrtho[varNum / 2] );
-			orthoT += time( 0 ) - tBeg;
+			//tBeg = time( 0 );
+			//orthoBuilder->orthonorm( varNum / 2, _x, decompVectOrtho[varNum / 2] );
+			//orthoT += time( 0 ) - tBeg;
 
 			if( orthoBuilder->checkOrtho( _x, decompVectOrtho, decompVect ) == 1 )			
 			{
+				active = 1;		//if orthonormalization has been performed, we have to restart the ABM method
 				for( int i = 0; i < EQ_NUM * NUMBER_OF_LINES / 2 + 1; ++i )
 				{
 					for( int j = 0; j < EQ_NUM * NUMBER_OF_LINES; ++j )
@@ -1010,9 +1134,9 @@ void Solver::walkthrough( int mode )
 			}
 			else
 			{
+				++active;	//if no orthonormalization has been done, we have one more solution that can be used in ABM method
 				orthoBuilder->setNextSolVects( _x, decompVect );
 			}
-
 
 			++_x;
 		}

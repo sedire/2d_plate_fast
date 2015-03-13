@@ -8,7 +8,7 @@ void SolInfo::setup( int _varNum )
 	o.resize( ( _varNum / 2 + 1 ) * ( _varNum / 2 + 2 ) / 2, 0.0 );		//the matrix is diagonal. such size is to store less  TODO: maybe I can make the size smaller by 1
 	//zi.resize( _varNum / 2, vector< PL_NUM>( _varNum, 0.0 ) );
 	//z5.resize( _varNum, 0.0 );
-	C.resize( _varNum / 2, 0.0 );				//FIXME may be another size here
+	//C.resize( _varNum / 2, 0.0 );				//FIXME may be another size here
 }
 
 void SolInfo::flushO()
@@ -531,31 +531,55 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 	//the right-hand side:
 	for( int i = 0; i < varNum / 2; ++i )
 	{
-		solInfoMap[Km - 1].C[i] = x1( i );
+		Cx1[i] = x1( i );
 	}
+	//calc the soln at the rhs
+	for( int i = 0; i < varNum; ++i )
+	{
+		(*_mesh)[Km - 1].Nk1[i] = 0.0;
+		for( int vNum = 0; vNum < varNum / 2; ++vNum )
+		{
+			(*_mesh)[Km - 1].Nk1[i] += Cx1[vNum] * zi[Km - 1][vNum][i];			//FIXME lags may happen here
+		}
+		/*(*_mesh)[_x].Nk1[i] += solInfoMap[_x].z5[i];*/
+		(*_mesh)[Km - 1].Nk1[i] += z5[Km - 1][i];
+	}
+
 	//all the other points:
 	for( int _x = Km - 2; _x >= 0; --_x )
 	{
-		for( int i = varNum / 2 - 1; i >= 0; --i )
+		if( orthoDone[_x] == true )
 		{
-			solInfoMap[_x].C[i] = solInfoMap[_x + 1].C[i] - solInfoMap[_x + 1].o[varNum / 2 * ( varNum / 2 + 1 ) / 2 + i];
-			for( int j = varNum / 2 - 1; j > i; --j )
+			for( int i = varNum / 2 - 1; i >= 0; --i )
 			{
-				solInfoMap[_x].C[i] -= solInfoMap[_x + 1].o[j * ( j + 1 ) / 2 + i] * solInfoMap[_x].C[j];
+				Cx[i] = Cx1[i] - solInfoMap[_x + 1].o[varNum / 2 * ( varNum / 2 + 1 ) / 2 + i];
+				for( int j = varNum / 2 - 1; j > i; --j )
+				{
+					Cx[i] -= solInfoMap[_x + 1].o[j * ( j + 1 ) / 2 + i] * Cx[j];
+				}
+				Cx[i] /= solInfoMap[_x + 1].o[i * ( i + 1 ) / 2 + i];
 			}
-			solInfoMap[_x].C[i] /= solInfoMap[_x + 1].o[i * ( i + 1 ) / 2 + i];
+			for( int i = 0; i < varNum / 2; ++i )
+			{
+				Cx1[i] = Cx[i];
+			}
 		}
-	}
+		else
+		{
+			for( int i = 0; i < varNum / 2; ++i )
+			{
+				Cx[i] = Cx1[i];
+			}
+			//... and there is no need to update the coefficients for the next interval
+		}
 
-	//now using the coefficients we write down the solution
-	for( int _x = 0; _x < Km; ++_x )
-	{
+		//now using the coefficients we write down the solution for current x
 		for( int i = 0; i < varNum; ++i )
 		{
 			(*_mesh)[_x].Nk1[i] = 0.0;
 			for( int vNum = 0; vNum < varNum / 2; ++vNum )
 			{
-				(*_mesh)[_x].Nk1[i] += solInfoMap[_x].C[vNum] * zi[_x][vNum][i];			//FIXME lags may happen here
+				(*_mesh)[_x].Nk1[i] += Cx[vNum] * zi[_x][vNum][i];			//FIXME lags may happen here
 			}
 			/*(*_mesh)[_x].Nk1[i] += solInfoMap[_x].z5[i];*/
 			(*_mesh)[_x].Nk1[i] += z5[_x][i];
