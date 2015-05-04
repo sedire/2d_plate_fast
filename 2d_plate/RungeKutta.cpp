@@ -148,12 +148,13 @@ void RungeKutta::calc( PL_NUM A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LIN
 	//this is just rolled out RgK
 	PL_NUM tmpProd = 0.0;
 	for( int i = 0; i < sizeOfF; ++i ) {				//f1 = dx * Fhi( x )
-		for( int j = lb[i]; j < rb[i]; j = j + 5 ) {
+		for( int j = lb[i]; j < rb[i]; j = j + 6 ) {
 			f1[thrNum][i] += A[i][j] * (x)[j];
 			f1[thrNum][i] += A[i][j + 1] * (x)[j + 1];
 			f1[thrNum][i] += A[i][j + 2] * (x)[j + 2];
 			f1[thrNum][i] += A[i][j + 3] * (x)[j + 3];
 			f1[thrNum][i] += A[i][j + 4] * (x)[j + 4];
+			f1[thrNum][i] += A[i][j + 5] * (x)[j + 5];
 		}
 		f1[thrNum][i] *= dx;
 		f2[thrNum][i] = f1[thrNum][i];
@@ -171,12 +172,13 @@ void RungeKutta::calc( PL_NUM A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LIN
 	}
 	for( int i = 0; i < sizeOfF; ++i ) {				//f2 = dx * Fhi( x + d21 * f1 )
 		tmpProd = 0.0;
-		for( int j = lb[i]; j < rb[i]; j = j + 5 ) {
+		for( int j = lb[i]; j < rb[i]; j = j + 6 ) {
 			tmpProd += A[i][j] * f1[thrNum][j];
 			tmpProd += A[i][j + 1] * f1[thrNum][j + 1];
 			tmpProd += A[i][j + 2] * f1[thrNum][j + 2];
 			tmpProd += A[i][j + 3] * f1[thrNum][j + 3];
 			tmpProd += A[i][j + 4] * f1[thrNum][j + 4];
+			tmpProd += A[i][j + 5] * f1[thrNum][j + 5];
 		}
 		f2[thrNum][i] += dx * rgk_d21 * tmpProd;
 		f3[thrNum][i] += dx * rgk_d31 * tmpProd;
@@ -184,24 +186,26 @@ void RungeKutta::calc( PL_NUM A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LIN
 	}
 	for( int i = 0; i < sizeOfF; ++i ) {				//f3 = dx * Fhi( x + d31 * f1 + d32 * f2 )
 		tmpProd = 0.0;
-		for( int j = lb[i]; j < rb[i]; j = j + 5 ) {
+		for( int j = lb[i]; j < rb[i]; j = j + 6 ) {
 			tmpProd += A[i][j] * f2[thrNum][j];
 			tmpProd += A[i][j + 1] * f2[thrNum][j + 1];
 			tmpProd += A[i][j + 2] * f2[thrNum][j + 2];
 			tmpProd += A[i][j + 3] * f2[thrNum][j + 3];
 			tmpProd += A[i][j + 4] * f2[thrNum][j + 4];
+			tmpProd += A[i][j + 5] * f2[thrNum][j + 5];
 		}
 		f3[thrNum][i] += dx * rgk_d32 * tmpProd;
 		f4[thrNum][i] += dx * rgk_d42 * tmpProd;
 	}
 	for( int i = 0; i < sizeOfF; ++i ) {				//f2 = dx * Fhi( x + d41 * f1 + d42 * f2 + d43 * f3 )
 		tmpProd = 0.0;
-		for( int j = lb[i]; j < rb[i]; j = j + 5 ) {
+		for( int j = lb[i]; j < rb[i]; j = j + 6 ) {
 			tmpProd += A[i][j] * f3[thrNum][j];
 			tmpProd += A[i][j + 1] * f3[thrNum][j + 1];
 			tmpProd += A[i][j + 2] * f3[thrNum][j + 2];
 			tmpProd += A[i][j + 3] * f3[thrNum][j + 3];
 			tmpProd += A[i][j + 4] * f3[thrNum][j + 4];
+			tmpProd += A[i][j + 5] * f3[thrNum][j + 5];
 		}
 		f4[thrNum][i] += dx * rgk_d43 * tmpProd;
 	}
@@ -245,12 +249,13 @@ void RungeKutta::calc3( PL_NUM A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LI
 	//this is just rolled out RgK
 	PL_NUM tmpProd = 0.0;
 	for( int i = 0; i < sizeOfF; ++i ) {				//f1 = dx * Fhi( y, x )
-		for( int j = lb[i]; j < rb[i]; j = j + 5 ) {
+		for( int j = lb[i]; j < rb[i]; j = j + 6 ) {
 			f1[thrNum][i] += A[i][j] * (x)[j];
 			f1[thrNum][i] += A[i][j + 1] * (x)[j + 1];
 			f1[thrNum][i] += A[i][j + 2] * (x)[j + 2];
 			f1[thrNum][i] += A[i][j + 3] * (x)[j + 3];
 			f1[thrNum][i] += A[i][j + 4] * (x)[j + 4];
+			f1[thrNum][i] += A[i][j + 5] * (x)[j + 5];
 		}
 		f1[thrNum][i] *= dx;
 		f2[thrNum][i] = f1[thrNum][i];
@@ -266,35 +271,38 @@ void RungeKutta::calc3( PL_NUM A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LI
 	}
 	for( int i = 0; i < sizeOfF; ++i ) {				//f2 = dx * Fhi( y, x + d21 * f1 )
 		tmpProd = 0.0;
-		for( int j = lb[i]; j < rb[i]; j = j + 5 ) {
+		for( int j = lb[i]; j < rb[i]; j = j + 6 ) {
 			tmpProd += A[i][j] * f1[thrNum][j];
 			tmpProd += A[i][j + 1] * f1[thrNum][j + 1];
 			tmpProd += A[i][j + 2] * f1[thrNum][j + 2];
 			tmpProd += A[i][j + 3] * f1[thrNum][j + 3];
 			tmpProd += A[i][j + 4] * f1[thrNum][j + 4];
+			tmpProd += A[i][j + 5] * f1[thrNum][j + 5];
 		}
 		f2[thrNum][i] += dx * rgk_d21 * tmpProd;
 		f3[thrNum][i] += dx * rgk_d31 * tmpProd;
 	}
 	for( int i = 0; i < sizeOfF; ++i ) {				//f3 = dx * Fhi( y, x + d31 * f1 + d32 * f2 )
 		tmpProd = 0.0;
-		for( int j = lb[i]; j < rb[i]; j = j + 5 ) {
+		for( int j = lb[i]; j < rb[i]; j = j + 6 ) {
 			tmpProd += A[i][j] * f2[thrNum][j];
 			tmpProd += A[i][j + 1] * f2[thrNum][j + 1];
 			tmpProd += A[i][j + 2] * f2[thrNum][j + 2];
 			tmpProd += A[i][j + 3] * f2[thrNum][j + 3];
 			tmpProd += A[i][j + 4] * f2[thrNum][j + 4];
+			tmpProd += A[i][j + 5] * f2[thrNum][j + 5];
 		}
 		f3[thrNum][i] += dx * rgk_d32 * tmpProd;
 	}
 	for( int i = 0; i < sizeOfF; ++i ) {				//f4 = dx * Fhi( y + dy, x + d41 * f1 + d42 * f2 + d43 * f3 )
 		tmpProd = 0.0;
-		for( int j = lb[i]; j < rb[i]; j = j + 5 ) {
+		for( int j = lb[i]; j < rb[i]; j = j + 6 ) {
 			tmpProd += A1[i][j] * ( (x)[j] + rgk_d41 * f1[thrNum][j] + rgk_d42 * f2[thrNum][j] + rgk_d43 * f3[thrNum][j] );
 			tmpProd += A1[i][j + 1] * ( (x)[j + 1] + rgk_d41 * f1[thrNum][j + 1] + rgk_d42 * f2[thrNum][j + 1] + rgk_d43 * f3[thrNum][j + 1] );
 			tmpProd += A1[i][j + 2] * ( (x)[j + 2] + rgk_d41 * f1[thrNum][j + 2] + rgk_d42 * f2[thrNum][j + 2] + rgk_d43 * f3[thrNum][j + 2] );
 			tmpProd += A1[i][j + 3] * ( (x)[j + 3] + rgk_d41 * f1[thrNum][j + 3] + rgk_d42 * f2[thrNum][j + 3] + rgk_d43 * f3[thrNum][j + 3] );
 			tmpProd += A1[i][j + 4] * ( (x)[j + 4] + rgk_d41 * f1[thrNum][j + 4] + rgk_d42 * f2[thrNum][j + 4] + rgk_d43 * f3[thrNum][j + 4] );
+			tmpProd += A1[i][j + 5] * ( (x)[j + 5] + rgk_d41 * f1[thrNum][j + 5] + rgk_d42 * f2[thrNum][j + 5] + rgk_d43 * f3[thrNum][j + 5] );
 		}
 		f4[thrNum][i] += dx * tmpProd;
 	}

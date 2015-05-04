@@ -458,12 +458,14 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 			M( line * _a + 2, vNum ) = zi[Km - 1][vNum][line * EQ_NUM + 4];
 			M( line * _a + 3, vNum ) = zi[Km - 1][vNum][line * EQ_NUM + 6];
 			M( line * _a + 4, vNum ) = zi[Km - 1][vNum][line * EQ_NUM + 8];
+			M( line * _a + 5, vNum ) = zi[Km - 1][vNum][line * EQ_NUM + 10];
 		}
 		f11( line * _a + 0 ) = -z5[Km - 1][line * EQ_NUM + 0];
 		f11( line * _a + 1 ) = -z5[Km - 1][line * EQ_NUM + 1];
 		f11( line * _a + 2 ) = -z5[Km - 1][line * EQ_NUM + 4];
 		f11( line * _a + 3 ) = -z5[Km - 1][line * EQ_NUM + 6];
 		f11( line * _a + 4 ) = -z5[Km - 1][line * EQ_NUM + 8];
+		f11( line * _a + 5 ) = -z5[Km - 1][line * EQ_NUM + 10];
 	}
 
 	//EigenSolver<Matrix<PL_NUM, msize, msize, RowMajor>> es( M );

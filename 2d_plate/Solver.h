@@ -76,6 +76,15 @@ private:
 	const PL_NUM  p0;				//constant mechanical load
 	const PL_NUM impRadSq;
 
+	const PL_NUM Tinf;			//ambient temperature
+	const PL_NUM hInf;
+	const PL_NUM alpha1;
+	const PL_NUM alpha2;
+	const PL_NUM kx;
+	const PL_NUM ky;
+	const PL_NUM cc;
+	const PL_NUM Rc;
+
 	const PL_NUM eps_0;
 	const PL_NUM eps_x;
 	const PL_NUM eps_x_0;

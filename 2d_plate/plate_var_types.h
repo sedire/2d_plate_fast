@@ -4,8 +4,8 @@
 #define _USE_MATH_DEFINES
 
 #define PL_NUM long double
-#define EQ_NUM 10
-#define NUMBER_OF_LINES 25
+#define EQ_NUM 12
+#define NUMBER_OF_LINES 15
 #define NODES_ON_Y 6001
 #define MAX_NEWTON_IT 0
 #define ALMOST_ZERO 0.0000000000001
