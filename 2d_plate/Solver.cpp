@@ -36,15 +36,23 @@ Solver::Solver():
 	p0( 30000.0 ),
 	impRadSq( 64.0 ),
 
-	//FIXME: FIX THIS BLOCK!! REAL VALUES NEEDED
-	Tinf( 293.0 ),		//ambient temperature
-	hInf( 1.0 ),
-	alpha1( -1.8e-6 ),
-	alpha2( 27.0e-6 ),
+	Tinf( 296.15 ),		//ambient temperature
+	hInf( 23.0 ),
+	alpha1( -1.80089e-6 ),
+	alpha2( 26.8023e-6 ),
 	kx( 10.88 ),
 	ky( 1.16 ),
-	cc( 1000.0 ),
+	cc( 1389.2 ),
 	Rc( 0.0424 ),
+
+	//Tinf( 1.0 ),		//ambient temperature
+	//hInf( 1.0 ),
+	//alpha1( 1 ),
+	//alpha2( 1 ),
+	//kx( 1 ),
+	//ky( 1 ),
+	//cc( 1 ),
+	//Rc( 1 ),
 
 	eps_0( 0.000000000008854 ),
 	eps_x( 0.0000000002501502912 ),
@@ -104,6 +112,7 @@ PL_NUM Solver::getCurTime()
 
 void Solver::setTask()
 {
+	//clear the output file
 	ofstream of1( "test_sol.txt" );
 	of1.close();
 
@@ -1154,7 +1163,8 @@ void Solver::pre_step()
 		orthoBuilder->zi[0][i * eq_num / 2 + 2][i * eq_num + 5] = 1.0;
 		orthoBuilder->zi[0][i * eq_num / 2 + 3][i * eq_num + 7] = 1.0;
 		orthoBuilder->zi[0][i * eq_num / 2 + 4][i * eq_num + 9] = -1.0;
-		orthoBuilder->zi[0][i * eq_num / 2 + 5][i * eq_num + 11] = 1.0;
+		orthoBuilder->zi[0][i * eq_num / 2 + 5][i * eq_num + 10] = ky;
+		orthoBuilder->zi[0][i * eq_num / 2 + 5][i * eq_num + 11] = hInf;
 
 		orthoBuilder->z5[0][i * eq_num + 10] = Tinf;
 	}
@@ -1190,13 +1200,12 @@ void Solver::do_step()
 			orthoBuilder->zi[0][i * eq_num / 2 + 3][i * eq_num + 7] = 1.0;
 			orthoBuilder->zi[0][i * eq_num / 2 + 4][i * eq_num + 8] = mesh[0].Nk1[i * eq_num + 1] / betta / 2.0 / dt + newmark_B[i * eq_num + 1];
 			orthoBuilder->zi[0][i * eq_num / 2 + 4][i * eq_num + 9] = -1.0;
-			orthoBuilder->zi[0][i * eq_num / 2 + 5][i * eq_num + 11] = 1.0;
+			orthoBuilder->zi[0][i * eq_num / 2 + 5][i * eq_num + 10] = ky;
+			orthoBuilder->zi[0][i * eq_num / 2 + 5][i * eq_num + 11] = hInf;
 
-			//orthoBuilder->solInfoMap[0].z5[i * eq_num + 8] = newmark_B[i * eq_num + 1] * mesh[0].Nk1[i * eq_num + 9] - newmark_B[i * eq_num + 4] * By0;
-			//orthoBuilder->solInfoMap[0].z5[i * eq_num + 9] = -mesh[0].Nk1[i * eq_num + 9];
 			orthoBuilder->z5[0][i * eq_num + 8] = newmark_B[i * eq_num + 1] * mesh[0].Nk1[i * eq_num + 9] - newmark_B[i * eq_num + 4] * By0;
 			orthoBuilder->z5[0][i * eq_num + 9] = -mesh[0].Nk1[i * eq_num + 9];
-			orthoBuilder->z5[0][i * eq_num + 10] = ky / hInf / dy * ( mesh[1].Nk0[i * eq_num + 10] - mesh[0].Nk0[i * eq_num + 10] ) + Tinf;
+			orthoBuilder->z5[0][i * eq_num + 10] = Tinf;
 		}
 
 		for( int i = 0; i < Km; ++i )

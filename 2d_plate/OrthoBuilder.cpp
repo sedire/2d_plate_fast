@@ -446,6 +446,13 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 	}
 	
 	//simply supported plate NO CURRENT PASSING THROUGH THE BOUNDARY
+	PL_NUM Tinf = 296.15;
+	PL_NUM hInf = 23.0;
+	PL_NUM ky = 1.16;
+
+	//PL_NUM Tinf = 1.0;
+	//PL_NUM hInf = 1.0;
+	//PL_NUM ky = 1.0;
 
 	int totLines = varNum / EQ_NUM;
 	int _a = EQ_NUM / 2;
@@ -458,14 +465,14 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 			M( line * _a + 2, vNum ) = zi[Km - 1][vNum][line * EQ_NUM + 4];
 			M( line * _a + 3, vNum ) = zi[Km - 1][vNum][line * EQ_NUM + 6];
 			M( line * _a + 4, vNum ) = zi[Km - 1][vNum][line * EQ_NUM + 8];
-			M( line * _a + 5, vNum ) = zi[Km - 1][vNum][line * EQ_NUM + 10];
+			M( line * _a + 5, vNum ) = hInf * zi[Km - 1][vNum][line * EQ_NUM + 10] + ky * zi[Km - 1][vNum][line * EQ_NUM + 11];
 		}
 		f11( line * _a + 0 ) = -z5[Km - 1][line * EQ_NUM + 0];
 		f11( line * _a + 1 ) = -z5[Km - 1][line * EQ_NUM + 1];
 		f11( line * _a + 2 ) = -z5[Km - 1][line * EQ_NUM + 4];
 		f11( line * _a + 3 ) = -z5[Km - 1][line * EQ_NUM + 6];
 		f11( line * _a + 4 ) = -z5[Km - 1][line * EQ_NUM + 8];
-		f11( line * _a + 5 ) = -z5[Km - 1][line * EQ_NUM + 10];
+		f11( line * _a + 5 ) = hInf * Tinf - hInf * z5[Km - 1][line * EQ_NUM + 10] - ky * z5[Km - 1][line * EQ_NUM + 11];
 	}
 
 	//EigenSolver<Matrix<PL_NUM, msize, msize, RowMajor>> es( M );
@@ -543,7 +550,6 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 		{
 			(*_mesh)[Km - 1].Nk1[i] += Cx1[vNum] * zi[Km - 1][vNum][i];			//FIXME lags may happen here
 		}
-		/*(*_mesh)[_x].Nk1[i] += solInfoMap[_x].z5[i];*/
 		(*_mesh)[Km - 1].Nk1[i] += z5[Km - 1][i];
 	}
 
@@ -583,7 +589,6 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 			{
 				(*_mesh)[_x].Nk1[i] += Cx[vNum] * zi[_x][vNum][i];			//FIXME lags may happen here
 			}
-			/*(*_mesh)[_x].Nk1[i] += solInfoMap[_x].z5[i];*/
 			(*_mesh)[_x].Nk1[i] += z5[_x][i];
 		}
 	}
