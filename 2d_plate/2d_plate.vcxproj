@@ -63,7 +63,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>D:\research\EigenLib;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\dchernikov\Documents\study\libs\eigen-eigen-10219c95fe65;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

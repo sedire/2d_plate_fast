@@ -22,10 +22,12 @@ int main()
 	cout << "\n doing pre_step...\n";
 	beginTime = time( 0 );
 	solver->pre_step();
+	solver->dump_sol();
 	endTime = time( 0 );
 
 	cout << "\n pre_step done\n";
 	cout << "pre_step done in " << float( endTime - beginTime ) << " ~~\n";
+	std::cin.ignore( std::numeric_limits<std::streamsize>::max(), '\n' );
 
 	while( solver->getCurTime() <= 0.05 )
 	{

@@ -158,6 +158,13 @@ void Solver::setTask()
 	mesh.resize( Km );
 	for( int i = 0; i < mesh.size(); ++i ){
 		mesh[i].setup( varNum );
+		//set the initial temperature value
+		for( int line = 0; line < NUMBER_OF_LINES; ++line )
+		{
+			mesh[i].Nk[line * eq_num + 10] = Tinf;
+			mesh[i].Nk1[line * eq_num + 10] = Tinf;
+			mesh[i].Nk0[line * eq_num + 10] = Tinf;
+		}
 	}
 
 	//matr_A.resize( varNum, vector<PL_NUM>( varNum, 0.0) );
@@ -432,7 +439,7 @@ void Solver::calc_system( int _x )
 
 	vect_f[9 + i * eq_num] = By2 / h - sigma_x_mu / Btdt * mesh[_x].Nk[1 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] - 0.5 * sigma_x_mu * By1 * newmark_B[4 + i * eq_num];
 
-	vect_f[11 + i * eq_num] = -( -2.0 * newmark_B[10 + i * eq_num] * cc * dx * h * rho + Area * h * Jx * Rc + 4.0 * dx * hInf * Tinf ) / 2.0 / dx / h / ky;
+	vect_f[11 + i * eq_num] = -( -2.0 * newmark_B[10 + i * eq_num] * cc * dx * h * rho + Area * h * Jx * Jx * Rc + 4.0 * dx * hInf * Tinf ) / 2.0 / dx / h / ky;
 
 	i = nx - 1;
 	r = i + 1;
@@ -636,7 +643,7 @@ void Solver::calc_system( int _x )
 
 	vect_f[9 + i * eq_num] = By2 / h - sigma_x_mu / Btdt * mesh[_x].Nk[1 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] - 0.5 * sigma_x_mu * By1 * newmark_B[4 + i * eq_num];
 
-	vect_f[11 + i * eq_num] = -( -2.0 * newmark_B[10 + i * eq_num] * cc * dx * h * rho + Area * h * Jx * Rc + 4.0 * dx * hInf * Tinf ) / 2.0 / dx / h / ky;
+	vect_f[11 + i * eq_num] = -( -2.0 * newmark_B[10 + i * eq_num] * cc * dx * h * rho + Area * h * Jx * Jx * Rc + 4.0 * dx * hInf * Tinf ) / 2.0 / dx / h / ky;
 
 	for( int i = 1; i < nx - 1; ++i )
 	{
@@ -941,6 +948,7 @@ void Solver::walkthrough( int mode )
 			calc_system( _x + 1 );
 			tBeg = time( 0 );
 		}
+		//dumpMatrA( _x + 1 );
 		#pragma omp barrier
 		
 		#pragma omp for		//calculating new Phi's for ABM method
@@ -1326,11 +1334,15 @@ void Solver::dump_sol()
 	
 	for( int x = 0; x < Km; ++x )
 	{
-		for( int i = 0; i < varNum; ++i )
+		for( int line = 0; line < nx; ++line )
 		{
-			dumpSol << mesh[x].Nk1[i] << " ";
+			for( int i = 0; i < eq_num; ++i )
+			{
+				dumpSol << mesh[x].Nk1[i] << " ";
+			}
+			dumpSol << "\n";
 		}
-		dumpSol << endl;
+		dumpSol << "\n\n";
 	}
 
 
@@ -1467,12 +1479,12 @@ void Solver::dumpMatrA( int _x )
 		}
 		of << endl;
 	}
-	of << endl;
+	of << "\n\n";
 	for( int i = 0; i < EQ_NUM * NUMBER_OF_LINES; ++i )
 	{
 		of << vect_f[i] << endl;
 	}
-
+	of << "\n\n";
 	of << hp << " " << B66 << " " << B12 << " " << B22 << " " << B11 << " " << dx << endl;
 
 	of.close();
