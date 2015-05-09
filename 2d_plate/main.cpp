@@ -22,6 +22,7 @@ int main()
 	cout << "\n doing pre_step...\n";
 	beginTime = time( 0 );
 	solver->pre_step();
+	solver->dump_sol();
 	endTime = time( 0 );
 
 	cout << "\n pre_step done\n";
@@ -40,6 +41,7 @@ int main()
 			cout << solver->getCurTime() << " -- step done\n";
 		}
 		solver->dump_whole_sol( 1 );
+		solver->dump_sol();
 		//solver->dump_check_sol();
 		//solver->dump_check_sol2D();
 	}
