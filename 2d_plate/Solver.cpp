@@ -947,8 +947,26 @@ void Solver::walkthrough( int mode )
 			calc_Newmark_AB( _x + 1, mode );
 			calc_system( _x + 1 );
 			tBeg = time( 0 );
+
+			//dumpMatrA( _x + 1 );
+			/*int vectNum = 89;
+			for( int line = 0; line < nx; ++line )
+			{
+				cout << "\t";
+				for( int i = 0; i < eq_num; ++i )
+				{
+					cout << orthoBuilder->zi[_x][vectNum][line * eq_num + i] << " ";
+				}
+				cout << endl;
+			}
+			PL_NUM vectNorm = 0.0;
+			for( int i = 0; i < varNum; ++i )
+			{
+				vectNorm += orthoBuilder->zi[_x][vectNum][i] * orthoBuilder->zi[_x][vectNum][i];
+			}
+			cout << " the norm is " << sqrt( vectNorm ) << endl;
+			std::cin.ignore( std::numeric_limits<std::streamsize>::max(), '\n' );*/
 		}
-		//dumpMatrA( _x + 1 );
 		#pragma omp barrier
 		
 		#pragma omp for		//calculating new Phi's for ABM method
@@ -1338,7 +1356,7 @@ void Solver::dump_sol()
 		{
 			for( int i = 0; i < eq_num; ++i )
 			{
-				dumpSol << mesh[x].Nk1[i] << " ";
+				dumpSol << mesh[x].Nk1[line * eq_num + i] << " ";
 			}
 			dumpSol << "\n";
 		}
@@ -1436,7 +1454,7 @@ void Solver::dump_border_vals()
 void Solver::dump_whole_sol( int var )
 {
 	stringstream ss;
-	ss << "sol_whole_" << curTimeStep << ".bin";
+	ss << "./res/" << var << "_sol_whole_" << curTimeStep << ".bin";
 	ofstream of1( ss.str(), ofstream::out | ofstream::binary );
 	for( int y = 0; y < Km; ++y )
 	{

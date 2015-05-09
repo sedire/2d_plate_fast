@@ -348,7 +348,7 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are
 			for( int k = 0; k < varNum; ++k )
 			{
 				//solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += solInfoMap[n + 1].zi[baseV][k] * solInfoMap[n + 1].zi[bvIt][k];			//problems here
-				solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += NtoOrt[k] * zi[n + 1][bvIt][k];			//problems here
+				solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += NtoOrt[k] * zi[n + 1][bvIt][k];			
 			}
 			for( int k = 0; k < varNum; ++k )
 			{
@@ -595,12 +595,12 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 
 	//force the BCs to be zero at y == a/2
 	//TODO why do we need this??
-	for( int line = 0; line < varNum / EQ_NUM; ++line )
-	{
-		(*_mesh)[Km - 1].Nk1[line * EQ_NUM + 0] = 0.0;
-		(*_mesh)[Km - 1].Nk1[line * EQ_NUM + 1] = 0.0;
-		(*_mesh)[Km - 1].Nk1[line * EQ_NUM + 4] = 0.0;
-		(*_mesh)[Km - 1].Nk1[line * EQ_NUM + 6] = 0.0;
-		(*_mesh)[Km - 1].Nk1[line * EQ_NUM + 8] = 0.0;
-	}
+	//for( int line = 0; line < varNum / EQ_NUM; ++line )
+	//{
+	//	(*_mesh)[Km - 1].Nk1[line * EQ_NUM + 0] = 0.0;
+	//	(*_mesh)[Km - 1].Nk1[line * EQ_NUM + 1] = 0.0;
+	//	(*_mesh)[Km - 1].Nk1[line * EQ_NUM + 4] = 0.0;
+	//	(*_mesh)[Km - 1].Nk1[line * EQ_NUM + 6] = 0.0;
+	//	(*_mesh)[Km - 1].Nk1[line * EQ_NUM + 8] = 0.0;
+	//}
 }
