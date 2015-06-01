@@ -1157,7 +1157,7 @@ void Solver::walkthrough( int mode )
 	cout << " == rgkT \t" << rgkT << endl;
 	cout << " == orthoT \t" << orthoT << endl;
 
-	orthoBuilder->buildSolution( &mesh );
+	orthoBuilder->buildSolution( &mesh, Tinf, hInf, ky );
 
 	for( int _x = 0; _x < Km; ++_x )
 	{
