@@ -225,7 +225,7 @@ void OrthoBuilderGodunov::orthonorm( int baseV, int n, PL_NUM* NtoOrt )
 	cout << "Warning: I am void\n";
 }
 
-void OrthoBuilderGodunov::buildSolution( vector<VarVect>* _mesh )
+void OrthoBuilderGodunov::buildSolution( vector<VarVect>* _mesh, PL_NUM Tinf, PL_NUM hInf, PL_NUM ky )
 {
 	cout << "WARNING: OrthoBuilderGodunov is void\n";
 }
@@ -422,7 +422,7 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are
 	}
 }
 
-void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
+void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh, PL_NUM Tinf, PL_NUM hInf, PL_NUM ky )
 {
 	static const int msize = NUMBER_OF_LINES * EQ_NUM / 2;
 	Matrix<PL_NUM, msize, msize, RowMajor> M;
@@ -446,9 +446,9 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 	}
 	
 	//simply supported plate NO CURRENT PASSING THROUGH THE BOUNDARY
-	PL_NUM Tinf = 296.15;
-	PL_NUM hInf = 23.0;
-	PL_NUM ky = 1.16;
+	//PL_NUM Tinf = 296.15;
+	//PL_NUM hInf = 23.0;
+	//PL_NUM ky = 1.16;
 
 	//PL_NUM Tinf = 1.0;
 	//PL_NUM hInf = 1.0;

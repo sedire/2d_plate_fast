@@ -41,7 +41,7 @@ public:
 	virtual ~OrthoBuilder();
 	virtual void setParams();
 	virtual void orthonorm( int baseV, int n, PL_NUM* NtoOrt ) {};
-	virtual void buildSolution( vector<VarVect>* _mesh ) {};
+	virtual void buildSolution( vector<VarVect>* _mesh, PL_NUM Tinf, PL_NUM hInf, PL_NUM ky ) {};
 	virtual void flushO( int x );
 	virtual void setInitVects( const vector<PL_NUM>& N1, const vector<PL_NUM>& N2, const vector<PL_NUM>& N3, const vector<PL_NUM>& N4, const vector<PL_NUM>& N5 );
 	virtual void setOrthoDoneInfo( int y );
@@ -76,7 +76,7 @@ public:
 	OrthoBuilderGodunov( int _varNum, int _Km );
 	~OrthoBuilderGodunov() {};
 	void orthonorm( int baseV, int n, PL_NUM* NtoOrt );
-	void buildSolution( vector<VarVect>* _mesh );
+	void buildSolution( vector<VarVect>* _mesh, PL_NUM Tinf, PL_NUM hInf, PL_NUM ky );
 };
 
 class OrthoBuilderGSh : public OrthoBuilder			//use this
@@ -85,7 +85,7 @@ public:
 	OrthoBuilderGSh( int _varNum, int Km );
 	~OrthoBuilderGSh() {};
 	void orthonorm( int baseV, int n, PL_NUM* NtoOrt );
-	void buildSolution( vector<VarVect>* _mesh );
+	void buildSolution( vector<VarVect>* _mesh, PL_NUM Tinf, PL_NUM hInf, PL_NUM ky );
 
 	void calcScalarProdsPar( int baseV, int n, vector<PL_NUM>* NtoOrt );
 	void calcScalarProdsPar2( int baseV, int n, vector<PL_NUM>* NtoOrt );
