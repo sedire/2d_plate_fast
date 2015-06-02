@@ -33,7 +33,7 @@ Solver::Solver():
 	omega( 0.0 ),
 	tauC( 0.01 ),
 	tauP( 0.01 ),
-	p0( 30000.0 ),
+	p0( 0.0 /*30000.0*/ ),
 	impRadSq( 64.0 ),
 
 	Tinf( 296.15 ),		//ambient temperature
