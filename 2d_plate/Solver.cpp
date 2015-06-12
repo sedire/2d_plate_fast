@@ -2,8 +2,8 @@
 
 Solver::Solver():
 	E1( 102970000000 ),
-	//E2( 7550000000 ),
-	E2( 102970000000 ),
+	E2( 7550000000 ),
+	//E2( 102970000000 ),
 	nu21( 0.3 ),
 	nu23( 0.3 ),
 	rho( 1594 ),
@@ -14,7 +14,7 @@ Solver::Solver():
 	B12( nu21 * E2 * E1 / ( E1 - nu21 * nu21 * E2 ) ),
 	B66( G23 ),
 
-	By0( 0.0 ),
+	By0( 1.0 ),
 	By1( 2.0 * By0 ),
 	By2( 0.0 ),
 
@@ -28,13 +28,13 @@ Solver::Solver():
 	sigma_y_mu( sigma_y * mu ),
 	sigma_z( sigma_y ),
 
-	//J0( 1000000.0 ),
-	J0( 0.0 ),
+	J0( 1000000.0 ),
+	//J0( 0.0 ),
 	omega( 0.0 ),
 	tauC( 0.01 ),
 	tauP( 0.01 ),
-	p0( 100.0 ),
-	//p0( 30000.0 ),
+	//p0( 100.0 ),
+	p0( 30000.0 ),
 	impRadSq( 64.0 ),
 
 	eps_0( 0.000000000008854 ),
@@ -42,8 +42,8 @@ Solver::Solver():
 	eps_x_0( eps_x - eps_0 ),
 
 	hp( 0.0021 ),
-	//ap( 0.1524 * 2.0 ),		//len in x-dir
-	ap( 0.1524 ),		//len in x-dir
+	ap( 0.1524 * 2.0 ),		//len in x-dir
+	//ap( 0.1524 ),		//len in x-dir
 	bp( 0.1524 ),		//width in y-dir
 
 	Km( NODES_ON_Y ),
@@ -202,7 +202,7 @@ void Solver::calc_system( int _x )
 	PL_NUM h = hp;
 	PL_NUM Btdt = 2 * dt * betta;
 	PL_NUM Jx = J0 * exp( -( cur_t ) / tauC ) * sin( omega * ( cur_t ) );  
-	PL_NUM Pimp = p0 * sin( 100.0 * _MMM_PI * ( cur_t ) );
+	PL_NUM Pimp = 0.0;//p0 * sin( 100.0 * _MMM_PI * ( cur_t ) );
 
 	//strip load
 	//PL_NUM cur_X = _x * dy - bp / 2.0;
@@ -240,20 +240,25 @@ void Solver::calc_system( int _x )
 
 	matr_A[3 + i * eq_num][0 + r * eq_num] = -( ( B12 * eps_x_0 * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 4.0 * betta * B22 * dt * dx ) );
 	matr_A[3 + i * eq_num][1 + r * eq_num] = -( ( B66 * h ) / ( 4 * dx * dx ) );
-	matr_A[3 + i * eq_num][1 + i * eq_num] = ( B66 * h ) / dx / dx + ( h * ( 2.0 * rho + dt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) ) / ( 2.0 * betta * dt * dt);
+	matr_A[3 + i * eq_num][1 + i * eq_num] = ( B66 * h ) / dx / dx + ( h * ( 2.0 * rho + dt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) )
+				/ ( 2.0 * betta * dt * dt);
 	matr_A[3 + i * eq_num][2 + r * eq_num] = -1.0 / ( 2.0 * dx );
 	matr_A[3 + i * eq_num][3 + i * eq_num] = ( eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 2.0 * betta * B22 * dt );
 	matr_A[3 + i * eq_num][4 + i * eq_num] = -( ( By1 * h * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) / ( 4.0 * betta * dt ) );
 	matr_A[3 + i * eq_num][5 + i * eq_num] = -( ( By1 * eps_x_0 * h * mesh[_x].Nk[8 + i * eq_num] ) / ( 4.0 * betta * dt ) );
-	matr_A[3 + i * eq_num][8 + i * eq_num] = -( ( eps_x_0 * ( 2.0 * betta * dt * ( B22 * newmark_B[5 + i * eq_num] * By1 * dx * h - 2.0 * newmark_B[3 + i * eq_num] * dx * mesh[_x].Nk[9 + i * eq_num]
-				+ B12 * newmark_B[0 + r * eq_num] * h * mesh[_x].Nk[9 + i * eq_num] ) + B12 * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[0 + r * eq_num] - 2.0 * dx * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[3 + i * eq_num] 
+	matr_A[3 + i * eq_num][8 + i * eq_num] = -( ( eps_x_0 * ( 2.0 * betta * dt * ( B22 * newmark_B[5 + i * eq_num] * By1 * dx * h - 2.0 * newmark_B[3 + i * eq_num] * dx
+				* mesh[_x].Nk[9 + i * eq_num]
+				+ B12 * newmark_B[0 + r * eq_num] * h * mesh[_x].Nk[9 + i * eq_num] ) + B12 * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[0 + r * eq_num] - 2.0 * dx
+				* mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[3 + i * eq_num] 
 				+ B22 * By1 * dx * h * mesh[_x].Nk[5 + i * eq_num] ) ) / ( 4.0 * betta * B22 * dt * dx ) ) + h * mesh[_x].Nk[9 + i * eq_num] * sigma_x;
 	matr_A[3 + i * eq_num][9 + i * eq_num] = ( 1.0 / ( 4.0 * betta * B22 * dt * dx ) ) * ( ( -B12 ) * eps_x_0 * h * mesh[_x].Nk[0 + r * eq_num] * mesh[_x].Nk[8 + i * eq_num] 
-				+ 2.0 * dx * eps_x_0 * mesh[_x].Nk[3 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + B22 * dx * h * ( 4.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num] - By1 * mesh[_x].Nk[4 + i * eq_num] ) * sigma_x 
+				+ 2.0 * dx * eps_x_0 * mesh[_x].Nk[3 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + B22 * dx * h * ( 4.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num]
+				- By1 * mesh[_x].Nk[4 + i * eq_num] ) * sigma_x 
 				+ 2.0 * betta * dt * ( eps_x_0 * ( 2.0 * newmark_B[3 + i * eq_num] * dx - B12 * newmark_B[0 + r * eq_num] * h ) * mesh[_x].Nk[8 + i * eq_num]
-				+ B22 * dx * h * ( 2.0 * Jx - newmark_B[4 + i * eq_num] * By1 * sigma_x + 4.0 * newmark_B[1 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * sigma_x + 2.0 * mesh[_x].Nk[8 + i * eq_num] * sigma_x ) ) );
+				+ B22 * dx * h * ( 2.0 * Jx - newmark_B[4 + i * eq_num] * By1 * sigma_x + 4.0 * newmark_B[1 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * sigma_x
+				+ 2.0 * mesh[_x].Nk[8 + i * eq_num] * sigma_x ) ) );
 
-	matr_A[4 + i * eq_num][5 + i * eq_num] = 1.0 / al;
+	matr_A[4 + i * eq_num][5 + i * eq_num] = 1.0;
 
 	matr_A[5 + i * eq_num][4 + r * eq_num] = -B12 / ( B22 * dx * dx );
 	matr_A[5 + i * eq_num][4 + i * eq_num] = 2.0 * B12 / ( B22 * dx * dx );
@@ -267,14 +272,18 @@ void Solver::calc_system( int _x )
 	matr_A[6 + i * eq_num][6 + i * eq_num] = ( eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 2.0 * betta * B22 * dt );
 	matr_A[6 + i * eq_num][7 + i * eq_num] = 1.0;
 	matr_A[6 + i * eq_num][8 + i * eq_num] = ( B12 * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( -2.0 * newmark_B[4 + i * eq_num] + newmark_B[4 + r * eq_num]
-				+ ( -2.0 * mesh[_x].Nk[4 + i * eq_num] + mesh[_x].Nk[4 + r * eq_num] ) / ( 2.0 * betta * dt ) ) ) / ( 12.0 * B22 * dx * dx ) + ( eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * ( newmark_B[6 + i * eq_num] + mesh[_x].Nk[6 + i * eq_num] / ( 2.0 * betta * dt ) ) ) / B22;
-	matr_A[6 + i * eq_num][9 + i * eq_num] = ( B12 * eps_x_0 * h * h * h * ( -2.0 * newmark_B[4 + i * eq_num] + newmark_B[4 + r * eq_num] + ( -2.0 * mesh[_x].Nk[4 + i * eq_num] + mesh[_x].Nk[4 + r * eq_num] ) / ( 2.0 * betta * dt ) ) * mesh[_x].Nk[8 + i * eq_num] )
+				+ ( -2.0 * mesh[_x].Nk[4 + i * eq_num] + mesh[_x].Nk[4 + r * eq_num] ) / ( 2.0 * betta * dt ) ) ) / ( 12.0 * B22 * dx * dx )
+				+ ( eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * ( newmark_B[6 + i * eq_num] + mesh[_x].Nk[6 + i * eq_num] / ( 2.0 * betta * dt ) ) ) / B22;
+	matr_A[6 + i * eq_num][9 + i * eq_num] = ( B12 * eps_x_0 * h * h * h * ( -2.0 * newmark_B[4 + i * eq_num] + newmark_B[4 + r * eq_num] + ( -2.0 * mesh[_x].Nk[4 + i * eq_num]
+				+ mesh[_x].Nk[4 + r * eq_num] ) / ( 2.0 * betta * dt ) ) * mesh[_x].Nk[8 + i * eq_num] )
 				/ ( 12.0 * B22 * dx * dx ) + ( eps_x_0 * ( newmark_B[6 + i * eq_num] + mesh[_x].Nk[6 + i * eq_num] / ( 2.0 * betta * dt ) ) * mesh[_x].Nk[8 + i * eq_num] )
 				/ B22 - ( 1.0 / 6.0 ) * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( newmark_B[5 + i * eq_num] + mesh[_x].Nk[5 + i * eq_num] / ( 2.0 * betta * dt ) ) * sigma_x;
 	
-	matr_A[7 + i * eq_num][1 + i * eq_num] = ( eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 4.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + r * eq_num] ) * ( 2.0 * betta * newmark_B[5 + r * eq_num] * dt + mesh[_x].Nk[5 + r * eq_num] ) 
+	matr_A[7 + i * eq_num][1 + i * eq_num] = ( eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 4.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + r * eq_num] )
+				 * ( 2.0 * betta * newmark_B[5 + r * eq_num] * dt + mesh[_x].Nk[5 + r * eq_num] ) 
 				 - 108.0 * betta * By1 * dt * dx * dx * h * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) / ( 432.0 * betta * betta * dt * dt * dx * dx );
-	matr_A[7 + i * eq_num][1 + r * eq_num] = -( ( eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 4.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + r * eq_num] ) * ( 2.0 * betta * newmark_B[5 + r * eq_num] * dt + mesh[_x].Nk[5 + r * eq_num] ) ) 
+	matr_A[7 + i * eq_num][1 + r * eq_num] = -( ( eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 4.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + r * eq_num] )
+				 * ( 2.0 * betta * newmark_B[5 + r * eq_num] * dt + mesh[_x].Nk[5 + r * eq_num] ) ) 
 				 / ( 1728.0 * betta * betta * dt * dt * dx * dx ) );
 	matr_A[7 + i * eq_num][4 + i * eq_num] = -( ( 1.0 / ( 288.0 * betta * betta * B12 * B22 * dt * dt * dx * dx * dx * dx ) ) * ( 24.0
 				 * betta * betta * ( B12 * B12 * B12 - B11 * B12 * B22 + 2.0 * B12 * B12 * B66 - 10.0 * B11 * B22 * B66 ) * dt * dt
@@ -283,83 +292,140 @@ void Solver::calc_system( int _x )
 				 + h * h * ( 8.0 * rho + 4.0 * dt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * sigma_y + By1 * By1 * dt * sigma_z ) ) ) ) );
 	matr_A[7 + i * eq_num][4 + r * eq_num] = -( ( 1.0 / ( 1152.0 * betta * betta * B12 * B22 * dt * dt * dx * dx * dx * dx ) ) * ( h * h * h * ( 192.0
 				 * betta * betta * ( B12 * B12 * B12 - B11 * B12 * B22 + 2.0 * B12 * B12 * B66 + 4.0 * B11 * B22 * B66 ) * dt * dt 
-				 - B12 * B22 * By1 * dx * dx * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + r * eq_num] + 2.0 * betta * B12 * B22 * dx * dx * ( ( -newmark_B[5 + r * eq_num] ) * By1 * dt * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] + 48.0 * rho
+				 - B12 * B22 * By1 * dx * dx * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + r * eq_num] + 2.0 * betta * B12 * B22 * dx * dx
+				 * ( ( -newmark_B[5 + r * eq_num] ) * By1 * dt * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] + 48.0 * rho
 				 + 8.0 * dt * mesh[_x].Nk[9 + i * eq_num] * ( mesh[_x].Nk[9 + i * eq_num] + 2.0 * mesh[_x].Nk[9 + r * eq_num] ) * sigma_y + 6.0 * By1 * By1 * dt * sigma_z ) ) ) );
 	matr_A[7 + i * eq_num][4 + rr * eq_num] = ( ( 3.0 * B12 * B12 * B12 - 3.0 * B11 * B12 * B22 + 6.0 * B12 * B12 * B66 + 2.0 * B11 * B22 * B66 ) * h * h * h)
 				 / ( 12.0 * B12 * B22 * dx * dx * dx * dx );
 	matr_A[7 + i * eq_num][4 + ( rr + 1 ) * eq_num] = -( ( ( B12 * B12 - B11 * B22 + 2.0 * B12 * B66 ) * h * h * h ) / ( 12.0 * B22 * dx * dx * dx * dx ) );
-	matr_A[7 + i * eq_num][5 + i * eq_num] = ( eps_x_0 * ( -6.0 * dx * dx * h + h * h * h ) * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 12.0 * betta * dt * dx * dx );
+	matr_A[7 + i * eq_num][5 + i * eq_num] = ( eps_x_0 * ( -6.0 * dx * dx * h + h * h * h ) * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 12.0 * betta * dt
+				 * dx * dx );
 	matr_A[7 + i * eq_num][5 + r * eq_num] = -( ( 1.0 / ( 3456.0 * betta * betta * dt * dt * dx * dx ) ) * ( eps_x_0 * h * h * h * ( mesh[_x].Nk[9 + i * eq_num]
-				 * ( 8.0 * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[1 + i * eq_num] - 2.0 * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[1 + r * eq_num] + 8.0 * mesh[_x].Nk[9 + i * eq_num] * ( -4.0 * mesh[_x].Nk[1 + i * eq_num] + mesh[_x].Nk[1 + r * eq_num] ) + 12.0 * By1 * mesh[_x].Nk[4 + i * eq_num] - 3.0 * By1 * mesh[_x].Nk[4 + r * eq_num] )
-				 + 2.0 * betta * dt * ( 12.0 * newmark_B[4 + i * eq_num] * By1 * mesh[_x].Nk[9 + i * eq_num] - 3.0 * newmark_B[4 + r * eq_num] * By1 * mesh[_x].Nk[9 + i * eq_num] - 32.0 * newmark_B[1 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] 
-				 + 8.0 * newmark_B[1 + r * eq_num] * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] + 8.0 * newmark_B[1 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + r * eq_num] - 2.0 * newmark_B[1 + r * eq_num] * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + r * eq_num] + 24.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 24.0 * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[8 + i * eq_num]
+				 * ( 8.0 * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[1 + i * eq_num] - 2.0 * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[1 + r * eq_num]
+				 + 8.0 * mesh[_x].Nk[9 + i * eq_num] * ( -4.0 * mesh[_x].Nk[1 + i * eq_num] + mesh[_x].Nk[1 + r * eq_num] ) + 12.0 * By1 * mesh[_x].Nk[4 + i * eq_num]
+				 - 3.0 * By1 * mesh[_x].Nk[4 + r * eq_num] )
+				 + 2.0 * betta * dt * ( 12.0 * newmark_B[4 + i * eq_num] * By1 * mesh[_x].Nk[9 + i * eq_num] - 3.0 * newmark_B[4 + r * eq_num] * By1
+				 * mesh[_x].Nk[9 + i * eq_num] - 32.0 * newmark_B[1 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] 
+				 + 8.0 * newmark_B[1 + r * eq_num] * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] + 8.0 * newmark_B[1 + i * eq_num]
+				 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + r * eq_num] - 2.0 * newmark_B[1 + r * eq_num] * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + r * eq_num]
+				 + 24.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 24.0 * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[8 + i * eq_num]
 				 + 24.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + r * eq_num] ) ) ) );
 	matr_A[7 + i * eq_num][6 + i * eq_num] = ( 2.0 * ( B12 + 2.0 * B66 ) ) / ( B22 * dx * dx );
 	matr_A[7 + i * eq_num][6 + r * eq_num] = -( ( B12 + 2.0 * B66 ) / ( B22 * dx * dx ) );
-	matr_A[7 + i * eq_num][8 + i * eq_num] = -( ( 1.0 / ( 72.0 * betta * dt * dx * dx ) ) * ( h * ( 36.0 * dx * dx * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + i * eq_num]
-				 + eps_x_0 * h * h * ( -6.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + i * eq_num] + ( mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + r * eq_num] ) * mesh[_x].Nk[5 + r * eq_num] ) + 2.0 * betta * dt * ( 6.0 * newmark_B[5 + i * eq_num] * eps_x_0 * ( 6.0 * dx * dx - h * h ) * mesh[_x].Nk[9 + i * eq_num]
+	matr_A[7 + i * eq_num][8 + i * eq_num] = -( ( 1.0 / ( 72.0 * betta * dt * dx * dx ) ) * ( h * ( 36.0 * dx * dx * eps_x_0 * mesh[_x].Nk[9 + i * eq_num]
+				 * mesh[_x].Nk[5 + i * eq_num]
+				 + eps_x_0 * h * h * ( -6.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + i * eq_num] + ( mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + r * eq_num] )
+				 * mesh[_x].Nk[5 + r * eq_num] ) + 2.0 * betta * dt * ( 6.0 * newmark_B[5 + i * eq_num] * eps_x_0 * ( 6.0 * dx * dx - h * h ) * mesh[_x].Nk[9 + i * eq_num]
 				 + newmark_B[5 + r * eq_num] * eps_x_0 * h * h * ( mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + r * eq_num] ) + 18.0 * By1 * dx * dx * sigma_x ) ) ) );
-	matr_A[7 + i * eq_num][8 + r * eq_num] = -( ( eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 2.0 * betta * newmark_B[5 + r * eq_num] * dt + mesh[_x].Nk[5 + r * eq_num] ) ) / ( 72.0 * betta * dt * dx * dx ) );
+	matr_A[7 + i * eq_num][8 + r * eq_num] = -( ( eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 2.0 * betta * newmark_B[5 + r * eq_num] * dt
+				 + mesh[_x].Nk[5 + r * eq_num] ) ) / ( 72.0 * betta * dt * dx * dx ) );
 	matr_A[7 + i * eq_num][9 + i * eq_num] = ( 1.0 / ( 3456.0 * betta * betta * dt * dt * dx * dx ) ) * ( h * ( eps_x_0 * h * h * ( 2.0 * ( 8.0 * mesh[_x].Nk[9 + i * eq_num] 
-				 - mesh[_x].Nk[9 + r * eq_num] ) * ( 4.0 * mesh[_x].Nk[1 + i * eq_num] - mesh[_x].Nk[1 + r * eq_num] ) + 3.0 * By1 * ( -4.0 * mesh[_x].Nk[4 + i * eq_num] + mesh[_x].Nk[4 + r * eq_num] ) ) * mesh[_x].Nk[5 + r * eq_num] + 2.0 * betta * dt * ( newmark_B[5 + r * eq_num] * eps_x_0 * h * h
-				 * ( 2.0 * ( 8.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + r * eq_num] ) * ( 4.0 * mesh[_x].Nk[1 + i * eq_num] - mesh[_x].Nk[1 + r * eq_num] ) + 3.0 * By1 * ( -4.0 * mesh[_x].Nk[4 + i * eq_num] + mesh[_x].Nk[4 + r * eq_num] ) ) - 12.0 * newmark_B[4 + i * eq_num] * By1 * eps_x_0 * h * h * mesh[_x].Nk[5 + r * eq_num]
-				 + 3.0 * newmark_B[4 + r * eq_num] * By1 * eps_x_0 * h * h * mesh[_x].Nk[5 + r * eq_num] + 64.0 * newmark_B[1 + i * eq_num] * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + r * eq_num] - 16.0 * newmark_B[1 + r * eq_num] * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + r * eq_num]
-				 - 8.0 * newmark_B[1 + i * eq_num] * eps_x_0 * h * h * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[5 + r * eq_num] + 2.0 * newmark_B[1 + r * eq_num] * eps_x_0 * h * h * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[5 + r * eq_num] - 864.0 * dx * dx * eps_x_0 * mesh[_x].Nk[5 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num]
-				 + 144.0 * eps_x_0 * h * h * mesh[_x].Nk[5 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] - 24.0 * eps_x_0 * h * h * mesh[_x].Nk[5 + r * eq_num] * mesh[_x].Nk[8 + i * eq_num] - 24.0 * eps_x_0 * h * h * mesh[_x].Nk[5 + r * eq_num] * mesh[_x].Nk[8 + r * eq_num]
-				 - 432.0 * By1 * dx * dx * mesh[_x].Nk[1 + i * eq_num] * sigma_x + 48.0 * h * h * ( 6.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[4 + i * eq_num] - ( mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + r * eq_num] ) * mesh[_x].Nk[4 + r * eq_num] ) * sigma_y )
-				 - 4.0 * betta * betta * dt * dt * ( 2.0 * eps_x_0 * ( 432.0 * newmark_B[5 + i * eq_num] * dx * dx * mesh[_x].Nk[8 + i * eq_num] + h * h * ( -72.0 * newmark_B[5 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num]
-				 + newmark_B[5 + r * eq_num] * ( ( -( 4.0 * newmark_B[1 + i * eq_num] - newmark_B[1 + r * eq_num] ) ) * ( 8.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + r * eq_num] ) + 12.0 * ( mesh[_x].Nk[8 + i * eq_num] + mesh[_x].Nk[8 + r * eq_num] ) ) ) ) + 432.0 * newmark_B[1 + i * eq_num] * By1 * dx * dx * sigma_x
-				 + 12.0 * newmark_B[4 + i * eq_num] * h * h * ( newmark_B[5 + r * eq_num] * By1 * eps_x_0 - 24.0 * mesh[_x].Nk[9 + i * eq_num] * sigma_y ) + 3.0 * newmark_B[4 + r * eq_num] * h * h
+				 - mesh[_x].Nk[9 + r * eq_num] ) * ( 4.0 * mesh[_x].Nk[1 + i * eq_num] - mesh[_x].Nk[1 + r * eq_num] ) + 3.0 * By1 * ( -4.0 * mesh[_x].Nk[4 + i * eq_num]
+				 + mesh[_x].Nk[4 + r * eq_num] ) ) * mesh[_x].Nk[5 + r * eq_num] + 2.0 * betta * dt * ( newmark_B[5 + r * eq_num] * eps_x_0 * h * h
+				 * ( 2.0 * ( 8.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + r * eq_num] ) * ( 4.0 * mesh[_x].Nk[1 + i * eq_num] - mesh[_x].Nk[1 + r * eq_num] )
+				 + 3.0 * By1 * ( -4.0 * mesh[_x].Nk[4 + i * eq_num] + mesh[_x].Nk[4 + r * eq_num] ) ) - 12.0 * newmark_B[4 + i * eq_num] * By1 * eps_x_0 * h * h
+				 * mesh[_x].Nk[5 + r * eq_num]
+				 + 3.0 * newmark_B[4 + r * eq_num] * By1 * eps_x_0 * h * h * mesh[_x].Nk[5 + r * eq_num] + 64.0 * newmark_B[1 + i * eq_num] * eps_x_0 * h * h
+				 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + r * eq_num] - 16.0 * newmark_B[1 + r * eq_num] * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num]
+				 * mesh[_x].Nk[5 + r * eq_num]
+				 - 8.0 * newmark_B[1 + i * eq_num] * eps_x_0 * h * h * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[5 + r * eq_num] + 2.0 * newmark_B[1 + r * eq_num]
+				 * eps_x_0 * h * h * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[5 + r * eq_num] - 864.0 * dx * dx * eps_x_0 * mesh[_x].Nk[5 + i * eq_num]
+				 * mesh[_x].Nk[8 + i * eq_num]
+				 + 144.0 * eps_x_0 * h * h * mesh[_x].Nk[5 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] - 24.0 * eps_x_0 * h * h * mesh[_x].Nk[5 + r * eq_num]
+				 * mesh[_x].Nk[8 + i * eq_num] - 24.0 * eps_x_0 * h * h * mesh[_x].Nk[5 + r * eq_num] * mesh[_x].Nk[8 + r * eq_num]
+				 - 432.0 * By1 * dx * dx * mesh[_x].Nk[1 + i * eq_num] * sigma_x + 48.0 * h * h * ( 6.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[4 + i * eq_num]
+				 - ( mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + r * eq_num] ) * mesh[_x].Nk[4 + r * eq_num] ) * sigma_y )
+				 - 4.0 * betta * betta * dt * dt * ( 2.0 * eps_x_0 * ( 432.0 * newmark_B[5 + i * eq_num] * dx * dx * mesh[_x].Nk[8 + i * eq_num] + h * h
+				 * ( -72.0 * newmark_B[5 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num]
+				 + newmark_B[5 + r * eq_num] * ( ( -( 4.0 * newmark_B[1 + i * eq_num] - newmark_B[1 + r * eq_num] ) ) * ( 8.0 * mesh[_x].Nk[9 + i * eq_num]
+				 - mesh[_x].Nk[9 + r * eq_num] ) + 12.0 * ( mesh[_x].Nk[8 + i * eq_num] + mesh[_x].Nk[8 + r * eq_num] ) ) ) ) + 432.0 * newmark_B[1 + i * eq_num]
+				 * By1 * dx * dx * sigma_x
+				 + 12.0 * newmark_B[4 + i * eq_num] * h * h * ( newmark_B[5 + r * eq_num] * By1 * eps_x_0 - 24.0 * mesh[_x].Nk[9 + i * eq_num] * sigma_y )
+				 + 3.0 * newmark_B[4 + r * eq_num] * h * h
 				 * ( ( -newmark_B[5 + r * eq_num] ) * By1 * eps_x_0 + 16.0 * ( mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + r * eq_num] ) * sigma_y ) ) ) );
-	matr_A[7 + i * eq_num][9 + r * eq_num] = -( ( h * h * h * ( eps_x_0 * ( 2.0 * betta * newmark_B[5 + r * eq_num] * dt + mesh[_x].Nk[5 + r * eq_num] ) * ( mesh[_x].Nk[9 + i * eq_num] * ( 8.0 * betta * newmark_B[1 + i * eq_num] * dt 
-				- 2.0 * betta * newmark_B[1 + r * eq_num] * dt + 4.0 * mesh[_x].Nk[1 + i * eq_num] - mesh[_x].Nk[1 + r * eq_num] ) + 24.0 * betta * dt * mesh[_x].Nk[8 + i * eq_num] ) + 48.0 * betta * dt * mesh[_x].Nk[9 + i * eq_num] * ( 2.0 * betta * newmark_B[4 + r * eq_num] * dt
+	matr_A[7 + i * eq_num][9 + r * eq_num] = -( ( h * h * h * ( eps_x_0 * ( 2.0 * betta * newmark_B[5 + r * eq_num] * dt + mesh[_x].Nk[5 + r * eq_num] )
+				* ( mesh[_x].Nk[9 + i * eq_num] * ( 8.0 * betta * newmark_B[1 + i * eq_num] * dt 
+				- 2.0 * betta * newmark_B[1 + r * eq_num] * dt + 4.0 * mesh[_x].Nk[1 + i * eq_num] - mesh[_x].Nk[1 + r * eq_num] ) + 24.0 * betta * dt
+				* mesh[_x].Nk[8 + i * eq_num] ) + 48.0 * betta * dt * mesh[_x].Nk[9 + i * eq_num] * ( 2.0 * betta * newmark_B[4 + r * eq_num] * dt
 				+ mesh[_x].Nk[4 + r * eq_num] ) * sigma_y ) ) / ( 1728.0 * betta * betta * dt * dt * dx * dx ) );
 
 	matr_A[8 + i * eq_num][0 + i * eq_num] = ( -( ( 4.0 * mesh[_x].Nk[9 + i * eq_num] ) / 3.0 ) + ( 4.0 * mesh[_x].Nk[9 + r * eq_num] ) / 3.0 ) / ( 4.0 * betta * dt * dx );
 	matr_A[8 + i * eq_num][0 + r * eq_num] = mesh[_x].Nk[9 + i * eq_num] / ( 4.0 * betta * dt * dx );
-	matr_A[8 + i * eq_num][9 + i * eq_num] = 1.0 / ( 2.0 * betta * dt ) - ( 2.0 * ( newmark_B[0 + i * eq_num] + mesh[_x].Nk[0 + i * eq_num] / ( 2.0 * betta * dt ) ) ) / ( 3.0 * dx )
+	matr_A[8 + i * eq_num][9 + i * eq_num] = 1.0 / ( 2.0 * betta * dt ) - ( 2.0 * ( newmark_B[0 + i * eq_num] + mesh[_x].Nk[0 + i * eq_num] / ( 2.0 * betta * dt ) ) )
+				/ ( 3.0 * dx )
 				+ ( newmark_B[0 + r * eq_num] + mesh[_x].Nk[0 + r * eq_num] / ( 2.0 * betta * dt ) ) / ( 2.0 * dx ) + 2.0 / ( 3.0 * dx * dx * mu * sigma_y );
-	matr_A[8 + i * eq_num][9 + r * eq_num] = ( 2.0 * ( newmark_B[0 + i * eq_num] + mesh[_x].Nk[0 + i * eq_num] / ( 2.0 * betta * dt ) ) ) / ( 3.0 * dx ) - 2.0 / ( 3.0 * dx * dx * mu * sigma_y );
+	matr_A[8 + i * eq_num][9 + r * eq_num] = ( 2.0 * ( newmark_B[0 + i * eq_num] + mesh[_x].Nk[0 + i * eq_num] / ( 2.0 * betta * dt ) ) ) / ( 3.0 * dx ) - 2.0
+				/ ( 3.0 * dx * dx * mu * sigma_y );
 
 	matr_A[9 + i * eq_num][1 + i * eq_num] = ( mu * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) / ( 2.0 * betta * dt );
 	matr_A[9 + i * eq_num][4 + i * eq_num] = -( ( By1 * mu * sigma_x ) / ( 4.0 * betta * dt ) );
 	matr_A[9 + i * eq_num][8 + i * eq_num] = sigma_x_mu;
 	matr_A[9 + i * eq_num][9 + i * eq_num] = mu * ( newmark_B[1 + i * eq_num] + mesh[_x].Nk[1 + i * eq_num] / ( 2.0 * betta * dt ) ) * sigma_x;
 
-	vect_f[2 + i * eq_num] = ( h * ( 3.0 * eps_x_0 * mu * ( -4.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + r * eq_num] + By1 * mesh[_x].Nk[4 + r * eq_num] ) * mesh[_x].Nk[8 + i * eq_num] + 2.0 * betta * dt * ( 8.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num]
-			- 2.0 * mesh[_x].Nk[9 + i * eq_num] * ( 4.0 * mesh[_x].Nk[9 + r * eq_num] + 3.0 * newmark_B[1 + r * eq_num] * eps_x_0 * mu * mesh[_x].Nk[8 + i * eq_num] ) + 3.0 * dx * mu * ( 4.0 * newmark_A[0 + i * eq_num] * rho + newmark_B[0 + i * eq_num] * By1 * By1 * sigma_z ) ) ) )
+	vect_f[2 + i * eq_num] = ( h * ( 3.0 * eps_x_0 * mu * ( -4.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + r * eq_num] + By1 * mesh[_x].Nk[4 + r * eq_num] )
+			* mesh[_x].Nk[8 + i * eq_num] + 2.0 * betta * dt * ( 8.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num]
+			- 2.0 * mesh[_x].Nk[9 + i * eq_num] * ( 4.0 * mesh[_x].Nk[9 + r * eq_num] + 3.0 * newmark_B[1 + r * eq_num] * eps_x_0 * mu * mesh[_x].Nk[8 + i * eq_num] )
+			+ 3.0 * dx * mu * ( 4.0 * newmark_A[0 + i * eq_num] * rho + newmark_B[0 + i * eq_num] * By1 * By1 * sigma_z ) ) ) )
 			/ ( 24.0 * betta * dt * dx * mu );
 
-	vect_f[3 + i * eq_num] = ( 1.0 / ( 4.0 * betta * B22 * dt * dx ) ) * ( eps_x_0 * ( 2.0 * B12 * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[0 + r * eq_num] - 4.0 * dx * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[3 + i * eq_num]
-			+ B22 * By1 * dx * h * mesh[_x].Nk[5 + i * eq_num] ) * mesh[_x].Nk[8 + i * eq_num] + B22 * dx * h * mesh[_x].Nk[9 + i * eq_num] * ( -4.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num] + By1 * mesh[_x].Nk[4 + i * eq_num] ) * sigma_x
-			+ 2.0 * betta * dt * ( -2.0 * newmark_B[3 + i * eq_num] * dx * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + h * ( B12 * newmark_B[0 + r * eq_num] * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 2.0 * newmark_A[1 + i * eq_num] * B22 * dx * rho
+	vect_f[3 + i * eq_num] = ( 1.0 / ( 4.0 * betta * B22 * dt * dx ) ) * ( eps_x_0 * ( 2.0 * B12 * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[0 + r * eq_num]
+			- 4.0 * dx * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[3 + i * eq_num]
+			+ B22 * By1 * dx * h * mesh[_x].Nk[5 + i * eq_num] ) * mesh[_x].Nk[8 + i * eq_num] + B22 * dx * h * mesh[_x].Nk[9 + i * eq_num]
+			* ( -4.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num] + By1 * mesh[_x].Nk[4 + i * eq_num] ) * sigma_x
+			+ 2.0 * betta * dt * ( -2.0 * newmark_B[3 + i * eq_num] * dx * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + h
+			* ( B12 * newmark_B[0 + r * eq_num] * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 2.0 * newmark_A[1 + i * eq_num] * B22 * dx * rho
 			- 2.0 * B22 * dx * mesh[_x].Nk[9 + i * eq_num] * ( newmark_B[1 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[8 + i * eq_num] ) * sigma_x ) ) );
 
-	vect_f[6 + i * eq_num] = ( 1.0 / ( 12.0 * betta * B22 * dt * dx * dx ) ) * ( mesh[_x].Nk[9 + i * eq_num] * ( B12 * eps_x_0 * h * h * h * ( 2.0 * mesh[_x].Nk[4 + i * eq_num] - mesh[_x].Nk[4 + r * eq_num] ) * mesh[_x].Nk[8 + i * eq_num]
-			+ dx * dx * ( -12.0 * eps_x_0 * mesh[_x].Nk[6 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + B22 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + i * eq_num] * sigma_x ) ) - betta * dt * ( 12.0 * newmark_B[6 + i * eq_num] * dx * dx * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num]
-			+ h * h * h * ( B12 * ( -2.0 * newmark_B[4 + i * eq_num] + newmark_B[4 + r * eq_num] ) * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + B22 * dx * dx * ( newmark_A[5 + i * eq_num] * rho - newmark_B[5 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) ) ) );
+	vect_f[6 + i * eq_num] = ( 1.0 / ( 12.0 * betta * B22 * dt * dx * dx ) ) * ( mesh[_x].Nk[9 + i * eq_num] * ( B12 * eps_x_0 * h * h * h * ( 2.0
+			* mesh[_x].Nk[4 + i * eq_num] - mesh[_x].Nk[4 + r * eq_num] ) * mesh[_x].Nk[8 + i * eq_num]
+			+ dx * dx * ( -12.0 * eps_x_0 * mesh[_x].Nk[6 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + B22 * h * h * h * mesh[_x].Nk[9 + i * eq_num]
+			* mesh[_x].Nk[5 + i * eq_num] * sigma_x ) ) - betta * dt * ( 12.0 * newmark_B[6 + i * eq_num] * dx * dx * eps_x_0 * mesh[_x].Nk[9 + i * eq_num]
+			* mesh[_x].Nk[8 + i * eq_num]
+			+ h * h * h * ( B12 * ( -2.0 * newmark_B[4 + i * eq_num] + newmark_B[4 + r * eq_num] ) * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num]
+			+ B22 * dx * dx * ( newmark_A[5 + i * eq_num] * rho - newmark_B[5 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) ) ) );
 
 	vect_f[7 + i * eq_num] = ( 1.0 / ( 1728.0 * betta * betta * dt * dt * dx * dx ) ) * ( -3.0 * eps_x_0 * h * h * h
-			* mesh[_x].Nk[9 + i * eq_num] * ( ( 4.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + r * eq_num] ) * ( 4.0 * mesh[_x].Nk[1 + i * eq_num] - mesh[_x].Nk[1 + r * eq_num]) + By1 * ( -4.0 * mesh[_x].Nk[4 + i * eq_num] + mesh[_x].Nk[4 + r * eq_num] ) ) * mesh[_x].Nk[5 + r * eq_num]
-			+ betta * dt * h * ( newmark_B[5 + r * eq_num] * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 16.0 * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[1 + i * eq_num] - 4.0 * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[1 + r * eq_num]
-			+ 16.0 * mesh[_x].Nk[9 + i * eq_num] * ( -4.0 * mesh[_x].Nk[1 + i * eq_num] + mesh[_x].Nk[1 + r * eq_num] ) + 12.0 * By1 * mesh[_x].Nk[4 + i * eq_num] - 3.0 * By1 * mesh[_x].Nk[4 + r * eq_num] ) + 12.0 * newmark_B[4 + i * eq_num] * By1 * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + r * eq_num]
-			- 3.0 * newmark_B[4 + r * eq_num] * By1 * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + r * eq_num] - 64.0 * newmark_B[1 + i * eq_num] * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + r * eq_num] + 16.0 * newmark_B[1 + r * eq_num] * eps_x_0 * h * h
-			* mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + r * eq_num] + 16.0 * newmark_B[1 + i * eq_num] * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[5 + r * eq_num] - 4.0 * newmark_B[1 + r * eq_num] * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[5 + r * eq_num]
-			+ 1728.0 * dx * dx * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] - 288.0 * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 48.0 * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + r * eq_num] * mesh[_x].Nk[8 + i * eq_num]
-			+ 48.0 * eps_x_0 * h * h * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[5 + r * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 48.0 * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + r * eq_num] * mesh[_x].Nk[8 + r * eq_num] + 432.0 * By1 * dx * dx * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num] * sigma_x
-			+ 48.0 * h * h * mesh[_x].Nk[9 + i * eq_num] * ( -6 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[4 + i * eq_num] + mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[4 + r * eq_num] + 2.0 * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[4 + r * eq_num] ) * sigma_y ) + 4.0 * betta * betta * dt * dt
-			* ( -216.0 * By1 * dx * dx * h * Jx + 4.0 * newmark_B[1 + r * eq_num] * newmark_B[5 + r * eq_num] * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num]
-			- newmark_B[1 + r * eq_num] * newmark_B[5 + r * eq_num] * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + r * eq_num] + 4.0 * newmark_B[1 + i * eq_num] * newmark_B[5 + r * eq_num] * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( -4.0 * mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + r * eq_num] )
-			+ 432.0 * newmark_B[5 + i * eq_num] * dx * dx * eps_x_0 * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] - 72.0 * newmark_B[5 + i * eq_num] * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 12.0 * newmark_B[5 + r * eq_num] * eps_x_0
-			* h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 12.0 * newmark_B[5 + r * eq_num] * eps_x_0 * h * h * h * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 12.0 * newmark_B[5 + r * eq_num] * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + r * eq_num]
-			+ 432.0 * newmark_A[4 + i * eq_num] * dx * dx * h * rho + 72.0 * newmark_A[4 + i * eq_num] * h * h * h * rho - 36.0 * newmark_A[4 + r * eq_num] * h * h * h * rho + 432.0 * dx * dx * Pimp
-			+ 12.0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( -6.0 * newmark_B[4 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] + newmark_B[4 + r * eq_num] * mesh[_x].Nk[9 + i * eq_num] + 2.0 * newmark_B[4 + r * eq_num] * mesh[_x].Nk[9 + r * eq_num] ) * sigma_y
-			+ 9.0 * By1 * By1 * ( 12.0 * newmark_B[4 + i * eq_num] * dx * dx * h * sigma_x + ( 2.0 * newmark_B[4 + i * eq_num] - newmark_B[4 + r * eq_num] ) * h * h * h * sigma_z ) ) );
+			* mesh[_x].Nk[9 + i * eq_num] * ( ( 4.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + r * eq_num] ) * ( 4.0 * mesh[_x].Nk[1 + i * eq_num]
+			- mesh[_x].Nk[1 + r * eq_num]) + By1 * ( -4.0 * mesh[_x].Nk[4 + i * eq_num] + mesh[_x].Nk[4 + r * eq_num] ) ) * mesh[_x].Nk[5 + r * eq_num]
+			+ betta * dt * h * ( newmark_B[5 + r * eq_num] * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 16.0 * mesh[_x].Nk[9 + r * eq_num]
+			* mesh[_x].Nk[1 + i * eq_num] - 4.0 * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[1 + r * eq_num]
+			+ 16.0 * mesh[_x].Nk[9 + i * eq_num] * ( -4.0 * mesh[_x].Nk[1 + i * eq_num] + mesh[_x].Nk[1 + r * eq_num] ) + 12.0 * By1 * mesh[_x].Nk[4 + i * eq_num]
+			- 3.0 * By1 * mesh[_x].Nk[4 + r * eq_num] ) + 12.0 * newmark_B[4 + i * eq_num] * By1 * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + r * eq_num]
+			- 3.0 * newmark_B[4 + r * eq_num] * By1 * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + r * eq_num] - 64.0 * newmark_B[1 + i * eq_num]
+			* eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + r * eq_num] + 16.0 * newmark_B[1 + r * eq_num] * eps_x_0 * h * h
+			* mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + r * eq_num] + 16.0 * newmark_B[1 + i * eq_num] * eps_x_0 * h * h
+			* mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[5 + r * eq_num] - 4.0 * newmark_B[1 + r * eq_num] * eps_x_0 * h * h
+			* mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[5 + r * eq_num]
+			+ 1728.0 * dx * dx * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] - 288.0 * eps_x_0 * h * h
+			* mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 48.0 * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num]
+			* mesh[_x].Nk[5 + r * eq_num] * mesh[_x].Nk[8 + i * eq_num]
+			+ 48.0 * eps_x_0 * h * h * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[5 + r * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 48.0 * eps_x_0 * h * h
+			* mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + r * eq_num] * mesh[_x].Nk[8 + r * eq_num] + 432.0 * By1 * dx * dx * mesh[_x].Nk[9 + i * eq_num]
+			* mesh[_x].Nk[1 + i * eq_num] * sigma_x
+			+ 48.0 * h * h * mesh[_x].Nk[9 + i * eq_num] * ( -6 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[4 + i * eq_num] + mesh[_x].Nk[9 + i * eq_num]
+			* mesh[_x].Nk[4 + r * eq_num] + 2.0 * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[4 + r * eq_num] ) * sigma_y ) + 4.0 * betta * betta * dt * dt
+			* ( -216.0 * By1 * dx * dx * h * Jx + 4.0 * newmark_B[1 + r * eq_num] * newmark_B[5 + r * eq_num] * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num]
+			* mesh[_x].Nk[9 + i * eq_num]
+			- newmark_B[1 + r * eq_num] * newmark_B[5 + r * eq_num] * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + r * eq_num] + 4.0
+			* newmark_B[1 + i * eq_num] * newmark_B[5 + r * eq_num] * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( -4.0 * mesh[_x].Nk[9 + i * eq_num]
+			+ mesh[_x].Nk[9 + r * eq_num] )
+			+ 432.0 * newmark_B[5 + i * eq_num] * dx * dx * eps_x_0 * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] - 72.0 * newmark_B[5 + i * eq_num]
+			* eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 12.0 * newmark_B[5 + r * eq_num] * eps_x_0
+			* h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 12.0 * newmark_B[5 + r * eq_num] * eps_x_0 * h * h * h * mesh[_x].Nk[9 + r * eq_num]
+			* mesh[_x].Nk[8 + i * eq_num] + 12.0 * newmark_B[5 + r * eq_num] * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + r * eq_num]
+			+ 432.0 * newmark_A[4 + i * eq_num] * dx * dx * h * rho + 72.0 * newmark_A[4 + i * eq_num] * h * h * h * rho - 36.0 * newmark_A[4 + r * eq_num] * h * h * h * rho
+			+ 432.0 * dx * dx * Pimp
+			+ 12.0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( -6.0 * newmark_B[4 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] + newmark_B[4 + r * eq_num]
+			* mesh[_x].Nk[9 + i * eq_num] + 2.0 * newmark_B[4 + r * eq_num] * mesh[_x].Nk[9 + r * eq_num] ) * sigma_y
+			+ 9.0 * By1 * By1 * ( 12.0 * newmark_B[4 + i * eq_num] * dx * dx * h * sigma_x + ( 2.0 * newmark_B[4 + i * eq_num] - newmark_B[4 + r * eq_num] )
+			* h * h * h * sigma_z ) ) );
 
-	vect_f[8 + i * eq_num] = ( 12.0 * betta * newmark_B[9 + i * eq_num] * dt * dx + 4.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[0 + i * eq_num] - 4.0 * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[0 + i * eq_num] - 3.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[0 + r * eq_num] )
+	vect_f[8 + i * eq_num] = ( 12.0 * betta * newmark_B[9 + i * eq_num] * dt * dx + 4.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[0 + i * eq_num]
+			- 4.0 * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[0 + i * eq_num] - 3.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[0 + r * eq_num] )
 			/ ( 12.0 * betta * dt * dx );
 
-	vect_f[9 + i * eq_num] = -( ( mu * ( betta * newmark_B[4 + i * eq_num] * By1 * dt + mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num] ) * sigma_x ) / ( 2.0 * betta * dt ) );
+	vect_f[9 + i * eq_num] = -( ( mu * ( betta * newmark_B[4 + i * eq_num] * By1 * dt + mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num] ) * sigma_x )
+			/ ( 2.0 * betta * dt ) );
 
 	i = nx - 1;
 	r = i + 1;
@@ -380,27 +446,34 @@ void Solver::calc_system( int _x )
 	matr_A[2 + i * eq_num][1 + j * eq_num] = -( ( eps_x_0 * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 4.0 * betta * dt * dx ) );
 	matr_A[2 + i * eq_num][3 + j * eq_num] = B12 / ( 2.0 * B22 * dx );
 	matr_A[2 + i * eq_num][4 + j * eq_num] = ( By1 * eps_x_0 * h * mesh[_x].Nk[8 + i * eq_num] ) / ( 8.0 * betta * dt * dx );
-	matr_A[2 + i * eq_num][8 + i * eq_num] = ( eps_x_0 * h * ( 2.0 * newmark_B[4 + j * eq_num] * betta * By1 * dt - 2.0 * mesh[_x].Nk[9 + i * eq_num] * ( 2.0 * newmark_B[1 + j * eq_num] * betta * dt + mesh[_x].Nk[1 + j * eq_num] )
+	matr_A[2 + i * eq_num][8 + i * eq_num] = ( eps_x_0 * h * ( 2.0 * newmark_B[4 + j * eq_num] * betta * By1 * dt - 2.0 * mesh[_x].Nk[9 + i * eq_num]
+				* ( 2.0 * newmark_B[1 + j * eq_num] * betta * dt + mesh[_x].Nk[1 + j * eq_num] )
 				+ By1 * mesh[_x].Nk[4 + j * eq_num] ) ) / ( 8.0 * betta * dt * dx);
-	matr_A[2 + i * eq_num][9 + i * eq_num] = ( h * ( 8.0 * betta * dt * ( 2.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + j * eq_num] ) - 3.0 * eps_x_0 * mu * ( 2.0 * newmark_B[1 + j * eq_num] * betta * dt + mesh[_x].Nk[1 + j * eq_num] )
+	matr_A[2 + i * eq_num][9 + i * eq_num] = ( h * ( 8.0 * betta * dt * ( 2.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + j * eq_num] ) - 3.0 * eps_x_0 * mu
+				* ( 2.0 * newmark_B[1 + j * eq_num] * betta * dt + mesh[_x].Nk[1 + j * eq_num] )
 				* mesh[_x].Nk[8 + i * eq_num] ) ) / ( 12.0 * betta * dt * dx * mu );
 	matr_A[2 + i * eq_num][9 + j * eq_num] = -( ( 2.0 * h * mesh[_x].Nk[9 + i * eq_num] ) / ( 3.0 * dx * mu ) );
 
 	matr_A[3 + i * eq_num][0 + j * eq_num] = ( B12 * eps_x_0 * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 4.0 * B22 * betta * dt * dx );
 	matr_A[3 + i * eq_num][1 + j * eq_num] = -( ( B66 * h ) / ( 4.0 * dx * dx ) );
-	matr_A[3 + i * eq_num][1 + i * eq_num] = ( B66 * h ) / dx / dx + ( h * ( 2.0 * rho + dt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) ) / ( 2.0 * betta * dt * dt );
+	matr_A[3 + i * eq_num][1 + i * eq_num] = ( B66 * h ) / dx / dx + ( h * ( 2.0 * rho + dt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) )
+				 / ( 2.0 * betta * dt * dt );
 	matr_A[3 + i * eq_num][2 + j * eq_num] = 1.0 / ( 2.0 * dx );
 	matr_A[3 + i * eq_num][3 + i * eq_num] = ( eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 2.0 * B22 * betta * dt );
 	matr_A[3 + i * eq_num][4 + i * eq_num] = -( ( By1 * h * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) / ( 4.0 * betta * dt ) );
 	matr_A[3 + i * eq_num][5 + i * eq_num] = -( ( By1 * eps_x_0 * h * mesh[_x].Nk[8 + i * eq_num] ) / ( 4.0 * betta * dt ) );
-	matr_A[3 + i * eq_num][8 + i * eq_num] = ( eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * ( 4.0 * newmark_B[3 + i * eq_num] * betta * dt * dx + B12 * h * ( 2.0 * newmark_B[0 + j * eq_num] * betta * dt + mesh[_x].Nk[0 + j * eq_num] )
-				+ 2.0 * dx * mesh[_x].Nk[3 + i * eq_num] ) - B22 * dx * h * ( By1 * eps_x_0 * ( 2.0 * newmark_B[5 + i * eq_num] * betta * dt + mesh[_x].Nk[5 + i * eq_num] ) - 4.0 * betta * dt * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) )
+	matr_A[3 + i * eq_num][8 + i * eq_num] = ( eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * ( 4.0 * newmark_B[3 + i * eq_num] * betta * dt * dx + B12 * h
+				* ( 2.0 * newmark_B[0 + j * eq_num] * betta * dt + mesh[_x].Nk[0 + j * eq_num] )
+				+ 2.0 * dx * mesh[_x].Nk[3 + i * eq_num] ) - B22 * dx * h * ( By1 * eps_x_0 * ( 2.0 * newmark_B[5 + i * eq_num] * betta * dt + mesh[_x].Nk[5 + i * eq_num] )
+				- 4.0 * betta * dt * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) )
 				/ ( 4.0 * B22 * betta * dt * dx );
 	matr_A[3 + i * eq_num][9 + i * eq_num] = ( 1.0 / ( 4.0 * B22 * betta * dt * dx ) ) * ( eps_x_0 * ( 4.0 * newmark_B[3 + i * eq_num] * betta * dt * dx
-				+ B12 * h * ( 2.0 * newmark_B[0 + j * eq_num] * betta * dt + mesh[_x].Nk[0 + j * eq_num] ) + 2.0 * dx * mesh[_x].Nk[3 + i * eq_num] ) * mesh[_x].Nk[8 + i * eq_num] + B22 * dx * h * ( ( 4.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num] - By1 * mesh[_x].Nk[4 + i * eq_num] )
-				* sigma_x + 2.0 * betta * dt * ( 2.0 * Jx - newmark_B[4 + i * eq_num] * By1 * sigma_x + 4.0 * newmark_B[1 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * sigma_x + 2.0 * mesh[_x].Nk[8 + i * eq_num] * sigma_x ) ) );
+				+ B12 * h * ( 2.0 * newmark_B[0 + j * eq_num] * betta * dt + mesh[_x].Nk[0 + j * eq_num] ) + 2.0 * dx * mesh[_x].Nk[3 + i * eq_num] )
+				* mesh[_x].Nk[8 + i * eq_num] + B22 * dx * h * ( ( 4.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num] - By1 * mesh[_x].Nk[4 + i * eq_num] )
+				* sigma_x + 2.0 * betta * dt * ( 2.0 * Jx - newmark_B[4 + i * eq_num] * By1 * sigma_x + 4.0 * newmark_B[1 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * sigma_x
+				+ 2.0 * mesh[_x].Nk[8 + i * eq_num] * sigma_x ) ) );
 
-	matr_A[4 + i * eq_num][5 + i * eq_num] = 1.0 / al;
+	matr_A[4 + i * eq_num][5 + i * eq_num] = 1.0;
 
 	matr_A[5 + i * eq_num][4 + j * eq_num] = -B12 / ( B22 * dx * dx );
 	matr_A[5 + i * eq_num][4 + i * eq_num] = 2.0 * B12 / ( B22 * dx * dx );
@@ -413,16 +486,22 @@ void Solver::calc_system( int _x )
 				- ( h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) / ( 24.0 * betta * dt );
 	matr_A[6 + i * eq_num][6 + i * eq_num] = ( eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 2.0 * B22 * betta * dt );
 	matr_A[6 + i * eq_num][7 + i * eq_num] = 1.0;
-	matr_A[6 + i * eq_num][8 + i * eq_num] = ( B12 * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( -2.0 * newmark_B[4 + i * eq_num] + newmark_B[4 + j * eq_num] + ( -2.0 * mesh[_x].Nk[4 + i * eq_num] + mesh[_x].Nk[4 + j * eq_num] )
-				/ ( 2.0 * betta * dt ) ) ) / ( 12.0 * B22 * dx * dx ) + (eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * ( newmark_B[6 + i * eq_num] + mesh[_x].Nk[6 + i * eq_num] / ( 2.0 * betta * dt ) ) ) / B22;
-	matr_A[6 + i * eq_num][9 + i * eq_num] = ( B12 * eps_x_0 * h * h * h * ( -2.0 * newmark_B[4 + i * eq_num] + newmark_B[4 + j * eq_num] + ( -2.0 * mesh[_x].Nk[4 + i * eq_num] + mesh[_x].Nk[4 + j * eq_num] ) / ( 2.0 * betta * dt ) )
-				 * mesh[_x].Nk[8 + i * eq_num] ) / ( 12.0 * B22 * dx * dx ) + ( eps_x_0 * ( newmark_B[6 + i * eq_num] + mesh[_x].Nk[6 + i * eq_num] / ( 2.0 * betta * dt ) ) * mesh[_x].Nk[8 + i * eq_num] ) / B22 - ( 1.0 / 6.0 ) * h * h * h
+	matr_A[6 + i * eq_num][8 + i * eq_num] = ( B12 * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( -2.0 * newmark_B[4 + i * eq_num] + newmark_B[4 + j * eq_num]
+				+ ( -2.0 * mesh[_x].Nk[4 + i * eq_num] + mesh[_x].Nk[4 + j * eq_num] )
+				/ ( 2.0 * betta * dt ) ) ) / ( 12.0 * B22 * dx * dx ) + (eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * ( newmark_B[6 + i * eq_num] + mesh[_x].Nk[6 + i * eq_num]
+				/ ( 2.0 * betta * dt ) ) ) / B22;
+	matr_A[6 + i * eq_num][9 + i * eq_num] = ( B12 * eps_x_0 * h * h * h * ( -2.0 * newmark_B[4 + i * eq_num] + newmark_B[4 + j * eq_num] + ( -2.0 * mesh[_x].Nk[4 + i * eq_num]
+				 + mesh[_x].Nk[4 + j * eq_num] ) / ( 2.0 * betta * dt ) )
+				 * mesh[_x].Nk[8 + i * eq_num] ) / ( 12.0 * B22 * dx * dx ) + ( eps_x_0 * ( newmark_B[6 + i * eq_num] + mesh[_x].Nk[6 + i * eq_num] / ( 2.0 * betta * dt ) )
+				 * mesh[_x].Nk[8 + i * eq_num] ) / B22 - ( 1.0 / 6.0 ) * h * h * h
 				 * mesh[_x].Nk[9 + i * eq_num] * ( newmark_B[5 + i * eq_num] + mesh[_x].Nk[5 + i * eq_num] / ( 2.0 * betta * dt ) ) * sigma_x;
 	
 
-	matr_A[7 + i * eq_num][1 + j * eq_num] = -( ( eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 4.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + j * eq_num] ) * ( 2.0 * newmark_B[5 + j * eq_num] * betta * dt + mesh[_x].Nk[5 + j * eq_num] ) )
+	matr_A[7 + i * eq_num][1 + j * eq_num] = -( ( eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 4.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + j * eq_num] )
+				 * ( 2.0 * newmark_B[5 + j * eq_num] * betta * dt + mesh[_x].Nk[5 + j * eq_num] ) )
 				 / ( 1728.0 * betta * betta * dt * dt * dx * dx ) );
-	matr_A[7 + i * eq_num][1 + i * eq_num] = ( eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 4.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + j * eq_num] ) * ( 2.0 * newmark_B[5 + j * eq_num] * betta * dt + mesh[_x].Nk[5 + j * eq_num])
+	matr_A[7 + i * eq_num][1 + i * eq_num] = ( eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 4.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + j * eq_num] )
+				 * ( 2.0 * newmark_B[5 + j * eq_num] * betta * dt + mesh[_x].Nk[5 + j * eq_num])
 				 - 108.0 * betta * By1 * dt * dx * dx * h * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) / ( 432.0 * betta * betta * dt * dt * dx * dx );
 	matr_A[7 + i * eq_num][4 + ( jj - 1 ) * eq_num] = -( ( ( B12 * B12 - B11 * B22 + 2.0 * B12 * B66 ) * h * h * h ) / ( 12.0 * B22 * dx * dx * dx * dx ) );
 	matr_A[7 + i * eq_num][4 + jj * eq_num] = ( ( 3.0 * B12 * B12 * B12 - 3.0 * B11 * B12 * B22 + 6.0 * B12 * B12 * B66 + 2.0 * B11 * B22 * B66 ) * h * h * h )
@@ -430,41 +509,65 @@ void Solver::calc_system( int _x )
 	matr_A[7 + i * eq_num][4 + j * eq_num] = -( ( 1.0 / ( 1152.0 * B12 * B22 * betta * betta * dt * dt * dx * dx * dx * dx ) )
 				 * ( h * h * h * ( 192.0 * B12 * B12 * B12 * betta * betta * dt * dt + 384.0 * B12 * B12 * B66 * betta * betta * dt * dt
 				 + 768.0 * B11 * B22 * B66 * betta * betta * dt * dt + B12 * B22 * ( -192.0 * B11 * betta * betta * dt * dt
-				 + dx * dx * ( -2.0 * newmark_B[5 + j * eq_num] * betta * By1 * dt * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] - By1 * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + j * eq_num] + 16.0 * betta * ( 6.0 * rho + dt
+				 + dx * dx * ( -2.0 * newmark_B[5 + j * eq_num] * betta * By1 * dt * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] - By1 * eps_x_0 * mesh[_x].Nk[9 + i * eq_num]
+				 * mesh[_x].Nk[5 + j * eq_num] + 16.0 * betta * ( 6.0 * rho + dt
 				 * mesh[_x].Nk[9 + i * eq_num] * ( mesh[_x].Nk[9 + i * eq_num] + 2.0 * mesh[_x].Nk[9 + j * eq_num] ) * sigma_y ) + 12.0 * betta * By1 * By1 * dt * sigma_z ) ) ) ) );
 	matr_A[7 + i * eq_num][4 + i * eq_num] = ( 1.0 / ( 288.0 * B12 * B22 * betta * betta * dt * dt * dx * dx * dx * dx ) ) * ( -24.0 * B12 * B12 * B12
 				 * betta* betta * dt * dt * h * h * h - 48.0 * B12 * B12 * B66 * betta * betta * dt * dt * h * h * h + 240.0 * B11 * B22 * B66 * betta * betta
 				 * dt* dt * h * h * h + B12 * B22 * h * ( 24.0 * B11 * betta * betta * dt * dt * h * h + dx * dx * ( -2.0 * newmark_B[5 + j * eq_num] * betta * By1 * dt
-				 * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] - By1 * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + j * eq_num] + 24.0 * betta * ( 2.0 * ( 6.0 * dx * dx + h * h ) * rho
+				 * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] - By1 * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + j * eq_num] + 24.0 * betta
+				 * ( 2.0 * ( 6.0 * dx * dx + h * h ) * rho
 				 + dt * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * sigma_y ) + 6.0 * betta * By1 * By1 * dt * ( 6.0 * dx * dx * sigma_x + h * h * sigma_z ) ) ) );
 	matr_A[7 + i * eq_num][5 + j * eq_num] = -( ( 1.0 / ( 3456.0 * betta * betta * dt * dt * dx * dx ) ) * ( eps_x_0 * h * h * h * ( 24.0
-				 * newmark_B[4 + i * eq_num] * betta * By1 * dt * mesh[_x].Nk[9 + i * eq_num] - 6.0 * newmark_B[4 + j * eq_num] * betta * By1 * dt * mesh[_x].Nk[9 + i * eq_num] - 64.0 * newmark_B[1 + i * eq_num] * betta * dt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] + 16.0 * newmark_B[1 + j * eq_num] * betta
-				 * dt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] + 16.0 * newmark_B[1 + i * eq_num] * betta * dt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + j * eq_num] - 4.0 * newmark_B[1 + j * eq_num] * betta * dt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + j * eq_num] - 32.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num]
-				 + 8.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + j * eq_num] * mesh[_x].Nk[1 + i * eq_num] + 8.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + j * eq_num] - 2.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + j * eq_num] * mesh[_x].Nk[1 + j * eq_num] + 12.0 * By1 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[4 + i * eq_num]
-				 - 3.0 * By1 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[4 + j * eq_num] + 48.0 * betta * dt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 48.0 * betta * dt * mesh[_x].Nk[9 + j * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 48.0 * betta * dt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + j * eq_num] ) ) );
-	matr_A[7 + i * eq_num][5 + i * eq_num] = ( eps_x_0 * ( -6.0 * dx * dx * h + h * h * h ) * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 12.0 * betta * dt * dx * dx );
+				 * newmark_B[4 + i * eq_num] * betta * By1 * dt * mesh[_x].Nk[9 + i * eq_num] - 6.0 * newmark_B[4 + j * eq_num] * betta * By1 * dt * mesh[_x].Nk[9 + i * eq_num]
+				 - 64.0 * newmark_B[1 + i * eq_num] * betta * dt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] + 16.0 * newmark_B[1 + j * eq_num] * betta
+				 * dt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] + 16.0 * newmark_B[1 + i * eq_num] * betta * dt * mesh[_x].Nk[9 + i * eq_num]
+				 * mesh[_x].Nk[9 + j * eq_num] - 4.0 * newmark_B[1 + j * eq_num] * betta * dt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + j * eq_num]
+				 - 32.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num]
+				 + 8.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + j * eq_num] * mesh[_x].Nk[1 + i * eq_num] + 8.0 * mesh[_x].Nk[9 + i * eq_num]
+				 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + j * eq_num] - 2.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + j * eq_num] * mesh[_x].Nk[1 + j * eq_num]
+				 + 12.0 * By1 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[4 + i * eq_num]
+				 - 3.0 * By1 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[4 + j * eq_num] + 48.0 * betta * dt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num]
+				 + 48.0 * betta * dt * mesh[_x].Nk[9 + j * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 48.0 * betta * dt * mesh[_x].Nk[9 + i * eq_num]
+				 * mesh[_x].Nk[8 + j * eq_num] ) ) );
+	matr_A[7 + i * eq_num][5 + i * eq_num] = ( eps_x_0 * ( -6.0 * dx * dx * h + h * h * h ) * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] )
+				 / ( 12.0 * betta * dt * dx * dx );
 	matr_A[7 + i * eq_num][6 + j * eq_num] = -( ( B12 + 2.0 * B66 ) / ( B22 * dx * dx ) );
 	matr_A[7 + i * eq_num][6 + i * eq_num] = ( 2.0 * ( B12 + 2.0 * B66 ) ) / ( B22 * dx * dx );
-	matr_A[7 + i * eq_num][8 + j * eq_num] =  -( ( eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 2.0 * newmark_B[5 + j * eq_num] * betta * dt + mesh[_x].Nk[5 + j * eq_num] ) ) / ( 72.0 * betta * dt * dx * dx ) );
-	matr_A[7 + i * eq_num][8 + i * eq_num] =  -( ( 1.0 / ( 72.0 * betta * dt * dx * dx ) ) * ( h * ( eps_x_0 * ( 12.0 * newmark_B[5 + i * eq_num] * betta * dt * ( 6.0 * dx * dx - h * h )
-				 * mesh[_x].Nk[9 + i * eq_num] + 2.0 * newmark_B[5 + j * eq_num] * betta * dt * h * h * ( mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + j * eq_num] ) - 6.0 * ( -6.0 * dx * dx + h * h ) * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + i * eq_num] + h * h * ( mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + j * eq_num] )
+	matr_A[7 + i * eq_num][8 + j * eq_num] =  -( ( eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 2.0 * newmark_B[5 + j * eq_num] * betta * dt
+				 + mesh[_x].Nk[5 + j * eq_num] ) ) / ( 72.0 * betta * dt * dx * dx ) );
+	matr_A[7 + i * eq_num][8 + i * eq_num] =  -( ( 1.0 / ( 72.0 * betta * dt * dx * dx ) ) * ( h * ( eps_x_0 * ( 12.0 * newmark_B[5 + i * eq_num] * betta * dt * ( 6.0
+				 * dx * dx - h * h )
+				 * mesh[_x].Nk[9 + i * eq_num] + 2.0 * newmark_B[5 + j * eq_num] * betta * dt * h * h * ( mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + j * eq_num] )
+				 - 6.0 * ( -6.0 * dx * dx + h * h ) * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + i * eq_num] + h * h * ( mesh[_x].Nk[9 + i * eq_num]
+				 + mesh[_x].Nk[9 + j * eq_num] )
 				 * mesh[_x].Nk[5 + j * eq_num] ) + 36.0 * betta * By1 * dt * dx * dx * sigma_x ) ) );
 	matr_A[7 + i * eq_num][9 + j * eq_num] = -( ( 1.0 / ( 1728.0 * betta * betta * dt * dt * dx * dx ) ) * ( h * h * h * ( eps_x_0 * ( 2.0 * newmark_B[5 + j * eq_num] * betta * dt
-				 + mesh[_x].Nk[5 + j * eq_num] ) * ( 8.0 * newmark_B[1 + i * eq_num] * betta * dt * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + i * eq_num] * ( 2.0 * newmark_B[1 + j * eq_num] * betta * dt - 4.0 * mesh[_x].Nk[1 + i * eq_num] + mesh[_x].Nk[1 + j * eq_num] ) + 24.0 * betta * dt * mesh[_x].Nk[8 + i * eq_num] )
+				 + mesh[_x].Nk[5 + j * eq_num] ) * ( 8.0 * newmark_B[1 + i * eq_num] * betta * dt * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + i * eq_num]
+				 * ( 2.0 * newmark_B[1 + j * eq_num] * betta * dt - 4.0 * mesh[_x].Nk[1 + i * eq_num] + mesh[_x].Nk[1 + j * eq_num] ) + 24.0 * betta * dt
+				 * mesh[_x].Nk[8 + i * eq_num] )
 				 + 48.0 * betta * dt * mesh[_x].Nk[9 + i * eq_num] * ( 2.0 * newmark_B[4 + j * eq_num] * betta * dt + mesh[_x].Nk[4 + j * eq_num] ) * sigma_y ) ) );
 	matr_A[7 + i * eq_num][9 + i * eq_num] = ( 1.0 / ( 3456.0 * betta * betta * dt * dt ) ) * ( h * ( -1728.0 * betta * dt * eps_x_0
-				 * ( 2.0 * newmark_B[5 + i * eq_num] * betta * dt + mesh[_x].Nk[5 + i * eq_num] ) * mesh[_x].Nk[8 + i * eq_num] + ( 144.0 * betta * dt * eps_x_0 * h * h * ( 4.0 * newmark_B[5 + i * eq_num] * betta * dt - 2.0 * newmark_B[5 + j * eq_num] * betta * dt + 2.0 * mesh[_x].Nk[5 + i * eq_num]
-				 - mesh[_x].Nk[5 + j * eq_num] ) * mesh[_x].Nk[8 + i * eq_num] ) / dx / dx + ( 1.0 / dx / dx) * ( eps_x_0 * h * h * ( 2.0 * newmark_B[5 + j * eq_num] * betta * dt + mesh[_x].Nk[5 + j * eq_num] ) * ( -24.0 * newmark_B[4 + i * eq_num] * betta * By1 * dt
-				 + 6.0 * newmark_B[4 + j * eq_num] * betta * By1 * dt + 3.0 * By1 * ( -4.0 * mesh[_x].Nk[4 + i * eq_num] + mesh[_x].Nk[4 + j * eq_num] ) + 2.0 * ( 8.0 * newmark_B[1 + i * eq_num] * betta * dt * ( 8.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + j * eq_num] )
-				 + 2.0 * newmark_B[1 + j * eq_num] * betta * dt * ( -8.0 * mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + j * eq_num] ) + ( 8.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + j * eq_num] ) * ( 4.0 * mesh[_x].Nk[1 + i * eq_num] - mesh[_x].Nk[1 + j * eq_num] ) + 24.0 * betta * dt
-				 * ( 2.0 * mesh[_x].Nk[8 + i * eq_num] - mesh[_x].Nk[8 + j * eq_num] ) ) ) ) - 864.0 * betta * By1 * dt * ( 2.0 * newmark_B[1 + i * eq_num] * betta * dt + mesh[_x].Nk[1 + i * eq_num] ) * sigma_x + ( 96.0 * betta * dt
-				 * h * h * ( 12.0 * newmark_B[4 + i * eq_num] * betta * dt * mesh[_x].Nk[9 + i * eq_num] - 2.0 * newmark_B[4 + j * eq_num] * betta * dt * ( mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + j * eq_num] ) + 6.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[4 + i * eq_num]
+				 * ( 2.0 * newmark_B[5 + i * eq_num] * betta * dt + mesh[_x].Nk[5 + i * eq_num] ) * mesh[_x].Nk[8 + i * eq_num] + ( 144.0 * betta * dt * eps_x_0 * h
+				 * h * ( 4.0 * newmark_B[5 + i * eq_num] * betta * dt - 2.0 * newmark_B[5 + j * eq_num] * betta * dt + 2.0 * mesh[_x].Nk[5 + i * eq_num]
+				 - mesh[_x].Nk[5 + j * eq_num] ) * mesh[_x].Nk[8 + i * eq_num] ) / dx / dx + ( 1.0 / dx / dx) * ( eps_x_0 * h * h * ( 2.0 * newmark_B[5 + j * eq_num]
+				 * betta * dt + mesh[_x].Nk[5 + j * eq_num] ) * ( -24.0 * newmark_B[4 + i * eq_num] * betta * By1 * dt
+				 + 6.0 * newmark_B[4 + j * eq_num] * betta * By1 * dt + 3.0 * By1 * ( -4.0 * mesh[_x].Nk[4 + i * eq_num] + mesh[_x].Nk[4 + j * eq_num] )
+				 + 2.0 * ( 8.0 * newmark_B[1 + i * eq_num] * betta * dt * ( 8.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + j * eq_num] )
+				 + 2.0 * newmark_B[1 + j * eq_num] * betta * dt * ( -8.0 * mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + j * eq_num] ) + ( 8.0 * mesh[_x].Nk[9 + i * eq_num]
+				 - mesh[_x].Nk[9 + j * eq_num] ) * ( 4.0 * mesh[_x].Nk[1 + i * eq_num] - mesh[_x].Nk[1 + j * eq_num] ) + 24.0 * betta * dt
+				 * ( 2.0 * mesh[_x].Nk[8 + i * eq_num] - mesh[_x].Nk[8 + j * eq_num] ) ) ) ) - 864.0 * betta * By1 * dt * ( 2.0 * newmark_B[1 + i * eq_num] * betta * dt
+				 + mesh[_x].Nk[1 + i * eq_num] ) * sigma_x + ( 96.0 * betta * dt
+				 * h * h * ( 12.0 * newmark_B[4 + i * eq_num] * betta * dt * mesh[_x].Nk[9 + i * eq_num] - 2.0 * newmark_B[4 + j * eq_num] * betta * dt
+				 * ( mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + j * eq_num] ) + 6.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[4 + i * eq_num]
 				 - ( mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + j * eq_num] ) * mesh[_x].Nk[4 + j * eq_num] ) * sigma_y ) / dx / dx ) );
 	
 	matr_A[8 + i * eq_num][0 + j * eq_num] = -( mesh[_x].Nk[9 + i * eq_num] / ( 4.0 * betta * dt * dx ) );
 	matr_A[8 + i * eq_num][0 + i * eq_num] = ( ( 4.0 * mesh[_x].Nk[9 + i * eq_num] ) / 3.0 - ( 4.0 * mesh[_x].Nk[9 + j * eq_num] ) / 3.0 ) / ( 4.0 * betta * dt * dx );
-	matr_A[8 + i * eq_num][9 + j * eq_num] = -( ( 2.0 * ( newmark_B[0 + i * eq_num] + mesh[_x].Nk[0 + i * eq_num] / ( 2.0 * betta * dt ) ) ) / ( 3.0 * dx ) ) - 2.0 / ( 3.0 * dx * dx * mu * sigma_y );
-	matr_A[8 + i * eq_num][9 + i * eq_num] = 1.0 / ( 2.0 * betta * dt ) + ( 2.0 * ( newmark_B[0 + i * eq_num] + mesh[_x].Nk[0 + i * eq_num] / ( 2.0 * betta * dt ) ) ) / ( 3.0 * dx )
+	matr_A[8 + i * eq_num][9 + j * eq_num] = -( ( 2.0 * ( newmark_B[0 + i * eq_num] + mesh[_x].Nk[0 + i * eq_num] / ( 2.0 * betta * dt ) ) ) / ( 3.0 * dx ) ) - 2.0
+				 / ( 3.0 * dx * dx * mu * sigma_y );
+	matr_A[8 + i * eq_num][9 + i * eq_num] = 1.0 / ( 2.0 * betta * dt ) + ( 2.0 * ( newmark_B[0 + i * eq_num] + mesh[_x].Nk[0 + i * eq_num] / ( 2.0 * betta * dt ) ) )
+				 / ( 3.0 * dx )
 				 + ( -newmark_B[0 + j * eq_num] - mesh[_x].Nk[0 + j * eq_num] / ( 2.0 * betta * dt ) ) / ( 2.0 * dx ) + 2.0 / ( 3.0 * dx * dx * mu * sigma_y );
 
 	matr_A[9 + i * eq_num][1 + i * eq_num] = ( mu * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) / ( 2.0 * betta * dt );
@@ -472,54 +575,84 @@ void Solver::calc_system( int _x )
 	matr_A[9 + i * eq_num][8 + i * eq_num] = sigma_x_mu;
 	matr_A[9 + i * eq_num][9 + i * eq_num] = mu * ( newmark_B[1 + i * eq_num] + mesh[_x].Nk[1 + i * eq_num] / ( 2.0 * betta * dt ) ) * sigma_x;
 
-	vect_f[2 + i * eq_num] = ( h * ( 3.0 * eps_x_0 * mu * ( 4.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + j * eq_num] - By1 * mesh[_x].Nk[4 + j * eq_num] ) * mesh[_x].Nk[8 + i * eq_num] + 2.0 * betta * dt * ( -8.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num]
-				 + mesh[_x].Nk[9 + i * eq_num] * ( 8.0 * mesh[_x].Nk[9 + j * eq_num] + 6.0 * newmark_B[1 + j * eq_num] * eps_x_0 * mu * mesh[_x].Nk[8 + i * eq_num] ) + 3.0 * dx * mu * ( 4.0 * newmark_A[0 + i * eq_num] * rho + newmark_B[0 + i * eq_num] * By1 * By1 * sigma_z ) ) ) )
+	vect_f[2 + i * eq_num] = ( h * ( 3.0 * eps_x_0 * mu * ( 4.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + j * eq_num] - By1 * mesh[_x].Nk[4 + j * eq_num] )
+				 * mesh[_x].Nk[8 + i * eq_num] + 2.0 * betta * dt * ( -8.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num]
+				 + mesh[_x].Nk[9 + i * eq_num] * ( 8.0 * mesh[_x].Nk[9 + j * eq_num] + 6.0 * newmark_B[1 + j * eq_num] * eps_x_0 * mu * mesh[_x].Nk[8 + i * eq_num] )
+				 + 3.0 * dx * mu * ( 4.0 * newmark_A[0 + i * eq_num] * rho + newmark_B[0 + i * eq_num] * By1 * By1 * sigma_z ) ) ) )
 				 / ( 24.0 * betta * dt * dx * mu );
 
-	vect_f[3 + i * eq_num] = ( 1.0 / ( 4.0 * B22 * betta * dt * dx ) ) * ( -4.0 * newmark_B[3 + i * eq_num] * betta * dt * dx * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num]
-				 - 2.0 * B12 * eps_x_0 * h * mesh[_x].Nk[9 + i * eq_num] * ( newmark_B[0 + j * eq_num] * betta * dt + mesh[_x].Nk[0 + j * eq_num] ) * mesh[_x].Nk[8 + i * eq_num] + dx * ( -4.0 * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[3 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num]
-				 + B22 * By1 * eps_x_0 * h * mesh[_x].Nk[5 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 4.0 * newmark_A[1 + i * eq_num] * B22 * betta * dt * h * rho + B22 * h * mesh[_x].Nk[9 + i * eq_num] * ( By1 * mesh[_x].Nk[4 + i * eq_num]
-				 - 4.0 * ( newmark_B[1 + i * eq_num] * betta * dt * mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num] + betta * dt * mesh[_x].Nk[8 + i * eq_num] ) ) * sigma_x ) );
+	vect_f[3 + i * eq_num] = ( 1.0 / ( 4.0 * B22 * betta * dt * dx ) ) * ( -4.0 * newmark_B[3 + i * eq_num] * betta * dt * dx * eps_x_0 * mesh[_x].Nk[9 + i * eq_num]
+				 * mesh[_x].Nk[8 + i * eq_num]
+				 - 2.0 * B12 * eps_x_0 * h * mesh[_x].Nk[9 + i * eq_num] * ( newmark_B[0 + j * eq_num] * betta * dt + mesh[_x].Nk[0 + j * eq_num] )
+				 * mesh[_x].Nk[8 + i * eq_num] + dx * ( -4.0 * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[3 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num]
+				 + B22 * By1 * eps_x_0 * h * mesh[_x].Nk[5 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 4.0 * newmark_A[1 + i * eq_num] * B22 * betta * dt * h * rho
+				 + B22 * h * mesh[_x].Nk[9 + i * eq_num] * ( By1 * mesh[_x].Nk[4 + i * eq_num]
+				 - 4.0 * ( newmark_B[1 + i * eq_num] * betta * dt * mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num] + betta * dt
+				 * mesh[_x].Nk[8 + i * eq_num] ) ) * sigma_x ) );
 
-	vect_f[6 + i * eq_num] = ( 1.0 / ( 12.0 * B22 * betta * dt * dx * dx ) ) * ( -12.0 * newmark_B[6 + i * eq_num] * betta * dt * dx * dx * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num]
-				 + B12 * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 2.0 * newmark_B[4 + i * eq_num] * betta * dt - newmark_B[4 + j * eq_num] * betta * dt + 2.0 * mesh[_x].Nk[4 + i * eq_num] - mesh[_x].Nk[4 + j * eq_num] ) * mesh[_x].Nk[8 + i * eq_num]
-				 + dx * dx * ( -12.0 * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[6 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + B22 * h * h * h * ( ( -newmark_A[5 + i * eq_num] ) * betta * dt * rho + mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num]
+	vect_f[6 + i * eq_num] = ( 1.0 / ( 12.0 * B22 * betta * dt * dx * dx ) ) * ( -12.0 * newmark_B[6 + i * eq_num] * betta * dt * dx * dx * eps_x_0
+				 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num]
+				 + B12 * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 2.0 * newmark_B[4 + i * eq_num] * betta * dt - newmark_B[4 + j * eq_num] * betta * dt
+				 + 2.0 * mesh[_x].Nk[4 + i * eq_num] - mesh[_x].Nk[4 + j * eq_num] ) * mesh[_x].Nk[8 + i * eq_num]
+				 + dx * dx * ( -12.0 * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[6 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + B22 * h * h * h
+				 * ( ( -newmark_A[5 + i * eq_num] ) * betta * dt * rho + mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num]
 				 * ( newmark_B[5 + i * eq_num] * betta * dt + mesh[_x].Nk[5 + i * eq_num] ) * sigma_x ) ) );
 
-	vect_f[7 + i * eq_num] = ( 1.0 / ( 1728.0 * betta * betta * dt * dt * dx * dx ) ) * ( -3.0 * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( ( 4.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + j * eq_num] )
-				 * ( 4.0 * mesh[_x].Nk[1 + i * eq_num] - mesh[_x].Nk[1 + j * eq_num] ) + By1 * ( -4.0 * mesh[_x].Nk[4 + i * eq_num] + mesh[_x].Nk[4 + j * eq_num] ) ) * mesh[_x].Nk[5 + j * eq_num] + betta * dt * h * ( newmark_B[5 + j * eq_num] * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 16.0
-				 * mesh[_x].Nk[9 + j * eq_num] * mesh[_x].Nk[1 + i * eq_num] - 4.0 * mesh[_x].Nk[9 + j * eq_num] * mesh[_x].Nk[1 + j * eq_num] + 16.0 * mesh[_x].Nk[9 + i * eq_num] * ( -4.0 * mesh[_x].Nk[1 + i * eq_num] + mesh[_x].Nk[1 + j * eq_num] ) + 12.0 * By1 * mesh[_x].Nk[4 + i * eq_num] - 3.0 * By1 * mesh[_x].Nk[4 + j * eq_num] )
-				 + 12.0 * newmark_B[4 + i * eq_num] * By1 * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + j * eq_num] - 3.0 * newmark_B[4 + j * eq_num] * By1 * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + j * eq_num] - 64.0 * newmark_B[1 + i * eq_num] * eps_x_0 * h * h
-				 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + j * eq_num] + 16.0 * newmark_B[1 + j * eq_num] * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + j * eq_num] + 16.0 * newmark_B[1 + i * eq_num] * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + j * eq_num] * mesh[_x].Nk[5 + j * eq_num]
-				 - 4.0 * newmark_B[1 + j * eq_num] * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + j * eq_num] * mesh[_x].Nk[5 + j * eq_num] + 1728.0 * dx * dx * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] - 288.0 * eps_x_0 * h * h
-				 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 48.0 * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + j * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 48.0 * eps_x_0 * h * h * mesh[_x].Nk[9 + j * eq_num] * mesh[_x].Nk[5 + j * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 48.0 * eps_x_0
-				 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + j * eq_num] * mesh[_x].Nk[8 + j * eq_num] + 432.0 * By1 * dx * dx * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num] * sigma_x + 48.0 * h * h * mesh[_x].Nk[9 + i * eq_num] * ( -6.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[4 + i * eq_num]
-				 + mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[4 + j * eq_num] + 2.0 * mesh[_x].Nk[9 + j * eq_num] * mesh[_x].Nk[4 + j * eq_num] ) * sigma_y ) + 4.0 * betta * betta * dt * dt * ( -216.0 * By1 * dx * dx * h * Jx + 4.0 * newmark_B[1 + j * eq_num]
-				 * newmark_B[5 + j * eq_num] * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] - newmark_B[1 + j * eq_num] * newmark_B[5 + j * eq_num] * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + j * eq_num] + 4.0 * newmark_B[1 + i * eq_num] * newmark_B[5 + j * eq_num] * eps_x_0 * h * h * h
-				 * mesh[_x].Nk[9 + i * eq_num] * ( -4.0 * mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + j * eq_num] ) + 432.0 * newmark_B[5 + i * eq_num] * dx * dx * eps_x_0 * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] - 72.0 * newmark_B[5 + i * eq_num] * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num]
-				 + 12.0 * newmark_B[5 + j * eq_num] * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 12.0 * newmark_B[5 + j * eq_num] * eps_x_0 * h * h * h * mesh[_x].Nk[9 + j * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 12.0 * newmark_B[5 + j * eq_num] * eps_x_0 * h * h * h
-				 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + j * eq_num] + 432.0 * newmark_A[4 + i * eq_num] * dx * dx * h * rho + 72.0 * newmark_A[4 + i * eq_num] * h * h * h * rho - 36.0 * newmark_A[4 + j * eq_num] * h * h * h * rho + 432.0 * dx * dx * Pimp
-				 + 12.0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( -6.0 * newmark_B[4 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] + newmark_B[4 + j * eq_num] * mesh[_x].Nk[9 + i * eq_num] + 2.0 * newmark_B[4 + j * eq_num] * mesh[_x].Nk[9 + j * eq_num] ) * sigma_y + 9.0 * By1 * By1 * ( 12.0 * newmark_B[4 + i * eq_num]
+	vect_f[7 + i * eq_num] = ( 1.0 / ( 1728.0 * betta * betta * dt * dt * dx * dx ) ) * ( -3.0 * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num]
+				 * ( ( 4.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + j * eq_num] )
+				 * ( 4.0 * mesh[_x].Nk[1 + i * eq_num] - mesh[_x].Nk[1 + j * eq_num] ) + By1 * ( -4.0 * mesh[_x].Nk[4 + i * eq_num] + mesh[_x].Nk[4 + j * eq_num] ) )
+				 * mesh[_x].Nk[5 + j * eq_num] + betta * dt * h * ( newmark_B[5 + j * eq_num] * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 16.0
+				 * mesh[_x].Nk[9 + j * eq_num] * mesh[_x].Nk[1 + i * eq_num] - 4.0 * mesh[_x].Nk[9 + j * eq_num] * mesh[_x].Nk[1 + j * eq_num] + 16.0 * mesh[_x].Nk[9 + i * eq_num]
+				 * ( -4.0 * mesh[_x].Nk[1 + i * eq_num] + mesh[_x].Nk[1 + j * eq_num] ) + 12.0 * By1 * mesh[_x].Nk[4 + i * eq_num] - 3.0 * By1 * mesh[_x].Nk[4 + j * eq_num] )
+				 + 12.0 * newmark_B[4 + i * eq_num] * By1 * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + j * eq_num] - 3.0 * newmark_B[4 + j * eq_num] * By1
+				 * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + j * eq_num] - 64.0 * newmark_B[1 + i * eq_num] * eps_x_0 * h * h
+				 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + j * eq_num] + 16.0 * newmark_B[1 + j * eq_num] * eps_x_0 * h * h
+				 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + j * eq_num] + 16.0 * newmark_B[1 + i * eq_num] * eps_x_0 * h * h
+				 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + j * eq_num] * mesh[_x].Nk[5 + j * eq_num]
+				 - 4.0 * newmark_B[1 + j * eq_num] * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + j * eq_num] * mesh[_x].Nk[5 + j * eq_num]
+				 + 1728.0 * dx * dx * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] - 288.0 * eps_x_0 * h * h
+				 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 48.0 * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num]
+				 * mesh[_x].Nk[5 + j * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 48.0 * eps_x_0 * h * h * mesh[_x].Nk[9 + j * eq_num] * mesh[_x].Nk[5 + j * eq_num]
+				 * mesh[_x].Nk[8 + i * eq_num] + 48.0 * eps_x_0
+				 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + j * eq_num] * mesh[_x].Nk[8 + j * eq_num] + 432.0 * By1 * dx * dx * mesh[_x].Nk[9 + i * eq_num]
+				 * mesh[_x].Nk[1 + i * eq_num] * sigma_x + 48.0 * h * h * mesh[_x].Nk[9 + i * eq_num] * ( -6.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[4 + i * eq_num]
+				 + mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[4 + j * eq_num] + 2.0 * mesh[_x].Nk[9 + j * eq_num] * mesh[_x].Nk[4 + j * eq_num] ) * sigma_y ) + 4.0 * betta
+				 * betta * dt * dt * ( -216.0 * By1 * dx * dx * h * Jx + 4.0 * newmark_B[1 + j * eq_num]
+				 * newmark_B[5 + j * eq_num] * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] - newmark_B[1 + j * eq_num]
+				 * newmark_B[5 + j * eq_num] * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + j * eq_num] + 4.0 * newmark_B[1 + i * eq_num]
+				 * newmark_B[5 + j * eq_num] * eps_x_0 * h * h * h
+				 * mesh[_x].Nk[9 + i * eq_num] * ( -4.0 * mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + j * eq_num] ) + 432.0 * newmark_B[5 + i * eq_num] * dx * dx
+				 * eps_x_0 * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] - 72.0 * newmark_B[5 + i * eq_num] * eps_x_0 * h * h * h
+				 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num]
+				 + 12.0 * newmark_B[5 + j * eq_num] * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 12.0 * newmark_B[5 + j * eq_num]
+				 * eps_x_0 * h * h * h * mesh[_x].Nk[9 + j * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 12.0 * newmark_B[5 + j * eq_num] * eps_x_0 * h * h * h
+				 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + j * eq_num] + 432.0 * newmark_A[4 + i * eq_num] * dx * dx * h * rho + 72.0 * newmark_A[4 + i * eq_num]
+				 * h * h * h * rho - 36.0 * newmark_A[4 + j * eq_num] * h * h * h * rho + 432.0 * dx * dx * Pimp
+				 + 12.0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( -6.0 * newmark_B[4 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] + newmark_B[4 + j * eq_num]
+				 * mesh[_x].Nk[9 + i * eq_num] + 2.0 * newmark_B[4 + j * eq_num] * mesh[_x].Nk[9 + j * eq_num] ) * sigma_y + 9.0 * By1 * By1
+				 * ( 12.0 * newmark_B[4 + i * eq_num]
 				 * dx * dx * h * sigma_x + ( 2.0 * newmark_B[4 + i * eq_num] - newmark_B[4 + j * eq_num] ) * h * h * h * sigma_z ) ) );
 
-	vect_f[8 + i * eq_num] = ( 12.0 * newmark_B[9 + i * eq_num] * betta * dt * dx - 4.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[0 + i * eq_num] + 4.0 * mesh[_x].Nk[9 + j * eq_num] * mesh[_x].Nk[0 + i * eq_num] + 3.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[0 + j * eq_num] )
+	vect_f[8 + i * eq_num] = ( 12.0 * newmark_B[9 + i * eq_num] * betta * dt * dx - 4.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[0 + i * eq_num]
+				 + 4.0 * mesh[_x].Nk[9 + j * eq_num] * mesh[_x].Nk[0 + i * eq_num] + 3.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[0 + j * eq_num] )
 				 / ( 12.0 * betta * dt * dx );
 
-	vect_f[9 + i * eq_num] = -( ( mu * ( newmark_B[4 + i * eq_num] * betta * By1 * dt + mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num] ) * sigma_x ) / ( 2.0 * betta * dt ) );
+	vect_f[9 + i * eq_num] = -( ( mu * ( newmark_B[4 + i * eq_num] * betta * By1 * dt + mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num] ) * sigma_x )
+				 / ( 2.0 * betta * dt ) );
 
 	for( int i = 1; i < nx - 1; ++i )
 	{
 		Pimp = 0.0;
-		Pimp = p0 * sin( 100.0 * _MMM_PI * ( cur_t ) );
-		//PL_NUM rad2 = ( ( Km - 1 ) / 2 - _x ) * dy * ( ( Km - 1 ) / 2 - _x ) * dy + ( ( nx - 1 ) / 2 - i ) * dx * ( ( nx - 1 ) / 2 - i ) * dx;
-		//if( rad2 < Rad2 && cur_t < tauP )
-		//{
-		//	Pimp = p0 * sqrt( 1 - rad2 / Rad2 ) * sin( _MMM_PI * ( cur_t ) / tauP );
-		//}
-		//else if( _x == ( Km - 1 ) / 2 )
-		//{
-		//	//cout << " == line " << i << " is out\n";
-		//}
+		//Pimp = p0 * sin( 100.0 * _MMM_PI * ( cur_t ) );
+		PL_NUM rad2 = ( ( Km - 1 ) / 2 - _x ) * dy * ( ( Km - 1 ) / 2 - _x ) * dy + ( ( nx - 1 ) / 2 - i ) * dx * ( ( nx - 1 ) / 2 - i ) * dx;
+		if( rad2 < Rad2 && cur_t < tauP )
+		{
+			Pimp = p0 * sqrt( 1 - rad2 / Rad2 ) * sin( _MMM_PI * ( cur_t ) / tauP );
+		}
+		else if( _x == ( Km - 1 ) / 2 )
+		{
+			//cout << " == line " << i << " is out\n";
+		}
 
 		r = i + 1;
 		rr = i + 2;
@@ -1360,7 +1493,7 @@ void Solver::dump_border_vals()
 void Solver::dump_whole_sol( int var )
 {
 	stringstream ss;
-	ss << "./res/sol_whole_" << curTimeStep << ".bin";
+	ss << "./res/" << var << "_sol_whole_" << curTimeStep << ".bin";
 	ofstream of1( ss.str(), ofstream::out | ofstream::binary );
 	for( int y = 0; y < Km; ++y )
 	{

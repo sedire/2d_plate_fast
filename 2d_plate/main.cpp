@@ -40,10 +40,19 @@ int main()
 			solver->increaseTime();
 			cout << solver->getCurTime() << " -- step done\n";
 		}
-		//solver->dump_whole_sol( 1 );
+		solver->dump_whole_sol( 0 );
+		solver->dump_whole_sol( 1 );
+		solver->dump_whole_sol( 2 );
+		solver->dump_whole_sol( 3 );
+		solver->dump_whole_sol( 4 );
+		solver->dump_whole_sol( 5 );
+		solver->dump_whole_sol( 6 );
+		solver->dump_whole_sol( 7 );
+		solver->dump_whole_sol( 8 );
+		solver->dump_whole_sol( 9 );
 		//solver->dump_sol();
 		//solver->dump_check_sol();
-		solver->dump_check_sol2D();
+		//solver->dump_check_sol2D();
 	}
 	
 	delete( solver );
