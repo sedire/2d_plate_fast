@@ -43,7 +43,8 @@ Solver::Solver():
 	kx( 10.88 ),
 	ky( 1.16 ),
 	cc( 1389.2 ),
-	Rc( 0.0424 ),
+	//Rc( 0.0424 ),
+	Rc( 0.00424 / 2.0 ),
 
 	//Tinf( 1.0 ),		//ambient temperature
 	//hInf( 1.0 ),
