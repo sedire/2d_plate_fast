@@ -30,6 +30,9 @@
     <ClInclude Include="OrthoBuilder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SolverThermo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Solver.cpp">
@@ -45,6 +48,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="OrthoBuilder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SolverThermo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

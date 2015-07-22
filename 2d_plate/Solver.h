@@ -5,6 +5,7 @@
 #include "plate_var_types.h"
 #include "RungeKutta.h"
 #include "OrthoBuilder.h"
+#include "SolverThermo.h"
 #include "VarVect.h"
 #include <iostream>
 #include <vector>
@@ -34,6 +35,8 @@ public:
 
 	void pre_step();
 	void do_step();
+	void doStepThermo();
+	void dumpThermo();
 	void dump_sol();
 	void dump_whole_sol( int var );
 	void dump_check_sol();
@@ -125,6 +128,7 @@ private:
 
 	RungeKutta* rungeKutta;
 	OrthoBuilder* orthoBuilder;
+	SolverThermo* solverThermo;
 
 	void calc_Newmark_AB( int _x, int mode );		//don't really know why we need this stuff with mode need to FIX
 	void calc_system( int _x );

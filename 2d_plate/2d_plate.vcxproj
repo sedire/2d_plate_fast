@@ -119,6 +119,7 @@
     <ClInclude Include="plate_var_types.h" />
     <ClInclude Include="RungeKutta.h" />
     <ClInclude Include="Solver.h" />
+    <ClInclude Include="SolverThermo.h" />
     <ClInclude Include="VarVect.h" />
   </ItemGroup>
   <ItemGroup>
@@ -126,6 +127,7 @@
     <ClCompile Include="OrthoBuilder.cpp" />
     <ClCompile Include="RungeKutta.cpp" />
     <ClCompile Include="Solver.cpp" />
+    <ClCompile Include="SolverThermo.cpp" />
     <ClCompile Include="VarVect.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

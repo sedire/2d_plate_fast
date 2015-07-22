@@ -28,7 +28,7 @@ Solver::Solver():
 	sigma_y_mu( sigma_y * mu ),
 	sigma_z( sigma_y ),
 
-	J0( 1000000.0 ),
+	J0( 100000.0 ),
 	//J0( 0.0 ),
 	omega( 0.0 ),
 	tauC( 0.01 ),
@@ -65,7 +65,8 @@ Solver::Solver():
 	al( 1.0 ),
 
 	rungeKutta( 0 ),
-	orthoBuilder( 0 )
+	orthoBuilder( 0 ),
+	solverThermo( 0 )
 {
 	setTask();
 }
@@ -74,11 +75,15 @@ Solver::~Solver()
 {
 	if( rungeKutta != 0 )
 	{
-		delete( rungeKutta );
+		delete rungeKutta;
 	}
 	if( orthoBuilder != 0 )
 	{
-		delete( orthoBuilder );
+		delete orthoBuilder ;
+	}
+	if( solverThermo != 0 )
+	{
+		delete solverThermo;
 	}
 }
 
@@ -137,6 +142,19 @@ void Solver::setTask()
 	rungeKutta = new RungeKutta( varNum );
 	orthoBuilder = new OrthoBuilderGSh( varNum, Km );
 	orthoBuilder->setParams();			//NOTE: it takes a lot of time to initialize so much memory
+	solverThermo = new SolverThermoWElectrodes( ( nx + 3 ) / 2 * 100,
+							ap, bp, 0.0508, hp, 0.009525,
+							J0, tauC, tauC, 296.15,
+							0.0424,
+							10.88, 23.0, sigma_x, rho, 1389.2,
+							401.0, 12.0, 5.81395349e7, 8700.0, 380.0,
+							dt );
+	//solverThermo = new SolverThermoConstFlow( ( nx + 3 ) / 2 * 100,
+	//						ap, bp, hp,
+	//						J0, 296.15,
+	//						0.0424,
+	//						10.88, 23.0, sigma_x, rho, 1389.2,
+	//						dt );
 
 	mesh.resize( Km );
 	for( int i = 0; i < mesh.size(); ++i ){
@@ -171,6 +189,31 @@ void Solver::setTask()
 	//By1 = 2.0 * By0;                                      // in considered boundary-value problem
 	//By2 = 0.0;
 	//eps_x_0 = eps_x - eps_0;
+}
+
+void Solver::doStepThermo()
+{
+	if( solverThermo != 0 )
+	{
+		solverThermo->doStep();
+	}
+	else
+	{
+		cout << "warning: thermo solver is NULL!\n";
+	}
+}
+
+void Solver::dumpThermo()
+{
+	if( solverThermo != 0 )
+	{
+		//solverThermo->dumpSol();
+		solverThermo->dumpSolBin();
+	}
+	else
+	{
+		cout << "warning: thermo solver is NULL!\n";
+	}
 }
 
 void Solver::calc_Newmark_AB( int _x, int mode )

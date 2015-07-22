@@ -17,7 +17,21 @@ int main()
 	time_t endTime;
 
 	Solver* solver = new Solver();
-	//solver->setTask();
+
+	solver->doStepThermo();
+	solver->dumpThermo();
+	for( int t = 0; t < 60; ++t )
+	{
+		cout << " ::::: " << t << endl;
+		for( int i = 0; i < 10000; ++i )
+		{
+			solver->doStepThermo();
+		}
+		solver->dumpThermo();
+	}
+
+	cout << "... done!\n";
+	std::cin.ignore( std::numeric_limits<std::streamsize>::max(), '\n' );
 
 	cout << "\n doing pre_step...\n";
 	beginTime = time( 0 );
