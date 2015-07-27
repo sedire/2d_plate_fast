@@ -262,18 +262,18 @@ void OrthoBuilderGodunov::buildSolution( vector<VarVect>* _mesh )
 //	}
 //}
 
-inline void OrthoBuilderGSh::setNextSolVects( int n, const PL_NUM decompVect[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] )
+inline void OrthoBuilderGSh::setNextSolVects( int n, const PL_NUM (*decompVect)[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] )
 {
 	for( int vNum = 0; vNum < EQ_NUM * NUMBER_OF_LINES / 2; ++vNum )
 	{
 		for( int j = 0; j < EQ_NUM * NUMBER_OF_LINES; ++j )
 		{
-			zi[n + 1][vNum][j] = decompVect[vNum][j];
+			zi[n + 1][vNum][j] = (*decompVect)[vNum][j];
 		}
 	}
 	for( int j = 0; j < EQ_NUM * NUMBER_OF_LINES; ++j )
 	{
-		z5[n + 1][j] = decompVect[EQ_NUM * NUMBER_OF_LINES / 2][j];
+		z5[n + 1][j] = (*decompVect)[EQ_NUM * NUMBER_OF_LINES / 2][j];
 	}
 }
 

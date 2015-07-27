@@ -28,7 +28,7 @@ Solver::Solver():
 	sigma_y_mu( sigma_y * mu ),
 	sigma_z( sigma_y ),
 
-	J0( 100000.0 ),
+	J0( 1000000.0 ),
 	//J0( 0.0 ),
 	omega( 0.0 ),
 	tauC( 0.01 ),
@@ -1232,7 +1232,7 @@ void Solver::walkthrough( int mode )
 			else
 			{
 				++active;	//if no orthonormalization has been done, we have one more solution that can be used in ABM method
-				orthoBuilder->setNextSolVects( _x, decompVect );
+				orthoBuilder->setNextSolVects( _x, &decompVect );
 			}
 
 			++_x;

@@ -46,7 +46,7 @@ public:
 	virtual void setInitVects( const vector<PL_NUM>& N1, const vector<PL_NUM>& N2, const vector<PL_NUM>& N3, const vector<PL_NUM>& N4, const vector<PL_NUM>& N5 );
 	virtual void setOrthoDoneInfo( int y );
 	virtual void resetOrthoDoneInfo();
-	inline virtual void setNextSolVects( int n, const PL_NUM decompVect[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] ) {};
+	inline virtual void setNextSolVects( int n, const PL_NUM (*decompVect)[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] ) {};
 	inline virtual int checkOrtho( int n, 
 									PL_NUM vectSetOrtho[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES], 
 									PL_NUM vectSetOrig[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] ) { return 1; };
@@ -90,7 +90,7 @@ public:
 	void calcScalarProdsPar( int baseV, int n, vector<PL_NUM>* NtoOrt );
 	void calcScalarProdsPar2( int baseV, int n, vector<PL_NUM>* NtoOrt );
 
-	inline void setNextSolVects( int n, const PL_NUM decompVect[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] );
+	inline void setNextSolVects( int n, const PL_NUM (*decompVect)[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] );
 	inline int checkOrtho( int n, 
 							PL_NUM vectSetOrtho[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES], 
 							PL_NUM vectSetOrig[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] );

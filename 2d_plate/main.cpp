@@ -18,20 +18,21 @@ int main()
 
 	Solver* solver = new Solver();
 
-	solver->doStepThermo();
-	solver->dumpThermo();
-	for( int t = 0; t < 60; ++t )
-	{
-		cout << " ::::: " << t << endl;
-		for( int i = 0; i < 10000; ++i )
-		{
-			solver->doStepThermo();
-		}
-		solver->dumpThermo();
-	}
+	//solver->doStepThermo();
+	//solver->dumpThermo();
+	//for( int t = 0; t < 500; ++t )
+	//{
+	//	cout << " ::::: " << t << endl;
+	//	for( int i = 0; i < 1; ++i )
+	//	{
+	//		solver->doStepThermo();
+	//	}
+	//	solver->dumpThermo();
+	//}
+	//cout << "... done!\n";
+	//std::cin.ignore( std::numeric_limits<std::streamsize>::max(), '\n' );
 
-	cout << "... done!\n";
-	std::cin.ignore( std::numeric_limits<std::streamsize>::max(), '\n' );
+	time_t totTimeStart = time( 0 );
 
 	cout << "\n doing pre_step...\n";
 	beginTime = time( 0 );
@@ -42,7 +43,7 @@ int main()
 	cout << "\n pre_step done\n";
 	cout << "pre_step done in " << float( endTime - beginTime ) << " ~~\n";
 
-	while( solver->getCurTime() <= 0.05 )
+	while( solver->getCurTime() <= 0.01 )
 	{
 		for( int i = 0; i < 1; ++i )
 		{
@@ -54,16 +55,16 @@ int main()
 			solver->increaseTime();
 			cout << solver->getCurTime() << " -- step done\n";
 		}
-		solver->dump_whole_sol( 0 );
-		solver->dump_whole_sol( 1 );
-		solver->dump_whole_sol( 2 );
-		solver->dump_whole_sol( 3 );
-		solver->dump_whole_sol( 4 );
-		solver->dump_whole_sol( 5 );
-		solver->dump_whole_sol( 6 );
-		solver->dump_whole_sol( 7 );
-		solver->dump_whole_sol( 8 );
-		solver->dump_whole_sol( 9 );
+		//solver->dump_whole_sol( 0 );
+		//solver->dump_whole_sol( 1 );
+		//solver->dump_whole_sol( 2 );
+		//solver->dump_whole_sol( 3 );
+		//solver->dump_whole_sol( 4 );
+		//solver->dump_whole_sol( 5 );
+		//solver->dump_whole_sol( 6 );
+		//solver->dump_whole_sol( 7 );
+		//solver->dump_whole_sol( 8 );
+		//solver->dump_whole_sol( 9 );
 		//solver->dump_sol();
 		//solver->dump_check_sol();
 		//solver->dump_check_sol2D();
@@ -73,6 +74,7 @@ int main()
 
 	cout << ".........\n";
 	cout << "... done!\n";
+	cout << "... in " << time( 0 ) - totTimeStart << " sec\n";
 	std::cin.ignore( std::numeric_limits<std::streamsize>::max(), '\n' );
 	return 0;
 }

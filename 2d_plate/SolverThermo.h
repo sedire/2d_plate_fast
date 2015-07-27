@@ -31,7 +31,8 @@ protected:
 
 	PL_NUM J0;		//current density
 	PL_NUM tauExp;
-	PL_NUm tauSin;
+	PL_NUM tauSin;
+	PL_NUM Jx;		//current at the actual time
 	PL_NUM Tamb;	//ambient temperature
 
 	PL_NUM Rc;		//contact resistance
@@ -64,8 +65,8 @@ protected:
 	PL_NUM curTime;
 	int curTimeStep;
 
-	virtual int fillSystem() = 0;
-	virtual int restoreSystem() = 0;
+	virtual int fillABSystem() = 0;
+	virtual int updateSystem() = 0;
 };
 
 class SolverThermoWElectrodes : public SolverThermo
@@ -73,14 +74,14 @@ class SolverThermoWElectrodes : public SolverThermo
 public:
 	SolverThermoWElectrodes( int _NN,
 				PL_NUM _aa, PL_NUM _bb, PL_NUM _aaEl, PL_NUM _hh, PL_NUM _hhEl,
-				PL_NUM _Jx, PL_NUM _tauExp, PL_NUm _tauSin, PL_NUM _Tamb,
+				PL_NUM _J0, PL_NUM _tauExp, PL_NUM _tauSin, PL_NUM _Tamb,
 				PL_NUM _Rc,
 				PL_NUM _kx, PL_NUM _hInf, PL_NUM _sigmaX, PL_NUM _rho, PL_NUM _cc,
 				PL_NUM _kEl, PL_NUM _hInfEl, PL_NUM _sigmaEl, PL_NUM _rhoEl, PL_NUM _ccEl,
 				PL_NUM _dt );
 	//int setParams( int _NN,
 	//			PL_NUM _aa, PL_NUM _bb, PL_NUM _aaEl, PL_NUM _hh, PL_NUM _hhEl,
-	//			PL_NUM _Jx, PL_NUM _Tamb,
+	//			PL_NUM _J0, PL_NUM _Tamb,
 	//			PL_NUM _Rc,
 	//			PL_NUM _kx, PL_NUM _hInf, PL_NUM _sigmaX, PL_NUM _rho, PL_NUM _cc,
 	//			PL_NUM _kEl, PL_NUM _hInfEl, PL_NUM _sigmaEl, PL_NUM _rhoEl, PL_NUM _ccEl,
@@ -114,8 +115,8 @@ protected:
 	PL_NUM* electrNodesN;
 	PL_NUM* electrNodesN1;
 
-	int fillSystem();
-	int restoreSystem();
+	int fillABSystem();
+	int updateSystem();
 };
 
 class SolverThermoConstFlow : public SolverThermo
@@ -123,14 +124,14 @@ class SolverThermoConstFlow : public SolverThermo
 public:
 	SolverThermoConstFlow( int _NN,
 				PL_NUM _aa, PL_NUM _bb, PL_NUM _hh,
-				PL_NUM _Jx, PL_NUM _tauExp, PL_NUN _tauSin, PL_NUM _Tamb,
+				PL_NUM _J0, PL_NUM _tauExp, PL_NUM _tauSin, PL_NUM _Tamb,
 				PL_NUM _Rc,
 				PL_NUM _kx, PL_NUM _hInf, PL_NUM _sigmaX, PL_NUM _rho, PL_NUM _cc,
 				PL_NUM _dt );
 	~SolverThermoConstFlow();
 	//int setParams( int _NN,
 	//			PL_NUM _aa, PL_NUM _bb, PL_NUM _hh,
-	//			PL_NUM _Jx, PL_NUM _Tamb,
+	//			PL_NUM _J0, PL_NUM _Tamb,
 	//			PL_NUM _Rc,
 	//			PL_NUM _kx, PL_NUM _hInf, PL_NUM _sigmaX, PL_NUM _rho, PL_NUM _cc,
 	//			PL_NUM _dt ) {};
@@ -138,8 +139,8 @@ public:
 	void dumpSol();
 	void dumpSolBin();
 protected:
-	int fillSystem();
-	int restoreSystem();
+	int fillABSystem();
+	int updateSystem();
 };
 
 #endif
