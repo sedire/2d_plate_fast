@@ -10,6 +10,7 @@ using std::endl;
 int main()
 {
 	cout << "hello\n";
+	cout << EIGEN_WORLD_VERSION << " " << EIGEN_MAJOR_VERSION << " " << EIGEN_MINOR_VERSION << endl;
 
 	omp_set_num_threads( NUM_OF_THREADS );
 	
@@ -18,19 +19,19 @@ int main()
 
 	Solver* solver = new Solver();
 
-	//solver->doStepThermo();
-	//solver->dumpThermo();
-	//for( int t = 0; t < 500; ++t )
-	//{
-	//	cout << " ::::: " << t << endl;
-	//	for( int i = 0; i < 1; ++i )
-	//	{
-	//		solver->doStepThermo();
-	//	}
-	//	solver->dumpThermo();
-	//}
-	//cout << "... done!\n";
-	//std::cin.ignore( std::numeric_limits<std::streamsize>::max(), '\n' );
+	solver->doStepThermo();
+	solver->dumpThermo();
+	for( int t = 0; t < 500; ++t )
+	{
+		cout << " ::::: " << t << endl;
+		for( int i = 0; i < 1; ++i )
+		{
+			solver->doStepThermo();
+		}
+		solver->dumpThermo();
+	}
+	cout << "... done!\n";
+	std::cin.ignore( std::numeric_limits<std::streamsize>::max(), '\n' );
 
 	time_t totTimeStart = time( 0 );
 

@@ -298,8 +298,8 @@ inline PL_NUM OrthoBuilder::getInfNorm( PL_NUM* vect, int vectSize )
 }
 
 inline int OrthoBuilderGSh::checkOrtho( int n, 
-									PL_NUM vectSetOrtho[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES], 
-									PL_NUM vectSetOrig[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] )
+									PL_NUM (*vectSetOrtho)[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES], 
+									PL_NUM (*vectSetOrig)[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] )
 {
 	int ret = 0;
 	PL_NUM eps = ORTHONORM_CHECK_EPS;
@@ -307,8 +307,8 @@ inline int OrthoBuilderGSh::checkOrtho( int n,
 	//check for the main basis vectors
 	for( int vNum = 1; vNum < EQ_NUM * NUMBER_OF_LINES / 2; ++vNum )
 	{
-		if( getInfNorm( vectSetOrtho[vNum], EQ_NUM * NUMBER_OF_LINES ) * solInfoMap[n + 1].o[vNum * ( vNum + 1 ) / 2 + vNum] <
-			eps * getInfNorm( vectSetOrig[vNum], EQ_NUM * NUMBER_OF_LINES ) )
+		if( getInfNorm( (*vectSetOrtho)[vNum], EQ_NUM * NUMBER_OF_LINES ) * solInfoMap[n + 1].o[vNum * ( vNum + 1 ) / 2 + vNum] <
+			eps * getInfNorm( (*vectSetOrig)[vNum], EQ_NUM * NUMBER_OF_LINES ) )
 		{
 			ret = 1;
 			break;
@@ -317,8 +317,8 @@ inline int OrthoBuilderGSh::checkOrtho( int n,
 
 	if( ret != 1 )	//check for the vector of particular solution
 	{
-		if( getInfNorm( vectSetOrtho[EQ_NUM * NUMBER_OF_LINES / 2], EQ_NUM * NUMBER_OF_LINES ) <
-			eps * getInfNorm( vectSetOrig[EQ_NUM * NUMBER_OF_LINES / 2], EQ_NUM * NUMBER_OF_LINES ) )
+		if( getInfNorm( (*vectSetOrtho)[EQ_NUM * NUMBER_OF_LINES / 2], EQ_NUM * NUMBER_OF_LINES ) <
+			eps * getInfNorm( (*vectSetOrig)[EQ_NUM * NUMBER_OF_LINES / 2], EQ_NUM * NUMBER_OF_LINES ) )
 		{
 			ret = 1;
 		}
@@ -348,7 +348,7 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are
 			for( int k = 0; k < varNum; ++k )
 			{
 				//solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += solInfoMap[n + 1].zi[baseV][k] * solInfoMap[n + 1].zi[bvIt][k];			//problems here
-				solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += NtoOrt[k] * zi[n + 1][bvIt][k];			//problems here
+				solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += NtoOrt[k] * zi[n + 1][bvIt][k];
 			}
 			for( int k = 0; k < varNum; ++k )
 			{
@@ -391,7 +391,6 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are
 			for( int k = 0; k < varNum; ++k )
 			{
 				zi[n + 1][baseV][k] = NtoOrt[k] / omega2[baseV];
-				//	(*NtoOrt)[k] = solInfoMap[n + 1].zi[baseV][k];
 			}
 			for( int bvIt = 0; bvIt < baseV; ++bvIt )
 			{
@@ -399,11 +398,9 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are
 			}
 			solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] = omega2[baseV];
 		}
-		//caution: previously there was a k11-procedure possibly from the modified gram-schmidt
 	}
 	else
 	{
-		//look at the original. m.b. there is a misake here
 		for( int bvIt = 0; bvIt < varNum / 2; ++bvIt )
 		{
 			for( int k = 0; k < varNum; ++k )

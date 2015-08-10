@@ -28,7 +28,7 @@ Solver::Solver():
 	sigma_y_mu( sigma_y * mu ),
 	sigma_z( sigma_y ),
 
-	J0( 1000000.0 ),
+	J0( 155000.0 ),
 	//J0( 0.0 ),
 	omega( 0.0 ),
 	tauC( 0.01 ),
@@ -1182,7 +1182,8 @@ void Solver::walkthrough( int mode )
 		#pragma omp barrier
 
 		if( omp_get_thread_num() == 0 )
-		{
+		{			
+			tBeg = time( 0 );
 			//rgkT += time( 0 ) - tBeg;
 			//tBeg = time( 0 );
 			//if( active >= 4 )
@@ -1197,7 +1198,6 @@ void Solver::walkthrough( int mode )
 			//}
 			//rgkT += time( 0 ) - tBeg;
 
-
 			for( int i = 0; i < EQ_NUM * NUMBER_OF_LINES / 2 + 1; ++i )
 			{
 				for( int j = 0; j < EQ_NUM * NUMBER_OF_LINES; ++j )
@@ -1208,15 +1208,13 @@ void Solver::walkthrough( int mode )
 
 			for( int vNum = 0; vNum < varNum / 2 + 1; ++vNum )
 			{
-				tBeg = time( 0 );
 				orthoBuilder->orthonorm( vNum, _x, decompVectOrtho[vNum] );
-				orthoT += time( 0 ) - tBeg;
 			}
 			//tBeg = time( 0 );
 			//orthoBuilder->orthonorm( varNum / 2, _x, decompVectOrtho[varNum / 2] );
 			//orthoT += time( 0 ) - tBeg;
 
-			if( orthoBuilder->checkOrtho( _x, decompVectOrtho, decompVect ) == 1 )			
+			if( orthoBuilder->checkOrtho( _x, &decompVectOrtho, &decompVect ) == 1 )			
 			{
 				active = 1;		//if orthonormalization has been performed, we have to restart the ABM method
 				for( int i = 0; i < EQ_NUM * NUMBER_OF_LINES / 2 + 1; ++i )
@@ -1236,6 +1234,7 @@ void Solver::walkthrough( int mode )
 			}
 
 			++_x;
+			orthoT += time( 0 ) - tBeg;
 		}
 		#pragma omp barrier
 	}

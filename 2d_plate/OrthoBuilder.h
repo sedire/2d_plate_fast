@@ -48,8 +48,8 @@ public:
 	virtual void resetOrthoDoneInfo();
 	inline virtual void setNextSolVects( int n, const PL_NUM (*decompVect)[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] ) {};
 	inline virtual int checkOrtho( int n, 
-									PL_NUM vectSetOrtho[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES], 
-									PL_NUM vectSetOrig[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] ) { return 1; };
+									PL_NUM (*vectSetOrtho)[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES], 
+									PL_NUM (*vectSetOrig)[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] ) { return 1; };
 
 	inline PL_NUM getInfNorm( PL_NUM* vect, int vectSize );
 	void LUsolve( vector<vector<PL_NUM>>& AA, vector<PL_NUM>& ff, vector<PL_NUM>* xx );
@@ -92,8 +92,8 @@ public:
 
 	inline void setNextSolVects( int n, const PL_NUM (*decompVect)[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] );
 	inline int checkOrtho( int n, 
-							PL_NUM vectSetOrtho[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES], 
-							PL_NUM vectSetOrig[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] );
+							PL_NUM (*vectSetOrtho)[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES], 
+							PL_NUM (*vectSetOrig)[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] );
 private:
 	OrthoBuilderGSh();
 };
