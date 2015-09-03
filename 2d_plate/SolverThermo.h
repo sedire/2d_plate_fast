@@ -24,6 +24,7 @@ public:
 	virtual int doStep() = 0;
 	virtual void dumpSol() = 0;
 	virtual void dumpSolBin() = 0;
+	virtual PL_NUM* getSolDx() = 0;
 protected:
 	PL_NUM aa;		//lenght of the plate in x-dir
 	PL_NUM bb;		//width of the plate in y-dir
@@ -55,6 +56,7 @@ protected:
 
 	PL_NUM* plateNodesN;
 	PL_NUM* plateNodesN1;
+	PL_NUM* solDx;
 
 	//a matrix and the rhs of the system of equations to solve
 	PL_NUM* ai;
@@ -90,6 +92,7 @@ public:
 	int doStep();
 	void dumpSol();
 	void dumpSolBin();
+	PL_NUM* getSolDx();
 protected:
 	PL_NUM aaEl;	//length of the electrode in x-dir
 	PL_NUM hhEl;	//thickness of the electrode
@@ -138,6 +141,7 @@ public:
 	int doStep();
 	void dumpSol();
 	void dumpSolBin();
+	PL_NUM* getSolDx() { cout << "WARNING: I am void\n"; return 0; };
 protected:
 	int fillABSystem();
 	int updateSystem();

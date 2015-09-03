@@ -10,7 +10,7 @@ using std::endl;
 int main()
 {
 	cout << "hello\n";
-	cout << EIGEN_WORLD_VERSION << " " << EIGEN_MAJOR_VERSION << " " << EIGEN_MINOR_VERSION << endl;
+	cout << " eigen lib version " << EIGEN_WORLD_VERSION << " " << EIGEN_MAJOR_VERSION << " " << EIGEN_MINOR_VERSION << endl;
 
 	omp_set_num_threads( NUM_OF_THREADS );
 	
@@ -19,7 +19,7 @@ int main()
 
 	Solver* solver = new Solver();
 
-	solver->doStepThermo();
+	/*solver->doStepThermo();
 	solver->dumpThermo();
 	for( int t = 0; t < 500; ++t )
 	{
@@ -31,7 +31,7 @@ int main()
 		solver->dumpThermo();
 	}
 	cout << "... done!\n";
-	std::cin.ignore( std::numeric_limits<std::streamsize>::max(), '\n' );
+	std::cin.ignore( std::numeric_limits<std::streamsize>::max(), '\n' );*/
 
 	time_t totTimeStart = time( 0 );
 
@@ -44,7 +44,7 @@ int main()
 	cout << "\n pre_step done\n";
 	cout << "pre_step done in " << float( endTime - beginTime ) << " ~~\n";
 
-	while( solver->getCurTime() <= 0.01 )
+	while( solver->getCurTime() <= 0.05 )
 	{
 		for( int i = 0; i < 1; ++i )
 		{
@@ -56,15 +56,15 @@ int main()
 			solver->increaseTime();
 			cout << solver->getCurTime() << " -- step done\n";
 		}
-		//solver->dump_whole_sol( 0 );
-		//solver->dump_whole_sol( 1 );
-		//solver->dump_whole_sol( 2 );
+		solver->dump_whole_sol( 0 );
+		solver->dump_whole_sol( 1 );
+		solver->dump_whole_sol( 2 );
 		//solver->dump_whole_sol( 3 );
-		//solver->dump_whole_sol( 4 );
-		//solver->dump_whole_sol( 5 );
+		solver->dump_whole_sol( 4 );
+		solver->dump_whole_sol( 5 );
 		//solver->dump_whole_sol( 6 );
 		//solver->dump_whole_sol( 7 );
-		//solver->dump_whole_sol( 8 );
+		solver->dump_whole_sol( 8 );
 		//solver->dump_whole_sol( 9 );
 		//solver->dump_sol();
 		//solver->dump_check_sol();

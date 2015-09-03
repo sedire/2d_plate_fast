@@ -97,6 +97,7 @@ SolverThermoWElectrodes::SolverThermoWElectrodes( int _NN,
 	electrNodesN1 = new PL_NUM[MM];
 	plateNodesN = new PL_NUM[NN];
 	plateNodesN1 = new PL_NUM[NN];
+	solDx = new PL_NUM[NN];
 
 	for( int i = 0; i < MM; ++i )
 	{
@@ -105,6 +106,7 @@ SolverThermoWElectrodes::SolverThermoWElectrodes( int _NN,
 	for( int i = 0; i < NN; ++i )
 	{
 		plateNodesN[i] = 0.0;	//because we solve for dT
+		solDx[i] = 0.0;
 	}
 	TelRightG = 0.0;
 	TleftG = 0.0;
@@ -259,6 +261,11 @@ int SolverThermoWElectrodes::doStep()
 	{
 		plateNodesN[i] = plateNodesN1[i];
 	}
+	solDx[0] = ( plateNodesN1[1] - TleftG1 ) / 2.0 / dx;
+	for( int i = 1; i < NN - 1; ++i )
+	{
+		solDx[i] = ( plateNodesN1[i + 1] - plateNodesN1[i - 1] ) / 2.0 / dx;
+	}
 
 	return 0;
 }
@@ -303,6 +310,11 @@ void SolverThermoWElectrodes::dumpSolBin()
 
 	of1.close();
 	of2.close();
+}
+
+PL_NUM* SolverThermoWElectrodes::getSolDx()
+{
+	return solDx;
 }
 
 //void SolverThermoWElectrodes::dumpSolElectrBin()

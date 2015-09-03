@@ -72,6 +72,9 @@ private:
 	const PL_NUM sigma_y_mu;
 	const PL_NUM sigma_z;
 
+	const PL_NUM alpha1;
+	const PL_NUM alpha2;
+
 	const PL_NUM J0;
 	const PL_NUM tauC;
 	const PL_NUM tauP;
@@ -105,6 +108,7 @@ private:
 
 	const PL_NUM al;			//some weird var for normalization. It is said that this will improve the numerical scheme. must be equal to density
 
+	PL_NUM* solThermoDx;
 	vector<VarVect> mesh;		//2d mesh for solution.
 	//vector<vector<PL_NUM>> matr_A;		//matrix A for the nonlinear system at certain t and x
 	//vector<PL_NUM> vect_f;		//vector f on right part of nonlinear system at certain t and x

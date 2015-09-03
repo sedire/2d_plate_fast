@@ -18,7 +18,7 @@ public:
 	vector<PL_NUM> d1N;
 	vector<PL_NUM> d2N;
 
-	vector<PL_NUM> Nk0;			//don't really know why we need these. some computational tricks, probably
+	vector<PL_NUM> Nk0;	
 	vector<PL_NUM> d1N0;
 	vector<PL_NUM> d2N0;
 };

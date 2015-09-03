@@ -28,13 +28,17 @@ Solver::Solver():
 	sigma_y_mu( sigma_y * mu ),
 	sigma_z( sigma_y ),
 
-	J0( 155000.0 ),
+	alpha1( 0 ),
+	alpha2( 0 ),
+
+	J0( 1000000.0 ),
 	//J0( 0.0 ),
 	omega( 0.0 ),
 	tauC( 0.01 ),
 	tauP( 0.01 ),
 	//p0( 100.0 ),
-	p0( 30000.0 ),
+	//p0( 30000.0 ),
+	p0( 3000.0 ),
 	impRadSq( 64.0 ),
 
 	eps_0( 0.000000000008854 ),
@@ -64,6 +68,8 @@ Solver::Solver():
 
 	al( 1.0 ),
 
+	solThermoDx( 0 ),
+
 	rungeKutta( 0 ),
 	orthoBuilder( 0 ),
 	solverThermo( 0 )
@@ -73,6 +79,10 @@ Solver::Solver():
 
 Solver::~Solver()
 {
+	if( solThermoDx != 0 )
+	{
+		delete[] solThermoDx;
+	}
 	if( rungeKutta != 0 )
 	{
 		delete rungeKutta;
@@ -142,7 +152,7 @@ void Solver::setTask()
 	rungeKutta = new RungeKutta( varNum );
 	orthoBuilder = new OrthoBuilderGSh( varNum, Km );
 	orthoBuilder->setParams();			//NOTE: it takes a lot of time to initialize so much memory
-	solverThermo = new SolverThermoWElectrodes( ( nx + 3 ) / 2 * 100,
+	solverThermo = new SolverThermoWElectrodes( ( nx + 1 ) / 2 * THERM_NODE_MULT + 1,
 							ap, bp, 0.0508, hp, 0.009525,
 							J0, tauC, tauC, 296.15,
 							0.0424,
@@ -409,7 +419,8 @@ void Solver::calc_system( int _x )
 			* mesh[_x].Nk[8 + i * eq_num] + 2.0 * betta * dt * ( 8.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num]
 			- 2.0 * mesh[_x].Nk[9 + i * eq_num] * ( 4.0 * mesh[_x].Nk[9 + r * eq_num] + 3.0 * newmark_B[1 + r * eq_num] * eps_x_0 * mu * mesh[_x].Nk[8 + i * eq_num] )
 			+ 3.0 * dx * mu * ( 4.0 * newmark_A[0 + i * eq_num] * rho + newmark_B[0 + i * eq_num] * By1 * By1 * sigma_z ) ) ) )
-			/ ( 24.0 * betta * dt * dx * mu );
+			/ ( 24.0 * betta * dt * dx * mu )
+			- ( B11 * alpha1 + B12 * alpha2 ) * h * solThermoDx[THERM_NODE_MULT];	// thermal component
 
 	vect_f[3 + i * eq_num] = ( 1.0 / ( 4.0 * betta * B22 * dt * dx ) ) * ( eps_x_0 * ( 2.0 * B12 * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[0 + r * eq_num]
 			- 4.0 * dx * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[3 + i * eq_num]
@@ -622,7 +633,8 @@ void Solver::calc_system( int _x )
 				 * mesh[_x].Nk[8 + i * eq_num] + 2.0 * betta * dt * ( -8.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num]
 				 + mesh[_x].Nk[9 + i * eq_num] * ( 8.0 * mesh[_x].Nk[9 + j * eq_num] + 6.0 * newmark_B[1 + j * eq_num] * eps_x_0 * mu * mesh[_x].Nk[8 + i * eq_num] )
 				 + 3.0 * dx * mu * ( 4.0 * newmark_A[0 + i * eq_num] * rho + newmark_B[0 + i * eq_num] * By1 * By1 * sigma_z ) ) ) )
-				 / ( 24.0 * betta * dt * dx * mu );
+				 / ( 24.0 * betta * dt * dx * mu )
+				 - ( B11 * alpha1 + B12 * alpha2 ) * h * ( -solThermoDx[THERM_NODE_MULT] );	// thermal component
 
 	vect_f[3 + i * eq_num] = ( 1.0 / ( 4.0 * B22 * betta * dt * dx ) ) * ( -4.0 * newmark_B[3 + i * eq_num] * betta * dt * dx * eps_x_0 * mesh[_x].Nk[9 + i * eq_num]
 				 * mesh[_x].Nk[8 + i * eq_num]
@@ -840,6 +852,16 @@ void Solver::calc_system( int _x )
 		matr_A[9 + i * eq_num][8 + i * eq_num] = sigma_x_mu;
 		matr_A[9 + i * eq_num][9 + i * eq_num] = sigma_x_mu * ( 1.0 / Btdt * mesh[_x].Nk[1 + i * eq_num] + newmark_B[1 + i * eq_num] );
 
+		PL_NUM dTdx = 0;
+		if( i <= ( nx - 1 ) / 2 )
+		{
+			dTdx = solThermoDx[THERM_NODE_MULT + THERM_NODE_MULT * i];
+		}
+		else
+		{
+			dTdx = solThermoDx[THERM_NODE_MULT + THERM_NODE_MULT * ( nx - i - 1 )];
+		}
+
 		vect_f[2 + i * eq_num] = ( - ( ( 2 * (B11 - B12 * B12 / B22) * h) / dx / dx + ( h * rho ) / ( betta * dt * dt ) + ( By1 * By1 * h * sigma_z ) / ( 8 * betta * dt ) ) ) 
 			* mesh[_x].Nk[0 + i * eq_num] +	h * rho * ( newmark_A[0 + i * eq_num] + mesh[_x].Nk[0 + i * eq_num] / ( betta * dt * dt) ) + ( 1 / 4 ) * By1 * By1 * h * sigma_z 
 			* ( newmark_B[0 + i * eq_num] + mesh[_x].Nk[0 + i * eq_num] / ( 2 * betta * dt ) ) + ( ( B11 - B12 * B12 / B22 ) * h * mesh[_x].Nk[0 + r * eq_num] ) / dx / dx 
@@ -858,7 +880,8 @@ void Solver::calc_system( int _x )
 			- ( By1 * eps_x_0 * h * ( newmark_B[4 + r * eq_num] - newmark_B[4 + j * eq_num] + ( mesh[_x].Nk[4 + r * eq_num] - mesh[_x].Nk[4 + j * eq_num] ) / ( 2 * betta * dt ) ) 
 			* mesh[_x].Nk[8 + i * eq_num] ) / ( 4 * dx ) - ( By1 * eps_x_0 * h * mesh[_x].Nk[4 + j * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 8 * betta * dt * dx )
 			- mesh[_x].Nk[9 + i * eq_num] * ( ( h * ( mesh[_x].Nk[9 + r * eq_num] - mesh[_x].Nk[9 + j * eq_num] ) ) / ( 2 * dx * mu ) + ( eps_x_0 * h * ( newmark_B[1 + r * eq_num] 
-			- newmark_B[1 + j * eq_num] + ( mesh[_x].Nk[1 + r * eq_num] - mesh[_x].Nk[1 + j * eq_num] ) / ( 2 * betta * dt ) ) * mesh[_x].Nk[8 + i * eq_num] ) / ( 2 * dx ) );
+			- newmark_B[1 + j * eq_num] + ( mesh[_x].Nk[1 + r * eq_num] - mesh[_x].Nk[1 + j * eq_num] ) / ( 2 * betta * dt ) ) * mesh[_x].Nk[8 + i * eq_num] ) / ( 2 * dx ) )
+			- ( B11 * alpha1 + B12 * alpha2 ) * h * dTdx;	// thermal component
 
 		vect_f[3 + i * eq_num] = h * Jx * mesh[_x].Nk[9 + i * eq_num] - ( ( h * rho ) / ( betta * dt * dt ) + ( h *sigma_x * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] )
 			/ ( 2 * betta * dt ) ) * mesh[_x].Nk[1 + i * eq_num] + h * rho * ( newmark_A[1 + i * eq_num] + mesh[_x].Nk[1 + i * eq_num] / ( betta * dt * dt ) ) 
@@ -1035,6 +1058,7 @@ void Solver::walkthrough( int mode )
 	//integrate and orthonorm
 	int _x = 0;
 	int PhiInd = 0;
+	int numOfRgkSteps = ABM_STAGE_NUM - 1;
 #pragma omp parallel //firstprivate( baseVect )
 	{
 	for( _x; _x < Km - 1; )
@@ -1225,7 +1249,8 @@ void Solver::walkthrough( int mode )
 					}
 				}
 				orthoBuilder->setOrthoDoneInfo( _x );
-				cout << " --- at x = " << _x << " ortho is needed\n";
+				//cout << " --- at x = " << _x << " ortho is needed\n";
+				numOfRgkSteps += ABM_STAGE_NUM - 1;
 			}
 			else
 			{
@@ -1242,6 +1267,7 @@ void Solver::walkthrough( int mode )
 
 	cout << " == rgkT \t" << rgkT << endl;
 	cout << " == orthoT \t" << orthoT << endl;
+	cout << " rgk to ABM ratio is -- " << ( float )numOfRgkSteps / ( float )( Km - 1 ) << endl;
 
 	orthoBuilder->buildSolution( &mesh );
 
@@ -1277,6 +1303,8 @@ void Solver::pre_step()
 		orthoBuilder->zi[0][( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 1] = -1.0;
 	}
 	//z5s are already zeros
+
+	solThermoDx = solverThermo->getSolDx();
 
 	calc_Newmark_AB( 0, 0 );
 	calc_system( 0 );
@@ -1327,6 +1355,9 @@ void Solver::do_step()
 		cont = checkConv();
 	}
 	updateDerivs();
+
+	doStepThermo();
+	solThermoDx = solverThermo->getSolDx();
 }
 
 int Solver::checkConv()

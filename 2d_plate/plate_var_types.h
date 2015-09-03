@@ -15,5 +15,6 @@
 #define _MMM_PI 3.14159265
 #define NUM_OF_THREADS 2
 #define ABM_STAGE_NUM 4
+#define THERM_NODE_MULT 100
 
 #endif
