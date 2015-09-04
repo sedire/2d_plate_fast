@@ -28,8 +28,8 @@ Solver::Solver():
 	sigma_y_mu( sigma_y * mu ),
 	sigma_z( sigma_y ),
 
-	alpha1( 0 ),
-	alpha2( 0 ),
+	alpha1( -1.80089e-6 ),
+	alpha2( 26.8023e-6 ),
 
 	J0( 1000000.0 ),
 	//J0( 0.0 ),
@@ -37,8 +37,7 @@ Solver::Solver():
 	tauC( 0.01 ),
 	tauP( 0.01 ),
 	//p0( 100.0 ),
-	//p0( 30000.0 ),
-	p0( 3000.0 ),
+	p0( 30000.0 ),
 	impRadSq( 64.0 ),
 
 	eps_0( 0.000000000008854 ),
@@ -263,6 +262,11 @@ void Solver::calc_system( int _x )
 	//{
 	//	Pimp = p0 * sqrt( 1.0 - cur_X / h * 10.0 * cur_X / h * 10.0 ) * sin( _MMM_PI * ( cur_t + dt ) / tauP );
 	//}
+
+	if( _x == ( Km - 1 ) / 2 )
+	{
+		cout << " ********* " << solThermoDx[THERM_NODE_MULT] << endl;
+	}	
 
 	PL_NUM Rad2 = ap * ap / impRadSq;
 
