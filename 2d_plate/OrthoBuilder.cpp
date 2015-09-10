@@ -339,16 +339,19 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are
 		for( int i = 0; i < varNum; ++i )
 		{
 			norm += NtoOrt[i] * NtoOrt[i];
-			omega2[i] = 0.0;
 		}
 		norm = sqrtf( norm );
+		for( int i = 0; i < varNum / 2; ++i )
+		{
+			omega2[i] = 0.0;
+		}
 
 		for( int bvIt = 0; bvIt < baseV; ++bvIt )
 		{
 			for( int k = 0; k < varNum; ++k )
 			{
-				//solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += solInfoMap[n + 1].zi[baseV][k] * solInfoMap[n + 1].zi[bvIt][k];			//problems here
-				solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += NtoOrt[k] * zi[n + 1][bvIt][k];			//problems here
+				//solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += solInfoMap[n + 1].zi[baseV][k] * solInfoMap[n + 1].zi[bvIt][k];		
+				solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += NtoOrt[k] * zi[n + 1][bvIt][k];			
 			}
 			for( int k = 0; k < varNum; ++k )
 			{
@@ -358,7 +361,7 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are
 
 		for( int k = 0; k < varNum; ++k )
 		{
-			solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] += NtoOrt[k] * NtoOrt[k];			//problems here
+			solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] += NtoOrt[k] * NtoOrt[k];			
 		}
 		solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] = sqrtl( fabs( solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] ) );
 
@@ -371,7 +374,7 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are
 		}
 		else
 		{
-			//cout << " === no ortho!!\n";
+			//cout << " ===!!!!!!!!!!!!!!!! no ortho!!\n";
 			for( int bvIt = 0; bvIt < baseV; ++bvIt )
 			{
 				for( int k = 0; k < varNum; ++k )
@@ -399,7 +402,6 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are
 			}
 			solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV] = omega2[baseV];
 		}
-		//caution: previously there was a k11-procedure possibly from the modified gram-schmidt
 	}
 	else
 	{

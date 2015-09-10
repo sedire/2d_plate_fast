@@ -62,7 +62,7 @@ protected:
 	vector<vector<PL_NUM>> LL;
 	vector<vector<PL_NUM>> UU;
 	vector<bool> orthoDone;
-	PL_NUM omega2[EQ_NUM * NUMBER_OF_LINES];
+	PL_NUM omega2[EQ_NUM * NUMBER_OF_LINES / 2];
 	PL_NUM omegaPar[NUM_OF_THREADS];
 	PL_NUM Cx[EQ_NUM * NUMBER_OF_LINES / 2];
 	PL_NUM Cx1[EQ_NUM * NUMBER_OF_LINES / 2];
