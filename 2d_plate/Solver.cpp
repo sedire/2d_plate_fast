@@ -1163,15 +1163,13 @@ void Solver::walkthrough( int mode )
 				}
 			}
 
-			for( int vNum = 0; vNum < varNum / 2 + 1; ++vNum )
-			{
-				tBeg = time( 0 );
-				orthoBuilder->orthonorm( vNum, _x, decompVectOrtho[vNum] );
-				orthoT += time( 0 ) - tBeg;
-			}
-			//tBeg = time( 0 );
-			//orthoBuilder->orthonorm( varNum / 2, _x, decompVectOrtho[varNum / 2] );
-			//orthoT += time( 0 ) - tBeg;
+			//for( int vNum = 0; vNum < varNum / 2 + 1; ++vNum )
+			//{
+			//	tBeg = time( 0 );
+			//	orthoBuilder->orthonorm( vNum, _x, decompVectOrtho[vNum] );
+			//	orthoT += time( 0 ) - tBeg;
+			//}
+			orthoBuilder->orthonorm( _x, decompVectOrtho );
 
 			if( orthoBuilder->checkOrtho( _x, decompVectOrtho, decompVect ) == 1 )			
 			{
@@ -1184,6 +1182,7 @@ void Solver::walkthrough( int mode )
 					}
 				}
 				orthoBuilder->setOrthoDoneInfo( _x );
+				orthoBuilder->setNextSolVects( _x, decompVectOrtho );
 				cout << " --- at x = " << _x << " ortho is needed\n";
 			}
 			else

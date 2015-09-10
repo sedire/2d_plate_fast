@@ -41,6 +41,7 @@ public:
 	virtual ~OrthoBuilder();
 	virtual void setParams();
 	virtual void orthonorm( int baseV, int n, PL_NUM* NtoOrt ) {};
+	virtual void orthonorm( int y, PL_NUM NtoOrt[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] ) {};	//this version should orthonorm all 
 	virtual void buildSolution( vector<VarVect>* _mesh ) {};
 	virtual void flushO( int x );
 	virtual void setInitVects( const vector<PL_NUM>& N1, const vector<PL_NUM>& N2, const vector<PL_NUM>& N3, const vector<PL_NUM>& N4, const vector<PL_NUM>& N5 );
@@ -76,6 +77,7 @@ public:
 	OrthoBuilderGodunov( int _varNum, int _Km );
 	~OrthoBuilderGodunov() {};
 	void orthonorm( int baseV, int n, PL_NUM* NtoOrt );
+	void orthonorm( int y, PL_NUM NtoOrt[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] );	//this version should orthonorm all 
 	void buildSolution( vector<VarVect>* _mesh );
 };
 
@@ -85,6 +87,7 @@ public:
 	OrthoBuilderGSh( int _varNum, int Km );
 	~OrthoBuilderGSh() {};
 	void orthonorm( int baseV, int n, PL_NUM* NtoOrt );
+	void orthonorm( int y, PL_NUM NtoOrt[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] );	//this version should orthonorm all 
 	void buildSolution( vector<VarVect>* _mesh );
 
 	void calcScalarProdsPar( int baseV, int n, vector<PL_NUM>* NtoOrt );

@@ -225,6 +225,11 @@ void OrthoBuilderGodunov::orthonorm( int baseV, int n, PL_NUM* NtoOrt )
 	cout << "Warning: I am void\n";
 }
 
+void OrthoBuilderGodunov::orthonorm( int y, PL_NUM NtoOrt[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] )
+{
+	cout << "Warning: I am void\n";
+}
+
 void OrthoBuilderGodunov::buildSolution( vector<VarVect>* _mesh )
 {
 	cout << "WARNING: OrthoBuilderGodunov is void\n";
@@ -329,7 +334,7 @@ inline int OrthoBuilderGSh::checkOrtho( int n,
 
 void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are from 0 to varNum / 2 (including), varNum = 10 * nx. 10 is the number of basic variables, nx is the number of lines
 {
-	PL_NUM k11 = 1.414213562373095;
+	PL_NUM k11 = sqrtl( 2.0 );
 	PL_NUM norm( 0.0 );
 
 	//theory is on p.45-46 of Scott, Watts article
@@ -420,6 +425,95 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are
 		for( int k = 0; k < varNum; ++k )
 		{
 			z5[n + 1][k] = NtoOrt[k];
+		}
+	}
+}
+
+void OrthoBuilderGSh::orthonorm( int y, PL_NUM NtoOrt[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] )
+{
+	PL_NUM k11 = sqrtl( 2.0 );
+	PL_NUM norm( 0.0 );
+
+	//theory is on p.45-46 of Scott, Watts article
+	for( int baseVNum = 0; baseVNum < varNum / 2; ++baseVNum )
+	{
+		norm = 0.0;
+		for( int i = 0; i < varNum; ++i )
+		{
+			norm += NtoOrt[baseVNum][i] * NtoOrt[baseVNum][i];
+		}
+		norm = sqrtf( norm );
+		for( int i = 0; i < varNum / 2; ++i )
+		{
+			omega2[i] = 0.0;
+		}
+
+		for( int bvIt = 0; bvIt < baseVNum; ++bvIt )
+		{
+			for( int k = 0; k < varNum; ++k )
+			{
+				solInfoMap[y + 1].o[baseVNum * ( baseVNum + 1 ) / 2 + bvIt] += NtoOrt[baseVNum][k] * NtoOrt[bvIt][k];			
+			}
+			for( int k = 0; k < varNum; ++k )
+			{
+				NtoOrt[baseVNum][k] -= solInfoMap[y + 1].o[baseVNum * ( baseVNum + 1 ) / 2 + bvIt] * NtoOrt[bvIt][k];
+			}
+		}
+
+		for( int k = 0; k < varNum; ++k )
+		{
+			solInfoMap[y + 1].o[baseVNum * ( baseVNum + 1 ) / 2 + baseVNum] += NtoOrt[baseVNum][k] * NtoOrt[baseVNum][k];			
+		}
+		solInfoMap[y + 1].o[baseVNum * ( baseVNum + 1 ) / 2 + baseVNum] = sqrtl( solInfoMap[y + 1].o[baseVNum * ( baseVNum + 1 ) / 2 + baseVNum] );
+
+		if( norm / solInfoMap[y + 1].o[baseVNum * ( baseVNum + 1 ) / 2 + baseVNum] <= k11 )
+		{
+			for( int k = 0; k < varNum; ++k )
+			{
+				NtoOrt[baseVNum][k] /= solInfoMap[y + 1].o[baseVNum * ( baseVNum + 1 ) / 2 + baseVNum];
+			}
+		}
+		else
+		{
+			//cout << " === no ortho!!\n";
+			for( int bvIt = 0; bvIt < baseVNum; ++bvIt )
+			{
+				for( int k = 0; k < varNum; ++k )
+				{
+					omega2[bvIt] += NtoOrt[baseVNum][k] * NtoOrt[bvIt][k];
+				}
+				for( int k = 0; k < varNum; ++k )
+				{
+					NtoOrt[baseVNum][k] -= omega2[bvIt] * NtoOrt[bvIt][k];
+				}
+			}
+			for( int k = 0; k < varNum; ++k )
+			{
+				omega2[baseVNum] += NtoOrt[baseVNum][k] * NtoOrt[baseVNum][k];
+			}
+			omega2[baseVNum] = sqrtl( omega2[baseVNum] );
+			for( int k = 0; k < varNum; ++k )
+			{
+				NtoOrt[baseVNum][k] /= omega2[baseVNum];
+			}
+			for( int bvIt = 0; bvIt < baseVNum; ++bvIt )
+			{
+				solInfoMap[y + 1].o[baseVNum * ( baseVNum + 1 ) / 2 + bvIt] += omega2[bvIt];
+			}
+			solInfoMap[y + 1].o[baseVNum * ( baseVNum + 1 ) / 2 + baseVNum] = omega2[baseVNum];
+		}
+	}
+	//orthogonalization of the particular solution
+	int partSolNum = varNum / 2;
+	for( int bvIt = 0; bvIt < varNum / 2; ++bvIt )
+	{
+		for( int k = 0; k < varNum; ++k )
+		{
+			solInfoMap[y + 1].o[partSolNum * ( partSolNum + 1 ) / 2 + bvIt] += NtoOrt[partSolNum][k] * NtoOrt[bvIt][k];
+		}
+		for( int k = 0; k < varNum; ++k )
+		{
+			NtoOrt[partSolNum][k] -= solInfoMap[y + 1].o[partSolNum * ( partSolNum + 1 ) / 2 + bvIt] * NtoOrt[bvIt][k];
 		}
 	}
 }
