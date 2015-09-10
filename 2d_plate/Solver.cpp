@@ -1062,7 +1062,6 @@ void Solver::walkthrough( int mode )
 	//integrate and orthonorm
 	int _x = 0;
 	int PhiInd = 0;
-	int numOfRgkSteps = ABM_STAGE_NUM - 1;
 #pragma omp parallel //firstprivate( baseVect )
 	{
 	for( _x; _x < Km - 1; )
@@ -1253,8 +1252,6 @@ void Solver::walkthrough( int mode )
 					}
 				}
 				orthoBuilder->setOrthoDoneInfo( _x );
-				//cout << " --- at x = " << _x << " ortho is needed\n";
-				numOfRgkSteps += ABM_STAGE_NUM - 1;
 			}
 			else
 			{
@@ -1271,7 +1268,6 @@ void Solver::walkthrough( int mode )
 
 	cout << " == rgkT \t" << rgkT << endl;
 	cout << " == orthoT \t" << orthoT << endl;
-	cout << " rgk to ABM ratio is -- " << ( float )numOfRgkSteps / ( float )( Km - 1 ) << endl;
 
 	orthoBuilder->buildSolution( &mesh );
 
