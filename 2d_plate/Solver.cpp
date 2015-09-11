@@ -65,7 +65,8 @@ Solver::Solver():
 	al( 1.0 ),
 
 	rungeKutta( 0 ),
-	orthoBuilder( 0 )
+	orthoBuilder( 0 ),
+	qr( EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1 )
 {
 	setTask();
 }
@@ -980,6 +981,7 @@ void Solver::walkthrough( int mode )
 	time_t tBeg;
 	time_t rgkT = 0;
 	time_t orthoT = 0;
+	time_t qrTime = 0;
 
 	calc_Newmark_AB( 0, mode );
 	calc_system( 0 );
@@ -992,10 +994,13 @@ void Solver::walkthrough( int mode )
 	//integrate and orthonorm
 	int _x = 0;
 	int PhiInd = 0;
+	int totalRgkSteps = 0;
+	tBeg = 0;
 #pragma omp parallel //firstprivate( baseVect )
 	{
 	for( _x; _x < Km - 1; )
 	{
+		int rgkIsDone = 0;
 		if( omp_get_thread_num() == 0 )
 		{
 			for( int i = 0; i < EQ_NUM * NUMBER_OF_LINES; ++i )
@@ -1134,12 +1139,23 @@ void Solver::walkthrough( int mode )
 				{
 					rungeKutta->calc3( matr_A_prev, matr_A, vect_f_prev, vect_f, dy, omp_get_thread_num(), 1, orthoBuilder->z5[_x], decompVect[varNum / 2] );
 				}
+				if( omp_get_thread_num() == 0 )
+				{
+					rgkIsDone = 1;
+				}
 			}
 		}
 		#pragma omp barrier
 
 		if( omp_get_thread_num() == 0 )
 		{
+			rgkT += time( 0 ) - tBeg;
+
+			//tBeg = time( 0 );
+			if( rgkIsDone )
+			{
+				++totalRgkSteps;
+			}
 			//rgkT += time( 0 ) - tBeg;
 			//tBeg = time( 0 );
 			//if( active >= 4 )
@@ -1160,6 +1176,7 @@ void Solver::walkthrough( int mode )
 				for( int j = 0; j < EQ_NUM * NUMBER_OF_LINES; ++j )
 				{
 					decompVectOrtho[i][j] = decompVect[i][j];
+					//qrA( j, i ) = decompVect[i][j];
 				}
 			}
 
@@ -1169,7 +1186,13 @@ void Solver::walkthrough( int mode )
 			//	orthoBuilder->orthonorm( vNum, _x, decompVectOrtho[vNum] );
 			//	orthoT += time( 0 ) - tBeg;
 			//}
+			tBeg = time( 0 );
 			orthoBuilder->orthonorm( _x, decompVectOrtho );
+			orthoT += time( 0 ) - tBeg;
+
+			//tBeg = time( 0 );
+			//qr.compute( qrA );
+			//qrTime += time( 0 ) - tBeg;
 
 			if( orthoBuilder->checkOrtho( _x, decompVectOrtho, decompVect ) == 1 )			
 			{
@@ -1183,7 +1206,7 @@ void Solver::walkthrough( int mode )
 				}
 				orthoBuilder->setOrthoDoneInfo( _x );
 				orthoBuilder->setNextSolVects( _x, decompVectOrtho );
-				cout << " --- at x = " << _x << " ortho is needed\n";
+				//cout << " --- at x = " << _x << " ortho is needed\n";
 			}
 			else
 			{
@@ -1192,6 +1215,8 @@ void Solver::walkthrough( int mode )
 			}
 
 			++_x;
+
+			//orthoT += time( 0 ) - tBeg;
 		}
 		#pragma omp barrier
 	}
@@ -1199,6 +1224,8 @@ void Solver::walkthrough( int mode )
 
 	cout << " == rgkT \t" << rgkT << endl;
 	cout << " == orthoT \t" << orthoT << endl;
+	cout << " == qrTime \t" << qrTime << endl;
+	cout << " == rgk to total ratio: " << ( float )totalRgkSteps / ( float )( Km - 1 ) << endl;
 
 	orthoBuilder->buildSolution( &mesh );
 
