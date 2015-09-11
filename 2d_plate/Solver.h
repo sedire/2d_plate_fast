@@ -72,7 +72,6 @@ private:
 	const PL_NUM J0;
 	const PL_NUM tauC;
 	const PL_NUM tauP;
-	PL_NUM omega;
 	const PL_NUM  p0;				//constant mechanical load
 	const PL_NUM impRadSq;
 
@@ -103,10 +102,7 @@ private:
 	const PL_NUM al;			//some weird var for normalization. It is said that this will improve the numerical scheme. must be equal to density
 
 	vector<VarVect> mesh;		//2d mesh for solution.
-	//vector<vector<PL_NUM>> matr_A;		//matrix A for the nonlinear system at certain t and x
-	//vector<PL_NUM> vect_f;		//vector f on right part of nonlinear system at certain t and x
-	//vector<PL_NUM> newmark_A;
-	//vector<PL_NUM> newmark_B;
+
 	PL_NUM matr_A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES];
 	PL_NUM vect_f[EQ_NUM * NUMBER_OF_LINES];		//vector f on right part of nonlinear system at certain t and x
 	PL_NUM matr_A_prev[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES];	//to look back in Rgk
@@ -122,14 +118,24 @@ private:
 	PL_NUM Phi[ABM_STAGE_NUM][EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES];
 
 	//Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES, RowMajor> Ma;
+	//bounds on the iterators of Matrix A
 	int lb[EQ_NUM * NUMBER_OF_LINES];
 	int rb[EQ_NUM * NUMBER_OF_LINES];
 
-	RungeKutta* rungeKutta;
+	const PL_NUM rgkU;
+	const PL_NUM rgkV;
+	PL_NUM rgkC1, rgkC2, rgkC3, rgkC4;
+	PL_NUM rgkD21, rgkD32, rgkD31, rgkD43, rgkD42, rgkD41;
+
+	PL_NUM rgkF1[NUM_OF_THREADS][EQ_NUM * NUMBER_OF_LINES];
+	PL_NUM rgkF2[NUM_OF_THREADS][EQ_NUM * NUMBER_OF_LINES];
+	PL_NUM rgkF3[NUM_OF_THREADS][EQ_NUM * NUMBER_OF_LINES];
+	PL_NUM rgkF4[NUM_OF_THREADS][EQ_NUM * NUMBER_OF_LINES];
+
+	//RungeKutta* rungeKutta;
 	OrthoBuilder* orthoBuilder;
-	//HouseholderQR< Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1> > qr;
-	//Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1> qrA;
-	//Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1> qrQ;
+
+	void rgkCalc( int thrNum, int hom, const vector<PL_NUM>& x, PL_NUM* x1 );
 
 	void calc_Newmark_AB( int _x, int mode );		//don't really know why we need this stuff with mode need to FIX
 	void calc_system( int _x );
