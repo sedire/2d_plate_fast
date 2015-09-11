@@ -65,8 +65,8 @@ Solver::Solver():
 	al( 1.0 ),
 
 	rungeKutta( 0 ),
-	orthoBuilder( 0 ),
-	qr( EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1 )
+	orthoBuilder( 0 )
+	//qr( EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1 )
 {
 	setTask();
 }
@@ -134,6 +134,25 @@ void Solver::setTask()
 	//dy = bp / ( Km - 1 );
 	//betta = 0.25;
 	//varNum = nx * eq_num;
+
+	for( int i = 0; i < EQ_NUM * NUMBER_OF_LINES; ++i )
+	{
+		if( i < 2 * EQ_NUM )
+		{
+			lb[i] = 0;
+			rb[i] = EQ_NUM * 4;
+		}
+		else if( i >= 2 * EQ_NUM && i < EQ_NUM * ( NUMBER_OF_LINES - 2 ) )
+		{
+			lb[i] = ( i / EQ_NUM - 2 ) * EQ_NUM;
+			rb[i] = lb[i] + EQ_NUM * 5;
+		}
+		else if( i >= EQ_NUM * ( NUMBER_OF_LINES - 2 ) )
+		{
+			lb[i] = EQ_NUM * NUMBER_OF_LINES - 4 * EQ_NUM;
+			rb[i] = EQ_NUM * NUMBER_OF_LINES;
+		}
+	}
 
 	rungeKutta = new RungeKutta( varNum );
 	orthoBuilder = new OrthoBuilderGSh( varNum, Km );
@@ -1005,7 +1024,7 @@ void Solver::walkthrough( int mode )
 		{
 			for( int i = 0; i < EQ_NUM * NUMBER_OF_LINES; ++i )
 			{
-				for( int j = 0; j < EQ_NUM * NUMBER_OF_LINES; ++j )
+				for( int j = lb[i]; j < rb[i]; ++j )
 				{
 					matr_A_prev[i][j] = matr_A[i][j];
 				}
@@ -1024,7 +1043,7 @@ void Solver::walkthrough( int mode )
 			for( int i = 0; i < varNum; ++i )
 			{
 				PL_NUM sum = 0.0;
-				for( int j = 0; j < varNum; ++j )
+				for( int j = lb[i]; j < rb[i]; ++j )
 				{
 					sum += matr_A_prev[i][j] * orthoBuilder->zi[_x][vNum][j];
 				}
@@ -1037,7 +1056,7 @@ void Solver::walkthrough( int mode )
 			for( int i = 0; i < varNum; ++i )
 			{
 				PL_NUM sum = 0.0;
-				for( int j = 0; j < varNum; ++j )
+				for( int j = lb[i]; j < rb[i]; ++j )
 				{
 					sum += matr_A_prev[i][j] * orthoBuilder->z5[_x][j];
 				}
@@ -1103,7 +1122,7 @@ void Solver::walkthrough( int mode )
 				for( int i = 0; i < varNum; ++i )
 				{
 					tempPhi2[vNum][i] = 0.0;
-					for( int j = 0; j < varNum; ++j )
+					for( int j = lb[i]; j < rb[i]; ++j )
 					{
 						tempPhi2[vNum][i] += matr_A[i][j] * tempPhi[vNum][j];
 					}

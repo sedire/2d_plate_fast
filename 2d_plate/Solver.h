@@ -122,12 +122,14 @@ private:
 	PL_NUM Phi[ABM_STAGE_NUM][EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES];
 
 	//Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES, RowMajor> Ma;
+	int lb[EQ_NUM * NUMBER_OF_LINES];
+	int rb[EQ_NUM * NUMBER_OF_LINES];
 
 	RungeKutta* rungeKutta;
 	OrthoBuilder* orthoBuilder;
-	HouseholderQR< Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1> > qr;
-	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1> qrA;
-	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1> qrQ;
+	//HouseholderQR< Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1> > qr;
+	//Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1> qrA;
+	//Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1> qrQ;
 
 	void calc_Newmark_AB( int _x, int mode );		//don't really know why we need this stuff with mode need to FIX
 	void calc_system( int _x );
