@@ -66,9 +66,11 @@ Solver::Solver():
 	rgkU( 0.3 ),
 	rgkV( 0.6 ),
 
+	Phi( 0 ),
+
 	//rungeKutta( 0 ),
-	orthoBuilder( 0 )
-	//qr( EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1 )
+	orthoBuilder( 0 ),
+	qr( EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1 )
 {
 	setTask();
 }
@@ -83,6 +85,7 @@ Solver::~Solver()
 	{
 		delete( orthoBuilder );
 	}
+	delete[] Phi;
 }
 
 PL_NUM Solver::increaseTime()
@@ -146,29 +149,511 @@ void Solver::setTask()
 	/*vect_f.resize( varNum, 0.0 );
 	cout << "f resized\n";*/
 
-	for( int i = 0; i < nx * eq_num; ++i )
+	//for( int i = 0; i < nx * eq_num; ++i )
+	//{
+	//	for( int j = 0; j < nx * eq_num; ++j )
+	//	{
+	//		matr_A[i][j] = 0.0;
+	//		matr_A_prev[i][j] = 0.0;
+	//	}
+	//	vect_f[i] = 0.0;
+	//	vect_f_prev[i] = 0.0;
+	//}
+
+	//matrA = Matrix<PL_NUM, Dynamic, Dynamic>::Zero( EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES );
+	//matrAprev = Matrix<PL_NUM, Dynamic, Dynamic>::Zero( EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES );
+	matrA = SparseMatrix<PL_NUM>( EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES );
+	matrAprev = SparseMatrix<PL_NUM>( EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES );
+	vectF = Matrix<PL_NUM, Dynamic, 1>::Zero( EQ_NUM * NUMBER_OF_LINES, 1 );
+	vectFprev = Matrix<PL_NUM, Dynamic, 1>::Zero( EQ_NUM * NUMBER_OF_LINES, 1 );
+
+	//filling A
+	int i = 0;
+	int r = i + 1;
+	int rr = i + 2;
+	int j = i - 1;
+	int jj = i - 2;
+	
+	//for the left line:
+	matrA.insert( 0 + i * eq_num, 1 + r * eq_num ) = 0.0;
+	matrA.insert( 0 + i * eq_num, 2 + i * eq_num ) = 0.0;
+
+	matrA.insert( 1 + i * eq_num, 0 + r * eq_num ) = 0.0;
+	matrA.insert( 1 + i * eq_num, 3 + i * eq_num ) = 0.0;
+
+	matrA.insert( 2 + i * eq_num, 0 + r * eq_num ) = 0.0;
+	matrA.insert( 2 + i * eq_num, 0 + i * eq_num ) = 0.0;
+	matrA.insert( 2 + i * eq_num, 1 + r * eq_num ) = 0.0;
+	matrA.insert( 2 + i * eq_num, 3 + r * eq_num ) = 0.0;
+	matrA.insert( 2 + i * eq_num, 4 + r * eq_num ) = 0.0;
+	matrA.insert( 2 + i * eq_num, 8 + i * eq_num ) = 0.0;
+	matrA.insert( 2 + i * eq_num, 9 + i * eq_num ) = 0.0;
+	matrA.insert( 2 + i * eq_num, 9 + r * eq_num ) = 0.0;
+
+	matrA.insert( 3 + i * eq_num, 0 + r * eq_num ) = 0.0;
+	matrA.insert( 3 + i * eq_num, 1 + r * eq_num ) = 0.0;
+	matrA.insert( 3 + i * eq_num, 1 + i * eq_num ) = 0.0;
+	matrA.insert( 3 + i * eq_num, 2 + r * eq_num ) = 0.0;
+	matrA.insert( 3 + i * eq_num, 3 + i * eq_num ) = 0.0;
+	matrA.insert( 3 + i * eq_num, 4 + i * eq_num ) = 0.0;
+	matrA.insert( 3 + i * eq_num, 5 + i * eq_num ) = 0.0;
+	matrA.insert( 3 + i * eq_num, 8 + i * eq_num ) = 0.0;
+	matrA.insert( 3 + i * eq_num, 9 + i * eq_num ) = 0.0;
+
+	matrA.insert( 4 + i * eq_num, 5 + i * eq_num ) = 0.0;
+
+	matrA.insert( 5 + i * eq_num, 4 + r * eq_num ) = 0.0;
+	matrA.insert( 5 + i * eq_num, 4 + i * eq_num ) = 0.0;
+	matrA.insert( 5 + i * eq_num, 6 + i * eq_num ) = 0.0;
+
+	matrA.insert( 6 + i * eq_num, 4 + i * eq_num ) = 0.0;
+	matrA.insert( 6 + i * eq_num, 4 + r * eq_num ) = 0.0;
+	matrA.insert( 6 + i * eq_num, 5 + i * eq_num ) = 0.0;
+	matrA.insert( 6 + i * eq_num, 5 + r * eq_num ) = 0.0;
+	matrA.insert( 6 + i * eq_num, 6 + i * eq_num ) = 0.0;
+	matrA.insert( 6 + i * eq_num, 7 + i * eq_num ) = 0.0;
+	matrA.insert( 6 + i * eq_num, 8 + i * eq_num ) = 0.0;
+	matrA.insert( 6 + i * eq_num, 9 + i * eq_num ) = 0.0;
+	
+	matrA.insert( 7 + i * eq_num, 1 + i * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 1 + r * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 4 + i * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 4 + r * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 4 + rr * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 4 + ( rr + 1 ) * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 5 + i * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 5 + r * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 6 + i * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 6 + r * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 8 + i * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 8 + r * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 9 + i * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 9 + r * eq_num ) = 0.0;
+
+	matrA.insert( 8 + i * eq_num, 0 + i * eq_num ) = 0.0;
+	matrA.insert( 8 + i * eq_num, 0 + r * eq_num ) = 0.0;
+	matrA.insert( 8 + i * eq_num, 9 + i * eq_num ) = 0.0;
+	matrA.insert( 8 + i * eq_num, 9 + r * eq_num ) = 0.0;
+
+	matrA.insert( 9 + i * eq_num, 1 + i * eq_num ) = 0.0;
+	matrA.insert( 9 + i * eq_num, 4 + i * eq_num ) = 0.0;
+	matrA.insert( 9 + i * eq_num, 8 + i * eq_num ) = 0.0;
+	matrA.insert( 9 + i * eq_num, 9 + i * eq_num ) = 0.0;
+
+	i = nx - 1;
+	r = i + 1;
+	rr = i + 2;
+	j = i - 1;
+	jj = i - 2;
+	
+	//for the right line:
+	matrA.insert( 0 + i * eq_num, 1 + j * eq_num ) = 0.0;
+	matrA.insert( 0 + i * eq_num, 2 + i * eq_num ) = 0.0;
+
+	matrA.insert( 1 + i * eq_num, 0 + j * eq_num ) = 0.0;
+	matrA.insert( 1 + i * eq_num, 3 + i * eq_num ) = 0.0;
+
+	matrA.insert( 2 + i * eq_num, 0 + j * eq_num ) = 0.0;
+	matrA.insert( 2 + i * eq_num, 0 + i * eq_num ) = 0.0;
+	matrA.insert( 2 + i * eq_num, 1 + j * eq_num ) = 0.0;
+	matrA.insert( 2 + i * eq_num, 3 + j * eq_num ) = 0.0;
+	matrA.insert( 2 + i * eq_num, 4 + j * eq_num ) = 0.0;
+	matrA.insert( 2 + i * eq_num, 8 + i * eq_num ) = 0.0;
+	matrA.insert( 2 + i * eq_num, 9 + i * eq_num ) = 0.0;
+	matrA.insert( 2 + i * eq_num, 9 + j * eq_num ) = 0.0;
+
+	matrA.insert( 3 + i * eq_num, 0 + j * eq_num ) = 0.0;
+	matrA.insert( 3 + i * eq_num, 1 + j * eq_num ) = 0.0;
+	matrA.insert( 3 + i * eq_num, 1 + i * eq_num ) = 0.0;
+	matrA.insert( 3 + i * eq_num, 2 + j * eq_num ) = 0.0;
+	matrA.insert( 3 + i * eq_num, 3 + i * eq_num ) = 0.0;
+	matrA.insert( 3 + i * eq_num, 4 + i * eq_num ) = 0.0;
+	matrA.insert( 3 + i * eq_num, 5 + i * eq_num ) = 0.0;
+	matrA.insert( 3 + i * eq_num, 8 + i * eq_num ) = 0.0;
+	matrA.insert( 3 + i * eq_num, 9 + i * eq_num ) = 0.0;
+
+	matrA.insert( 4 + i * eq_num, 5 + i * eq_num ) = 0.0;
+
+	matrA.insert( 5 + i * eq_num, 4 + j * eq_num ) = 0.0;
+	matrA.insert( 5 + i * eq_num, 4 + i * eq_num ) = 0.0;
+	matrA.insert( 5 + i * eq_num, 6 + i * eq_num ) = 0.0;
+
+	matrA.insert( 6 + i * eq_num, 4 + j * eq_num ) = 0.0;
+	matrA.insert( 6 + i * eq_num, 4 + i * eq_num ) = 0.0;
+	matrA.insert( 6 + i * eq_num, 5 + j * eq_num ) = 0.0;
+	matrA.insert( 6 + i * eq_num, 5 + i * eq_num ) = 0.0;
+	matrA.insert( 6 + i * eq_num, 6 + i * eq_num ) = 0.0;
+	matrA.insert( 6 + i * eq_num, 7 + i * eq_num ) = 0.0;
+	matrA.insert( 6 + i * eq_num, 8 + i * eq_num ) = 0.0;
+	matrA.insert( 6 + i * eq_num, 9 + i * eq_num ) = 0.0;
+
+	matrA.insert( 7 + i * eq_num, 1 + j * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 1 + i * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 4 + ( jj - 1 ) * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 4 + jj * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 4 + j * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 4 + i * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 5 + j * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 5 + i * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 6 + j * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 6 + i * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 8 + j * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 8 + i * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 9 + j * eq_num ) = 0.0;
+	matrA.insert( 7 + i * eq_num, 9 + i * eq_num ) = 0.0;
+	
+	matrA.insert( 8 + i * eq_num, 0 + j * eq_num ) = 0.0;
+	matrA.insert( 8 + i * eq_num, 0 + i * eq_num ) = 0.0;
+	matrA.insert( 8 + i * eq_num, 9 + j * eq_num ) = 0.0;
+	matrA.insert( 8 + i * eq_num, 9 + i * eq_num ) = 0.0;
+
+	matrA.insert( 9 + i * eq_num, 1 + i * eq_num ) = 0.0;
+	matrA.insert( 9 + i * eq_num, 4 + i * eq_num ) = 0.0;
+	matrA.insert( 9 + i * eq_num, 8 + i * eq_num ) = 0.0;
+	matrA.insert( 9 + i * eq_num, 9 + i * eq_num ) = 0.0;
+
+	for( int i = 1; i < nx - 1; ++i )
 	{
-		for( int j = 0; j < nx * eq_num; ++j )
+		r = i + 1;
+		rr = i + 2;
+		j = i - 1;
+		jj = i - 2;
+
+		matrA.insert( 0 + i * eq_num, 1 + r * eq_num ) = 0.0;
+		matrA.insert( 0 + i * eq_num, 1 + j * eq_num ) = 0.0;
+		matrA.insert( 0 + i * eq_num, 2 + i * eq_num ) = 0.0;
+
+		matrA.insert( 1 + i * eq_num, 0 + r * eq_num ) = 0.0;
+		matrA.insert( 1 + i * eq_num, 0 + j * eq_num ) = 0.0;
+		matrA.insert( 1 + i * eq_num, 3 + i * eq_num ) = 0.0;
+
+		matrA.insert( 2 + i * eq_num, 0 + r * eq_num ) = 0.0;
+		matrA.insert( 2 + i * eq_num, 0 + j * eq_num ) = 0.0;
+		matrA.insert( 2 + i * eq_num, 0 + i * eq_num ) = 0.0;
+		matrA.insert( 2 + i * eq_num, 1 + r * eq_num ) = 0.0;
+		matrA.insert( 2 + i * eq_num, 1 + j * eq_num ) = 0.0;
+		matrA.insert( 2 + i * eq_num, 3 + r * eq_num ) = 0.0;
+		matrA.insert( 2 + i * eq_num, 3 + j * eq_num ) = 0.0;
+		matrA.insert( 2 + i * eq_num, 4 + r * eq_num ) = 0.0;
+		matrA.insert( 2 + i * eq_num, 4 + j * eq_num ) = 0.0;
+		matrA.insert( 2 + i * eq_num, 8 + i * eq_num ) = 0.0;
+		matrA.insert( 2 + i * eq_num, 9 + i * eq_num ) = 0.0;
+		matrA.insert( 2 + i * eq_num, 9 + r * eq_num ) = 0.0;
+		matrA.insert( 2 + i * eq_num, 9 + j * eq_num ) = 0.0;
+
+		matrA.insert( 3 + i * eq_num, 0 + r * eq_num ) = 0.0;
+		matrA.insert( 3 + i * eq_num, 0 + j * eq_num ) = 0.0;
+		matrA.insert( 3 + i * eq_num, 1 + i * eq_num ) = 0.0;
+		matrA.insert( 3 + i * eq_num, 2 + r * eq_num ) = 0.0;
+		matrA.insert( 3 + i * eq_num, 2 + j * eq_num ) = 0.0;
+		matrA.insert( 3 + i * eq_num, 3 + i * eq_num ) = 0.0;
+		matrA.insert( 3 + i * eq_num, 4 + i * eq_num ) = 0.0;
+		matrA.insert( 3 + i * eq_num, 5 + i * eq_num ) = 0.0;
+		matrA.insert( 3 + i * eq_num, 8 + i * eq_num ) = 0.0;
+		matrA.insert( 3 + i * eq_num, 9 + i * eq_num ) = 0.0;
+
+		matrA.insert( 4 + i * eq_num, 5 + i * eq_num ) = 0.0;
+
+		matrA.insert( 5 + i * eq_num, 4 + r * eq_num ) = 0.0;
+		matrA.insert( 5 + i * eq_num, 4 + i * eq_num ) = 0.0;
+		matrA.insert( 5 + i * eq_num, 4 + j * eq_num ) = 0.0;
+		matrA.insert( 5 + i * eq_num, 6 + i * eq_num ) = 0.0;
+
+		matrA.insert( 6 + i * eq_num, 4 + i * eq_num ) = 0.0;
+		matrA.insert( 6 + i * eq_num, 4 + r * eq_num ) = 0.0;
+		matrA.insert( 6 + i * eq_num, 4 + j * eq_num ) = 0.0;
+		matrA.insert( 6 + i * eq_num, 5 + i * eq_num ) = 0.0;
+		matrA.insert( 6 + i * eq_num, 5 + r * eq_num ) = 0.0;
+		matrA.insert( 6 + i * eq_num, 5 + j * eq_num ) = 0.0;
+		matrA.insert( 6 + i * eq_num, 6 + i * eq_num ) = 0.0;
+		matrA.insert( 6 + i * eq_num, 7 + i * eq_num ) = 0.0;
+		matrA.insert( 6 + i * eq_num, 8 + i * eq_num ) = 0.0;
+		matrA.insert( 6 + i * eq_num, 9 + i * eq_num ) = 0.0;
+
+		matrA.insert( 7 + i * eq_num, 1 + i * eq_num ) = 0.0;
+		matrA.insert( 7 + i * eq_num, 4 + i * eq_num ) = 0.0;
+		matrA.insert( 7 + i * eq_num, 4 + r * eq_num ) = 0.0;
+		matrA.insert( 7 + i * eq_num, 4 + j * eq_num ) = 0.0;
+		if( i != nx - 2 )
 		{
-			matr_A[i][j] = 0.0;
-			matr_A_prev[i][j] = 0.0;
+			matrA.insert( 7 + i * eq_num, 4 + rr * eq_num ) = 0.0;
 		}
-		vect_f[i] = 0.0;
-		vect_f_prev[i] = 0.0;
+		if( i != 1 )
+		{
+			matrA.insert( 7 + i * eq_num, 4 + jj * eq_num ) = 0.0;
+		}
+		matrA.insert( 7 + i * eq_num, 5 + i * eq_num ) = 0.0;
+		matrA.insert( 7 + i * eq_num, 5 + r * eq_num ) = 0.0;
+		matrA.insert( 7 + i * eq_num, 5 + j * eq_num ) = 0.0;
+		matrA.insert( 7 + i * eq_num, 6 + i * eq_num ) = 0.0;
+		matrA.insert( 7 + i * eq_num, 6 + r * eq_num ) = 0.0;
+		matrA.insert( 7 + i * eq_num, 6 + j * eq_num ) = 0.0;
+		matrA.insert( 7 + i * eq_num, 8 + i * eq_num ) = 0.0;
+		matrA.insert( 7 + i * eq_num, 8 + r * eq_num ) = 0.0;
+		matrA.insert( 7 + i * eq_num, 8 + j * eq_num ) = 0.0;
+		matrA.insert( 7 + i * eq_num, 9 + i * eq_num ) = 0.0;
+		matrA.insert( 7 + i * eq_num, 9 + r * eq_num ) = 0.0;
+		matrA.insert( 7 + i * eq_num, 9 + j * eq_num ) = 0.0;
+
+		matrA.insert( 8 + i * eq_num, 0 + i * eq_num ) = 0.0;
+		matrA.insert( 8 + i * eq_num, 0 + r * eq_num ) = 0.0;
+		matrA.insert( 8 + i * eq_num, 0 + j * eq_num ) = 0.0;
+		matrA.insert( 8 + i * eq_num, 9 + i * eq_num ) = 0.0;
+		matrA.insert( 8 + i * eq_num, 9 + r * eq_num ) = 0.0;
+		matrA.insert( 8 + i * eq_num, 9 + j * eq_num ) = 0.0;
+
+		matrA.insert( 9 + i * eq_num, 1 + i * eq_num ) = 0.0;
+		matrA.insert( 9 + i * eq_num, 4 + i * eq_num ) = 0.0;
+		matrA.insert( 9 + i * eq_num, 8 + i * eq_num ) = 0.0;
+		matrA.insert( 9 + i * eq_num, 9 + i * eq_num ) = 0.0;
 	}
 
-	//newmark_A.resize( varNum, 0.0 );
-	//newmark_B.resize( varNum, 0.0 );
-	//cout << "newmark resized\n";
+	//filling A
+	i = 0;
+	r = i + 1;
+	rr = i + 2;
+	j = i - 1;
+	jj = i - 2;
+	
+	//for the left line:
+	matrAprev.insert( 0 + i * eq_num, 1 + r * eq_num ) = 0.0;
+	matrAprev.insert( 0 + i * eq_num, 2 + i * eq_num ) = 0.0;
 
-	//B11 = E1 * E1 / ( E1 - nu21 * nu21 * E2 );
-	//B22 = E2 / ( 1 - nu21 * nu21 * E2 / E1 );
-	//B12 = nu21 * E2 * E1 / ( E1 - nu21 * nu21 * E2 );
-	//G23 = E2 / 2.0 / ( 1 + nu23 );
-	//B66 = G23;
-	//By1 = 2.0 * By0;                                      // in considered boundary-value problem
-	//By2 = 0.0;
-	//eps_x_0 = eps_x - eps_0;
+	matrAprev.insert( 1 + i * eq_num, 0 + r * eq_num ) = 0.0;
+	matrAprev.insert( 1 + i * eq_num, 3 + i * eq_num ) = 0.0;
+
+	matrAprev.insert( 2 + i * eq_num, 0 + r * eq_num ) = 0.0;
+	matrAprev.insert( 2 + i * eq_num, 0 + i * eq_num ) = 0.0;
+	matrAprev.insert( 2 + i * eq_num, 1 + r * eq_num ) = 0.0;
+	matrAprev.insert( 2 + i * eq_num, 3 + r * eq_num ) = 0.0;
+	matrAprev.insert( 2 + i * eq_num, 4 + r * eq_num ) = 0.0;
+	matrAprev.insert( 2 + i * eq_num, 8 + i * eq_num ) = 0.0;
+	matrAprev.insert( 2 + i * eq_num, 9 + i * eq_num ) = 0.0;
+	matrAprev.insert( 2 + i * eq_num, 9 + r * eq_num ) = 0.0;
+
+	matrAprev.insert( 3 + i * eq_num, 0 + r * eq_num ) = 0.0;
+	matrAprev.insert( 3 + i * eq_num, 1 + r * eq_num ) = 0.0;
+	matrAprev.insert( 3 + i * eq_num, 1 + i * eq_num ) = 0.0;
+	matrAprev.insert( 3 + i * eq_num, 2 + r * eq_num ) = 0.0;
+	matrAprev.insert( 3 + i * eq_num, 3 + i * eq_num ) = 0.0;
+	matrAprev.insert( 3 + i * eq_num, 4 + i * eq_num ) = 0.0;
+	matrAprev.insert( 3 + i * eq_num, 5 + i * eq_num ) = 0.0;
+	matrAprev.insert( 3 + i * eq_num, 8 + i * eq_num ) = 0.0;
+	matrAprev.insert( 3 + i * eq_num, 9 + i * eq_num ) = 0.0;
+
+	matrAprev.insert( 4 + i * eq_num, 5 + i * eq_num ) = 0.0;
+
+	matrAprev.insert( 5 + i * eq_num, 4 + r * eq_num ) = 0.0;
+	matrAprev.insert( 5 + i * eq_num, 4 + i * eq_num ) = 0.0;
+	matrAprev.insert( 5 + i * eq_num, 6 + i * eq_num ) = 0.0;
+
+	matrAprev.insert( 6 + i * eq_num, 4 + i * eq_num ) = 0.0;
+	matrAprev.insert( 6 + i * eq_num, 4 + r * eq_num ) = 0.0;
+	matrAprev.insert( 6 + i * eq_num, 5 + i * eq_num ) = 0.0;
+	matrAprev.insert( 6 + i * eq_num, 5 + r * eq_num ) = 0.0;
+	matrAprev.insert( 6 + i * eq_num, 6 + i * eq_num ) = 0.0;
+	matrAprev.insert( 6 + i * eq_num, 7 + i * eq_num ) = 0.0;
+	matrAprev.insert( 6 + i * eq_num, 8 + i * eq_num ) = 0.0;
+	matrAprev.insert( 6 + i * eq_num, 9 + i * eq_num ) = 0.0;
+	
+	matrAprev.insert( 7 + i * eq_num, 1 + i * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 1 + r * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 4 + i * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 4 + r * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 4 + rr * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 4 + ( rr + 1 ) * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 5 + i * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 5 + r * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 6 + i * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 6 + r * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 8 + i * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 8 + r * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 9 + i * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 9 + r * eq_num ) = 0.0;
+
+	matrAprev.insert( 8 + i * eq_num, 0 + i * eq_num ) = 0.0;
+	matrAprev.insert( 8 + i * eq_num, 0 + r * eq_num ) = 0.0;
+	matrAprev.insert( 8 + i * eq_num, 9 + i * eq_num ) = 0.0;
+	matrAprev.insert( 8 + i * eq_num, 9 + r * eq_num ) = 0.0;
+
+	matrAprev.insert( 9 + i * eq_num, 1 + i * eq_num ) = 0.0;
+	matrAprev.insert( 9 + i * eq_num, 4 + i * eq_num ) = 0.0;
+	matrAprev.insert( 9 + i * eq_num, 8 + i * eq_num ) = 0.0;
+	matrAprev.insert( 9 + i * eq_num, 9 + i * eq_num ) = 0.0;
+
+	i = nx - 1;
+	r = i + 1;
+	rr = i + 2;
+	j = i - 1;
+	jj = i - 2;
+	
+	//for the right line:
+	matrAprev.insert( 0 + i * eq_num, 1 + j * eq_num ) = 0.0;
+	matrAprev.insert( 0 + i * eq_num, 2 + i * eq_num ) = 0.0;
+
+	matrAprev.insert( 1 + i * eq_num, 0 + j * eq_num ) = 0.0;
+	matrAprev.insert( 1 + i * eq_num, 3 + i * eq_num ) = 0.0;
+
+	matrAprev.insert( 2 + i * eq_num, 0 + j * eq_num ) = 0.0;
+	matrAprev.insert( 2 + i * eq_num, 0 + i * eq_num ) = 0.0;
+	matrAprev.insert( 2 + i * eq_num, 1 + j * eq_num ) = 0.0;
+	matrAprev.insert( 2 + i * eq_num, 3 + j * eq_num ) = 0.0;
+	matrAprev.insert( 2 + i * eq_num, 4 + j * eq_num ) = 0.0;
+	matrAprev.insert( 2 + i * eq_num, 8 + i * eq_num ) = 0.0;
+	matrAprev.insert( 2 + i * eq_num, 9 + i * eq_num ) = 0.0;
+	matrAprev.insert( 2 + i * eq_num, 9 + j * eq_num ) = 0.0;
+
+	matrAprev.insert( 3 + i * eq_num, 0 + j * eq_num ) = 0.0;
+	matrAprev.insert( 3 + i * eq_num, 1 + j * eq_num ) = 0.0;
+	matrAprev.insert( 3 + i * eq_num, 1 + i * eq_num ) = 0.0;
+	matrAprev.insert( 3 + i * eq_num, 2 + j * eq_num ) = 0.0;
+	matrAprev.insert( 3 + i * eq_num, 3 + i * eq_num ) = 0.0;
+	matrAprev.insert( 3 + i * eq_num, 4 + i * eq_num ) = 0.0;
+	matrAprev.insert( 3 + i * eq_num, 5 + i * eq_num ) = 0.0;
+	matrAprev.insert( 3 + i * eq_num, 8 + i * eq_num ) = 0.0;
+	matrAprev.insert( 3 + i * eq_num, 9 + i * eq_num ) = 0.0;
+
+	matrAprev.insert( 4 + i * eq_num, 5 + i * eq_num ) = 0.0;
+
+	matrAprev.insert( 5 + i * eq_num, 4 + j * eq_num ) = 0.0;
+	matrAprev.insert( 5 + i * eq_num, 4 + i * eq_num ) = 0.0;
+	matrAprev.insert( 5 + i * eq_num, 6 + i * eq_num ) = 0.0;
+
+	matrAprev.insert( 6 + i * eq_num, 4 + j * eq_num ) = 0.0;
+	matrAprev.insert( 6 + i * eq_num, 4 + i * eq_num ) = 0.0;
+	matrAprev.insert( 6 + i * eq_num, 5 + j * eq_num ) = 0.0;
+	matrAprev.insert( 6 + i * eq_num, 5 + i * eq_num ) = 0.0;
+	matrAprev.insert( 6 + i * eq_num, 6 + i * eq_num ) = 0.0;
+	matrAprev.insert( 6 + i * eq_num, 7 + i * eq_num ) = 0.0;
+	matrAprev.insert( 6 + i * eq_num, 8 + i * eq_num ) = 0.0;
+	matrAprev.insert( 6 + i * eq_num, 9 + i * eq_num ) = 0.0;
+
+	matrAprev.insert( 7 + i * eq_num, 1 + j * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 1 + i * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 4 + ( jj - 1 ) * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 4 + jj * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 4 + j * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 4 + i * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 5 + j * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 5 + i * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 6 + j * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 6 + i * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 8 + j * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 8 + i * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 9 + j * eq_num ) = 0.0;
+	matrAprev.insert( 7 + i * eq_num, 9 + i * eq_num ) = 0.0;
+	
+	matrAprev.insert( 8 + i * eq_num, 0 + j * eq_num ) = 0.0;
+	matrAprev.insert( 8 + i * eq_num, 0 + i * eq_num ) = 0.0;
+	matrAprev.insert( 8 + i * eq_num, 9 + j * eq_num ) = 0.0;
+	matrAprev.insert( 8 + i * eq_num, 9 + i * eq_num ) = 0.0;
+
+	matrAprev.insert( 9 + i * eq_num, 1 + i * eq_num ) = 0.0;
+	matrAprev.insert( 9 + i * eq_num, 4 + i * eq_num ) = 0.0;
+	matrAprev.insert( 9 + i * eq_num, 8 + i * eq_num ) = 0.0;
+	matrAprev.insert( 9 + i * eq_num, 9 + i * eq_num ) = 0.0;
+
+	for( int i = 1; i < nx - 1; ++i )
+	{
+		r = i + 1;
+		rr = i + 2;
+		j = i - 1;
+		jj = i - 2;
+
+		matrAprev.insert( 0 + i * eq_num, 1 + r * eq_num ) = 0.0;
+		matrAprev.insert( 0 + i * eq_num, 1 + j * eq_num ) = 0.0;
+		matrAprev.insert( 0 + i * eq_num, 2 + i * eq_num ) = 0.0;
+
+		matrAprev.insert( 1 + i * eq_num, 0 + r * eq_num ) = 0.0;
+		matrAprev.insert( 1 + i * eq_num, 0 + j * eq_num ) = 0.0;
+		matrAprev.insert( 1 + i * eq_num, 3 + i * eq_num ) = 0.0;
+
+		matrAprev.insert( 2 + i * eq_num, 0 + r * eq_num ) = 0.0;
+		matrAprev.insert( 2 + i * eq_num, 0 + j * eq_num ) = 0.0;
+		matrAprev.insert( 2 + i * eq_num, 0 + i * eq_num ) = 0.0;
+		matrAprev.insert( 2 + i * eq_num, 1 + r * eq_num ) = 0.0;
+		matrAprev.insert( 2 + i * eq_num, 1 + j * eq_num ) = 0.0;
+		matrAprev.insert( 2 + i * eq_num, 3 + r * eq_num ) = 0.0;
+		matrAprev.insert( 2 + i * eq_num, 3 + j * eq_num ) = 0.0;
+		matrAprev.insert( 2 + i * eq_num, 4 + r * eq_num ) = 0.0;
+		matrAprev.insert( 2 + i * eq_num, 4 + j * eq_num ) = 0.0;
+		matrAprev.insert( 2 + i * eq_num, 8 + i * eq_num ) = 0.0;
+		matrAprev.insert( 2 + i * eq_num, 9 + i * eq_num ) = 0.0;
+		matrAprev.insert( 2 + i * eq_num, 9 + r * eq_num ) = 0.0;
+		matrAprev.insert( 2 + i * eq_num, 9 + j * eq_num ) = 0.0;
+
+		matrAprev.insert( 3 + i * eq_num, 0 + r * eq_num ) = 0.0;
+		matrAprev.insert( 3 + i * eq_num, 0 + j * eq_num ) = 0.0;
+		matrAprev.insert( 3 + i * eq_num, 1 + i * eq_num ) = 0.0;
+		matrAprev.insert( 3 + i * eq_num, 2 + r * eq_num ) = 0.0;
+		matrAprev.insert( 3 + i * eq_num, 2 + j * eq_num ) = 0.0;
+		matrAprev.insert( 3 + i * eq_num, 3 + i * eq_num ) = 0.0;
+		matrAprev.insert( 3 + i * eq_num, 4 + i * eq_num ) = 0.0;
+		matrAprev.insert( 3 + i * eq_num, 5 + i * eq_num ) = 0.0;
+		matrAprev.insert( 3 + i * eq_num, 8 + i * eq_num ) = 0.0;
+		matrAprev.insert( 3 + i * eq_num, 9 + i * eq_num ) = 0.0;
+
+		matrAprev.insert( 4 + i * eq_num, 5 + i * eq_num ) = 0.0;
+
+		matrAprev.insert( 5 + i * eq_num, 4 + r * eq_num ) = 0.0;
+		matrAprev.insert( 5 + i * eq_num, 4 + i * eq_num ) = 0.0;
+		matrAprev.insert( 5 + i * eq_num, 4 + j * eq_num ) = 0.0;
+		matrAprev.insert( 5 + i * eq_num, 6 + i * eq_num ) = 0.0;
+
+		matrAprev.insert( 6 + i * eq_num, 4 + i * eq_num ) = 0.0;
+		matrAprev.insert( 6 + i * eq_num, 4 + r * eq_num ) = 0.0;
+		matrAprev.insert( 6 + i * eq_num, 4 + j * eq_num ) = 0.0;
+		matrAprev.insert( 6 + i * eq_num, 5 + i * eq_num ) = 0.0;
+		matrAprev.insert( 6 + i * eq_num, 5 + r * eq_num ) = 0.0;
+		matrAprev.insert( 6 + i * eq_num, 5 + j * eq_num ) = 0.0;
+		matrAprev.insert( 6 + i * eq_num, 6 + i * eq_num ) = 0.0;
+		matrAprev.insert( 6 + i * eq_num, 7 + i * eq_num ) = 0.0;
+		matrAprev.insert( 6 + i * eq_num, 8 + i * eq_num ) = 0.0;
+		matrAprev.insert( 6 + i * eq_num, 9 + i * eq_num ) = 0.0;
+
+		matrAprev.insert( 7 + i * eq_num, 1 + i * eq_num ) = 0.0;
+		matrAprev.insert( 7 + i * eq_num, 4 + i * eq_num ) = 0.0;
+		matrAprev.insert( 7 + i * eq_num, 4 + r * eq_num ) = 0.0;
+		matrAprev.insert( 7 + i * eq_num, 4 + j * eq_num ) = 0.0;
+		if( i != nx - 2 )
+		{
+			matrAprev.insert( 7 + i * eq_num, 4 + rr * eq_num ) = 0.0;
+		}
+		if( i != 1 )
+		{
+			matrAprev.insert( 7 + i * eq_num, 4 + jj * eq_num ) = 0.0;
+		}
+		matrAprev.insert( 7 + i * eq_num, 5 + i * eq_num ) = 0.0;
+		matrAprev.insert( 7 + i * eq_num, 5 + r * eq_num ) = 0.0;
+		matrAprev.insert( 7 + i * eq_num, 5 + j * eq_num ) = 0.0;
+		matrAprev.insert( 7 + i * eq_num, 6 + i * eq_num ) = 0.0;
+		matrAprev.insert( 7 + i * eq_num, 6 + r * eq_num ) = 0.0;
+		matrAprev.insert( 7 + i * eq_num, 6 + j * eq_num ) = 0.0;
+		matrAprev.insert( 7 + i * eq_num, 8 + i * eq_num ) = 0.0;
+		matrAprev.insert( 7 + i * eq_num, 8 + r * eq_num ) = 0.0;
+		matrAprev.insert( 7 + i * eq_num, 8 + j * eq_num ) = 0.0;
+		matrAprev.insert( 7 + i * eq_num, 9 + i * eq_num ) = 0.0;
+		matrAprev.insert( 7 + i * eq_num, 9 + r * eq_num ) = 0.0;
+		matrAprev.insert( 7 + i * eq_num, 9 + j * eq_num ) = 0.0;
+
+		matrAprev.insert( 8 + i * eq_num, 0 + i * eq_num ) = 0.0;
+		matrAprev.insert( 8 + i * eq_num, 0 + r * eq_num ) = 0.0;
+		matrAprev.insert( 8 + i * eq_num, 0 + j * eq_num ) = 0.0;
+		matrAprev.insert( 8 + i * eq_num, 9 + i * eq_num ) = 0.0;
+		matrAprev.insert( 8 + i * eq_num, 9 + r * eq_num ) = 0.0;
+		matrAprev.insert( 8 + i * eq_num, 9 + j * eq_num ) = 0.0;
+
+		matrAprev.insert( 9 + i * eq_num, 1 + i * eq_num ) = 0.0;
+		matrAprev.insert( 9 + i * eq_num, 4 + i * eq_num ) = 0.0;
+		matrAprev.insert( 9 + i * eq_num, 8 + i * eq_num ) = 0.0;
+		matrAprev.insert( 9 + i * eq_num, 9 + i * eq_num ) = 0.0;
+	}
+
+	Phi = new Matrix<PL_NUM, Dynamic, Dynamic>[ABM_STAGE_NUM];
+	for( int i = 0; i < ABM_STAGE_NUM; ++i )
+	{
+		Phi[i] = Matrix<PL_NUM, Dynamic, Dynamic>::Zero( EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1 );
+	}
 }
 
 void Solver::calc_Newmark_AB( int _x, int mode )
@@ -218,87 +703,87 @@ void Solver::calc_system( int _x )
 	int jj = i - 2;
 	
 	//for the left line:
-	matr_A[0 + i * eq_num][1 + r * eq_num] = -1.0 / ( 2.0 * dx );
-	matr_A[0 + i * eq_num][2 + i * eq_num] = 1.0 / ( h  *B66 );
+	matrA.coeffRef( 0 + i * eq_num, 1 + r * eq_num ) = -1.0 / ( 2.0 * dx );
+	matrA.coeffRef( 0 + i * eq_num, 2 + i * eq_num ) = 1.0 / ( h  *B66 );
 
-	matr_A[1 + i * eq_num][0 + r * eq_num] = -B12 / ( B22 * 2.0 * dx );
-	matr_A[1 + i * eq_num][3 + i * eq_num] = 1.0 / ( h * B22 );
+	matrA.coeffRef( 1 + i * eq_num, 0 + r * eq_num ) = -B12 / ( B22 * 2.0 * dx );
+	matrA.coeffRef( 1 + i * eq_num, 3 + i * eq_num ) = 1.0 / ( h * B22 );
 
-	matr_A[2 + i * eq_num][0 + r * eq_num] = ( ( 3.0 * B12 * B12 - 4.0 * B11 * B22 ) * h ) / ( 4.0 * B22 * dx * dx );
-	matr_A[2 + i * eq_num][0 + i * eq_num] = ( 2 * B11 * h ) / dx / dx - ( B12 * B12 * h ) / ( B22 * dx * dx ) + ( h * ( 8.0 * rho + By1 * By1 * dt * sigma_z ) ) 
+	matrA.coeffRef( 2 + i * eq_num, 0 + r * eq_num ) = ( ( 3.0 * B12 * B12 - 4.0 * B11 * B22 ) * h ) / ( 4.0 * B22 * dx * dx );
+	matrA.coeffRef( 2 + i * eq_num, 0 + i * eq_num ) = ( 2 * B11 * h ) / dx / dx - ( B12 * B12 * h ) / ( B22 * dx * dx ) + ( h * ( 8.0 * rho + By1 * By1 * dt * sigma_z ) ) 
 				/ ( 8.0 * betta * dt * dt );
-	matr_A[2 + i * eq_num][1 + r * eq_num] = ( eps_x_0 * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 4.0 * betta * dt * dx );
-	matr_A[2 + i * eq_num][3 + r * eq_num] = -B12 / ( B22 * 2.0 * dx );
-	matr_A[2 + i * eq_num][4 + r * eq_num] = -( ( By1 * eps_x_0 * h * mesh[_x].Nk[8 + i * eq_num] ) / ( 8.0 * betta * dt * dx ) );
-	matr_A[2 + i * eq_num][8 + i * eq_num] = -( ( eps_x_0 * h * ( 2.0 * betta * dt * ( newmark_B[4 + r * eq_num] * By1 - 2.0 * newmark_B[1 + r * eq_num] * mesh[_x].Nk[9 + i * eq_num] )
+	matrA.coeffRef( 2 + i * eq_num, 1 + r * eq_num ) = ( eps_x_0 * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 4.0 * betta * dt * dx );
+	matrA.coeffRef( 2 + i * eq_num, 3 + r * eq_num ) = -B12 / ( B22 * 2.0 * dx );
+	matrA.coeffRef( 2 + i * eq_num, 4 + r * eq_num ) = -( ( By1 * eps_x_0 * h * mesh[_x].Nk[8 + i * eq_num] ) / ( 8.0 * betta * dt * dx ) );
+	matrA.coeffRef( 2 + i * eq_num, 8 + i * eq_num ) = -( ( eps_x_0 * h * ( 2.0 * betta * dt * ( newmark_B[4 + r * eq_num] * By1 - 2.0 * newmark_B[1 + r * eq_num] * mesh[_x].Nk[9 + i * eq_num] )
 				- 2.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + r * eq_num] + By1 * mesh[_x].Nk[4 + r * eq_num] ) ) / ( 8.0 * betta * dt * dx ) );
-	matr_A[2 + i * eq_num][9 + i * eq_num] = ( 8.0 * betta * dt * h * ( -2.0 * mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + r * eq_num] ) + 3.0 * eps_x_0 * h * mu 
+	matrA.coeffRef( 2 + i * eq_num, 9 + i * eq_num ) = ( 8.0 * betta * dt * h * ( -2.0 * mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + r * eq_num] ) + 3.0 * eps_x_0 * h * mu 
 				* ( 2.0 * betta * newmark_B[1 + r * eq_num] * dt + mesh[_x].Nk[1 + r * eq_num] ) * mesh[_x].Nk[8 + i * eq_num] ) / ( 12.0 * betta * dt * dx * mu );
-	matr_A[2 + i * eq_num][9 + r * eq_num] = ( 2.0 * h * mesh[_x].Nk[9 + i * eq_num] ) / ( 3.0 * dx * mu );
+	matrA.coeffRef( 2 + i * eq_num, 9 + r * eq_num ) = ( 2.0 * h * mesh[_x].Nk[9 + i * eq_num] ) / ( 3.0 * dx * mu );
 
-	matr_A[3 + i * eq_num][0 + r * eq_num] = -( ( B12 * eps_x_0 * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 4.0 * betta * B22 * dt * dx ) );
-	matr_A[3 + i * eq_num][1 + r * eq_num] = -( ( B66 * h ) / ( 4 * dx * dx ) );
-	matr_A[3 + i * eq_num][1 + i * eq_num] = ( B66 * h ) / dx / dx + ( h * ( 2.0 * rho + dt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) )
+	matrA.coeffRef( 3 + i * eq_num, 0 + r * eq_num ) = -( ( B12 * eps_x_0 * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 4.0 * betta * B22 * dt * dx ) );
+	matrA.coeffRef( 3 + i * eq_num, 1 + r * eq_num ) = -( ( B66 * h ) / ( 4 * dx * dx ) );
+	matrA.coeffRef( 3 + i * eq_num, 1 + i * eq_num ) = ( B66 * h ) / dx / dx + ( h * ( 2.0 * rho + dt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) )
 				/ ( 2.0 * betta * dt * dt);
-	matr_A[3 + i * eq_num][2 + r * eq_num] = -1.0 / ( 2.0 * dx );
-	matr_A[3 + i * eq_num][3 + i * eq_num] = ( eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 2.0 * betta * B22 * dt );
-	matr_A[3 + i * eq_num][4 + i * eq_num] = -( ( By1 * h * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) / ( 4.0 * betta * dt ) );
-	matr_A[3 + i * eq_num][5 + i * eq_num] = -( ( By1 * eps_x_0 * h * mesh[_x].Nk[8 + i * eq_num] ) / ( 4.0 * betta * dt ) );
-	matr_A[3 + i * eq_num][8 + i * eq_num] = -( ( eps_x_0 * ( 2.0 * betta * dt * ( B22 * newmark_B[5 + i * eq_num] * By1 * dx * h - 2.0 * newmark_B[3 + i * eq_num] * dx
+	matrA.coeffRef( 3 + i * eq_num, 2 + r * eq_num ) = -1.0 / ( 2.0 * dx );
+	matrA.coeffRef( 3 + i * eq_num, 3 + i * eq_num ) = ( eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 2.0 * betta * B22 * dt );
+	matrA.coeffRef( 3 + i * eq_num, 4 + i * eq_num ) = -( ( By1 * h * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) / ( 4.0 * betta * dt ) );
+	matrA.coeffRef( 3 + i * eq_num, 5 + i * eq_num ) = -( ( By1 * eps_x_0 * h * mesh[_x].Nk[8 + i * eq_num] ) / ( 4.0 * betta * dt ) );
+	matrA.coeffRef( 3 + i * eq_num, 8 + i * eq_num ) = -( ( eps_x_0 * ( 2.0 * betta * dt * ( B22 * newmark_B[5 + i * eq_num] * By1 * dx * h - 2.0 * newmark_B[3 + i * eq_num] * dx
 				* mesh[_x].Nk[9 + i * eq_num]
 				+ B12 * newmark_B[0 + r * eq_num] * h * mesh[_x].Nk[9 + i * eq_num] ) + B12 * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[0 + r * eq_num] - 2.0 * dx
 				* mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[3 + i * eq_num] 
 				+ B22 * By1 * dx * h * mesh[_x].Nk[5 + i * eq_num] ) ) / ( 4.0 * betta * B22 * dt * dx ) ) + h * mesh[_x].Nk[9 + i * eq_num] * sigma_x;
-	matr_A[3 + i * eq_num][9 + i * eq_num] = ( 1.0 / ( 4.0 * betta * B22 * dt * dx ) ) * ( ( -B12 ) * eps_x_0 * h * mesh[_x].Nk[0 + r * eq_num] * mesh[_x].Nk[8 + i * eq_num] 
+	matrA.coeffRef( 3 + i * eq_num, 9 + i * eq_num ) = ( 1.0 / ( 4.0 * betta * B22 * dt * dx ) ) * ( ( -B12 ) * eps_x_0 * h * mesh[_x].Nk[0 + r * eq_num] * mesh[_x].Nk[8 + i * eq_num] 
 				+ 2.0 * dx * eps_x_0 * mesh[_x].Nk[3 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + B22 * dx * h * ( 4.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num]
 				- By1 * mesh[_x].Nk[4 + i * eq_num] ) * sigma_x 
 				+ 2.0 * betta * dt * ( eps_x_0 * ( 2.0 * newmark_B[3 + i * eq_num] * dx - B12 * newmark_B[0 + r * eq_num] * h ) * mesh[_x].Nk[8 + i * eq_num]
 				+ B22 * dx * h * ( 2.0 * Jx - newmark_B[4 + i * eq_num] * By1 * sigma_x + 4.0 * newmark_B[1 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * sigma_x
 				+ 2.0 * mesh[_x].Nk[8 + i * eq_num] * sigma_x ) ) );
 
-	matr_A[4 + i * eq_num][5 + i * eq_num] = 1.0;
+	matrA.coeffRef( 4 + i * eq_num, 5 + i * eq_num ) = 1.0;
 
-	matr_A[5 + i * eq_num][4 + r * eq_num] = -B12 / ( B22 * dx * dx );
-	matr_A[5 + i * eq_num][4 + i * eq_num] = 2.0 * B12 / ( B22 * dx * dx );
-	matr_A[5 + i * eq_num][6 + i * eq_num] = -12.0 / ( B22 * h * h * h );
+	matrA.coeffRef( 5 + i * eq_num, 4 + r * eq_num ) = -B12 / ( B22 * dx * dx );
+	matrA.coeffRef( 5 + i * eq_num, 4 + i * eq_num ) = 2.0 * B12 / ( B22 * dx * dx );
+	matrA.coeffRef( 5 + i * eq_num, 6 + i * eq_num ) = -12.0 / ( B22 * h * h * h );
 
-	matr_A[6 + i * eq_num][4 + i * eq_num] = -( ( B12 * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 12.0 * betta * B22 * dt * dx * dx ) );
-	matr_A[6 + i * eq_num][4 + r * eq_num] = ( B12 * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 24.0 * betta * B22 * dt * dx * dx );
-	matr_A[6 + i * eq_num][5 + i * eq_num] = -( ( B66 * h * h * h ) / ( 3.0 * dx * dx ) ) - ( h * h * h * rho ) / ( 12.0 * betta * dt * dt ) 
+	matrA.coeffRef( 6 + i * eq_num, 4 + i * eq_num ) = -( ( B12 * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 12.0 * betta * B22 * dt * dx * dx ) );
+	matrA.coeffRef( 6 + i * eq_num, 4 + r * eq_num ) = ( B12 * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 24.0 * betta * B22 * dt * dx * dx );
+	matrA.coeffRef( 6 + i * eq_num, 5 + i * eq_num ) = -( ( B66 * h * h * h ) / ( 3.0 * dx * dx ) ) - ( h * h * h * rho ) / ( 12.0 * betta * dt * dt ) 
 				 - ( h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) / ( 24.0 * betta * dt );
-	matr_A[6 + i * eq_num][5 + r * eq_num] = ( B66 * h * h * h ) / ( 6.0 * dx * dx );
-	matr_A[6 + i * eq_num][6 + i * eq_num] = ( eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 2.0 * betta * B22 * dt );
-	matr_A[6 + i * eq_num][7 + i * eq_num] = 1.0;
-	matr_A[6 + i * eq_num][8 + i * eq_num] = ( B12 * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( -2.0 * newmark_B[4 + i * eq_num] + newmark_B[4 + r * eq_num]
+	matrA.coeffRef( 6 + i * eq_num, 5 + r * eq_num ) = ( B66 * h * h * h ) / ( 6.0 * dx * dx );
+	matrA.coeffRef( 6 + i * eq_num, 6 + i * eq_num ) = ( eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 2.0 * betta * B22 * dt );
+	matrA.coeffRef( 6 + i * eq_num, 7 + i * eq_num ) = 1.0;
+	matrA.coeffRef( 6 + i * eq_num, 8 + i * eq_num ) = ( B12 * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( -2.0 * newmark_B[4 + i * eq_num] + newmark_B[4 + r * eq_num]
 				+ ( -2.0 * mesh[_x].Nk[4 + i * eq_num] + mesh[_x].Nk[4 + r * eq_num] ) / ( 2.0 * betta * dt ) ) ) / ( 12.0 * B22 * dx * dx )
 				+ ( eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * ( newmark_B[6 + i * eq_num] + mesh[_x].Nk[6 + i * eq_num] / ( 2.0 * betta * dt ) ) ) / B22;
-	matr_A[6 + i * eq_num][9 + i * eq_num] = ( B12 * eps_x_0 * h * h * h * ( -2.0 * newmark_B[4 + i * eq_num] + newmark_B[4 + r * eq_num] + ( -2.0 * mesh[_x].Nk[4 + i * eq_num]
+	matrA.coeffRef( 6 + i * eq_num, 9 + i * eq_num ) = ( B12 * eps_x_0 * h * h * h * ( -2.0 * newmark_B[4 + i * eq_num] + newmark_B[4 + r * eq_num] + ( -2.0 * mesh[_x].Nk[4 + i * eq_num]
 				+ mesh[_x].Nk[4 + r * eq_num] ) / ( 2.0 * betta * dt ) ) * mesh[_x].Nk[8 + i * eq_num] )
 				/ ( 12.0 * B22 * dx * dx ) + ( eps_x_0 * ( newmark_B[6 + i * eq_num] + mesh[_x].Nk[6 + i * eq_num] / ( 2.0 * betta * dt ) ) * mesh[_x].Nk[8 + i * eq_num] )
 				/ B22 - ( 1.0 / 6.0 ) * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( newmark_B[5 + i * eq_num] + mesh[_x].Nk[5 + i * eq_num] / ( 2.0 * betta * dt ) ) * sigma_x;
 	
-	matr_A[7 + i * eq_num][1 + i * eq_num] = ( eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 4.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + r * eq_num] )
+	matrA.coeffRef( 7 + i * eq_num, 1 + i * eq_num ) = ( eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 4.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + r * eq_num] )
 				 * ( 2.0 * betta * newmark_B[5 + r * eq_num] * dt + mesh[_x].Nk[5 + r * eq_num] ) 
 				 - 108.0 * betta * By1 * dt * dx * dx * h * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) / ( 432.0 * betta * betta * dt * dt * dx * dx );
-	matr_A[7 + i * eq_num][1 + r * eq_num] = -( ( eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 4.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + r * eq_num] )
+	matrA.coeffRef( 7 + i * eq_num, 1 + r * eq_num ) = -( ( eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 4.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + r * eq_num] )
 				 * ( 2.0 * betta * newmark_B[5 + r * eq_num] * dt + mesh[_x].Nk[5 + r * eq_num] ) ) 
 				 / ( 1728.0 * betta * betta * dt * dt * dx * dx ) );
-	matr_A[7 + i * eq_num][4 + i * eq_num] = -( ( 1.0 / ( 288.0 * betta * betta * B12 * B22 * dt * dt * dx * dx * dx * dx ) ) * ( 24.0
+	matrA.coeffRef( 7 + i * eq_num, 4 + i * eq_num ) = -( ( 1.0 / ( 288.0 * betta * betta * B12 * B22 * dt * dt * dx * dx * dx * dx ) ) * ( 24.0
 				 * betta * betta * ( B12 * B12 * B12 - B11 * B12 * B22 + 2.0 * B12 * B12 * B66 - 10.0 * B11 * B22 * B66 ) * dt * dt
 				 * h * h * h + B12 * B22 * By1 * dx * dx * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + r * eq_num] - 2.0 * betta * B12 * B22 * dx * dx * h
 				 * ( ( -newmark_B[5 + r * eq_num] ) * By1 * dt * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] + 3.0 * ( 6.0 * dx * dx * ( 8.0 * rho + By1 * By1 * dt * sigma_x )
 				 + h * h * ( 8.0 * rho + 4.0 * dt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * sigma_y + By1 * By1 * dt * sigma_z ) ) ) ) );
-	matr_A[7 + i * eq_num][4 + r * eq_num] = -( ( 1.0 / ( 1152.0 * betta * betta * B12 * B22 * dt * dt * dx * dx * dx * dx ) ) * ( h * h * h * ( 192.0
+	matrA.coeffRef( 7 + i * eq_num, 4 + r * eq_num ) = -( ( 1.0 / ( 1152.0 * betta * betta * B12 * B22 * dt * dt * dx * dx * dx * dx ) ) * ( h * h * h * ( 192.0
 				 * betta * betta * ( B12 * B12 * B12 - B11 * B12 * B22 + 2.0 * B12 * B12 * B66 + 4.0 * B11 * B22 * B66 ) * dt * dt 
 				 - B12 * B22 * By1 * dx * dx * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + r * eq_num] + 2.0 * betta * B12 * B22 * dx * dx
 				 * ( ( -newmark_B[5 + r * eq_num] ) * By1 * dt * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] + 48.0 * rho
 				 + 8.0 * dt * mesh[_x].Nk[9 + i * eq_num] * ( mesh[_x].Nk[9 + i * eq_num] + 2.0 * mesh[_x].Nk[9 + r * eq_num] ) * sigma_y + 6.0 * By1 * By1 * dt * sigma_z ) ) ) );
-	matr_A[7 + i * eq_num][4 + rr * eq_num] = ( ( 3.0 * B12 * B12 * B12 - 3.0 * B11 * B12 * B22 + 6.0 * B12 * B12 * B66 + 2.0 * B11 * B22 * B66 ) * h * h * h)
+	matrA.coeffRef( 7 + i * eq_num, 4 + rr * eq_num ) = ( ( 3.0 * B12 * B12 * B12 - 3.0 * B11 * B12 * B22 + 6.0 * B12 * B12 * B66 + 2.0 * B11 * B22 * B66 ) * h * h * h)
 				 / ( 12.0 * B12 * B22 * dx * dx * dx * dx );
-	matr_A[7 + i * eq_num][4 + ( rr + 1 ) * eq_num] = -( ( ( B12 * B12 - B11 * B22 + 2.0 * B12 * B66 ) * h * h * h ) / ( 12.0 * B22 * dx * dx * dx * dx ) );
-	matr_A[7 + i * eq_num][5 + i * eq_num] = ( eps_x_0 * ( -6.0 * dx * dx * h + h * h * h ) * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 12.0 * betta * dt
+	matrA.coeffRef( 7 + i * eq_num, 4 + ( rr + 1 ) * eq_num ) = -( ( ( B12 * B12 - B11 * B22 + 2.0 * B12 * B66 ) * h * h * h ) / ( 12.0 * B22 * dx * dx * dx * dx ) );
+	matrA.coeffRef( 7 + i * eq_num, 5 + i * eq_num ) = ( eps_x_0 * ( -6.0 * dx * dx * h + h * h * h ) * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 12.0 * betta * dt
 				 * dx * dx );
-	matr_A[7 + i * eq_num][5 + r * eq_num] = -( ( 1.0 / ( 3456.0 * betta * betta * dt * dt * dx * dx ) ) * ( eps_x_0 * h * h * h * ( mesh[_x].Nk[9 + i * eq_num]
+	matrA.coeffRef( 7 + i * eq_num, 5 + r * eq_num ) = -( ( 1.0 / ( 3456.0 * betta * betta * dt * dt * dx * dx ) ) * ( eps_x_0 * h * h * h * ( mesh[_x].Nk[9 + i * eq_num]
 				 * ( 8.0 * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[1 + i * eq_num] - 2.0 * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[1 + r * eq_num]
 				 + 8.0 * mesh[_x].Nk[9 + i * eq_num] * ( -4.0 * mesh[_x].Nk[1 + i * eq_num] + mesh[_x].Nk[1 + r * eq_num] ) + 12.0 * By1 * mesh[_x].Nk[4 + i * eq_num]
 				 - 3.0 * By1 * mesh[_x].Nk[4 + r * eq_num] )
@@ -308,16 +793,16 @@ void Solver::calc_system( int _x )
 				 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + r * eq_num] - 2.0 * newmark_B[1 + r * eq_num] * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + r * eq_num]
 				 + 24.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 24.0 * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[8 + i * eq_num]
 				 + 24.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + r * eq_num] ) ) ) );
-	matr_A[7 + i * eq_num][6 + i * eq_num] = ( 2.0 * ( B12 + 2.0 * B66 ) ) / ( B22 * dx * dx );
-	matr_A[7 + i * eq_num][6 + r * eq_num] = -( ( B12 + 2.0 * B66 ) / ( B22 * dx * dx ) );
-	matr_A[7 + i * eq_num][8 + i * eq_num] = -( ( 1.0 / ( 72.0 * betta * dt * dx * dx ) ) * ( h * ( 36.0 * dx * dx * eps_x_0 * mesh[_x].Nk[9 + i * eq_num]
+	matrA.coeffRef( 7 + i * eq_num, 6 + i * eq_num ) = ( 2.0 * ( B12 + 2.0 * B66 ) ) / ( B22 * dx * dx );
+	matrA.coeffRef( 7 + i * eq_num, 6 + r * eq_num ) = -( ( B12 + 2.0 * B66 ) / ( B22 * dx * dx ) );
+	matrA.coeffRef( 7 + i * eq_num, 8 + i * eq_num ) = -( ( 1.0 / ( 72.0 * betta * dt * dx * dx ) ) * ( h * ( 36.0 * dx * dx * eps_x_0 * mesh[_x].Nk[9 + i * eq_num]
 				 * mesh[_x].Nk[5 + i * eq_num]
 				 + eps_x_0 * h * h * ( -6.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + i * eq_num] + ( mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + r * eq_num] )
 				 * mesh[_x].Nk[5 + r * eq_num] ) + 2.0 * betta * dt * ( 6.0 * newmark_B[5 + i * eq_num] * eps_x_0 * ( 6.0 * dx * dx - h * h ) * mesh[_x].Nk[9 + i * eq_num]
 				 + newmark_B[5 + r * eq_num] * eps_x_0 * h * h * ( mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + r * eq_num] ) + 18.0 * By1 * dx * dx * sigma_x ) ) ) );
-	matr_A[7 + i * eq_num][8 + r * eq_num] = -( ( eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 2.0 * betta * newmark_B[5 + r * eq_num] * dt
+	matrA.coeffRef( 7 + i * eq_num, 8 + r * eq_num ) = -( ( eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 2.0 * betta * newmark_B[5 + r * eq_num] * dt
 				 + mesh[_x].Nk[5 + r * eq_num] ) ) / ( 72.0 * betta * dt * dx * dx ) );
-	matr_A[7 + i * eq_num][9 + i * eq_num] = ( 1.0 / ( 3456.0 * betta * betta * dt * dt * dx * dx ) ) * ( h * ( eps_x_0 * h * h * ( 2.0 * ( 8.0 * mesh[_x].Nk[9 + i * eq_num] 
+	matrA.coeffRef( 7 + i * eq_num, 9 + i * eq_num ) = ( 1.0 / ( 3456.0 * betta * betta * dt * dt * dx * dx ) ) * ( h * ( eps_x_0 * h * h * ( 2.0 * ( 8.0 * mesh[_x].Nk[9 + i * eq_num] 
 				 - mesh[_x].Nk[9 + r * eq_num] ) * ( 4.0 * mesh[_x].Nk[1 + i * eq_num] - mesh[_x].Nk[1 + r * eq_num] ) + 3.0 * By1 * ( -4.0 * mesh[_x].Nk[4 + i * eq_num]
 				 + mesh[_x].Nk[4 + r * eq_num] ) ) * mesh[_x].Nk[5 + r * eq_num] + 2.0 * betta * dt * ( newmark_B[5 + r * eq_num] * eps_x_0 * h * h
 				 * ( 2.0 * ( 8.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + r * eq_num] ) * ( 4.0 * mesh[_x].Nk[1 + i * eq_num] - mesh[_x].Nk[1 + r * eq_num] )
@@ -341,32 +826,32 @@ void Solver::calc_system( int _x )
 				 + 12.0 * newmark_B[4 + i * eq_num] * h * h * ( newmark_B[5 + r * eq_num] * By1 * eps_x_0 - 24.0 * mesh[_x].Nk[9 + i * eq_num] * sigma_y )
 				 + 3.0 * newmark_B[4 + r * eq_num] * h * h
 				 * ( ( -newmark_B[5 + r * eq_num] ) * By1 * eps_x_0 + 16.0 * ( mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + r * eq_num] ) * sigma_y ) ) ) );
-	matr_A[7 + i * eq_num][9 + r * eq_num] = -( ( h * h * h * ( eps_x_0 * ( 2.0 * betta * newmark_B[5 + r * eq_num] * dt + mesh[_x].Nk[5 + r * eq_num] )
+	matrA.coeffRef( 7 + i * eq_num, 9 + r * eq_num ) = -( ( h * h * h * ( eps_x_0 * ( 2.0 * betta * newmark_B[5 + r * eq_num] * dt + mesh[_x].Nk[5 + r * eq_num] )
 				* ( mesh[_x].Nk[9 + i * eq_num] * ( 8.0 * betta * newmark_B[1 + i * eq_num] * dt 
 				- 2.0 * betta * newmark_B[1 + r * eq_num] * dt + 4.0 * mesh[_x].Nk[1 + i * eq_num] - mesh[_x].Nk[1 + r * eq_num] ) + 24.0 * betta * dt
 				* mesh[_x].Nk[8 + i * eq_num] ) + 48.0 * betta * dt * mesh[_x].Nk[9 + i * eq_num] * ( 2.0 * betta * newmark_B[4 + r * eq_num] * dt
 				+ mesh[_x].Nk[4 + r * eq_num] ) * sigma_y ) ) / ( 1728.0 * betta * betta * dt * dt * dx * dx ) );
 
-	matr_A[8 + i * eq_num][0 + i * eq_num] = ( -( ( 4.0 * mesh[_x].Nk[9 + i * eq_num] ) / 3.0 ) + ( 4.0 * mesh[_x].Nk[9 + r * eq_num] ) / 3.0 ) / ( 4.0 * betta * dt * dx );
-	matr_A[8 + i * eq_num][0 + r * eq_num] = mesh[_x].Nk[9 + i * eq_num] / ( 4.0 * betta * dt * dx );
-	matr_A[8 + i * eq_num][9 + i * eq_num] = 1.0 / ( 2.0 * betta * dt ) - ( 2.0 * ( newmark_B[0 + i * eq_num] + mesh[_x].Nk[0 + i * eq_num] / ( 2.0 * betta * dt ) ) )
+	matrA.coeffRef( 8 + i * eq_num, 0 + i * eq_num ) = ( -( ( 4.0 * mesh[_x].Nk[9 + i * eq_num] ) / 3.0 ) + ( 4.0 * mesh[_x].Nk[9 + r * eq_num] ) / 3.0 ) / ( 4.0 * betta * dt * dx );
+	matrA.coeffRef( 8 + i * eq_num, 0 + r * eq_num ) = mesh[_x].Nk[9 + i * eq_num] / ( 4.0 * betta * dt * dx );
+	matrA.coeffRef( 8 + i * eq_num, 9 + i * eq_num ) = 1.0 / ( 2.0 * betta * dt ) - ( 2.0 * ( newmark_B[0 + i * eq_num] + mesh[_x].Nk[0 + i * eq_num] / ( 2.0 * betta * dt ) ) )
 				/ ( 3.0 * dx )
 				+ ( newmark_B[0 + r * eq_num] + mesh[_x].Nk[0 + r * eq_num] / ( 2.0 * betta * dt ) ) / ( 2.0 * dx ) + 2.0 / ( 3.0 * dx * dx * mu * sigma_y );
-	matr_A[8 + i * eq_num][9 + r * eq_num] = ( 2.0 * ( newmark_B[0 + i * eq_num] + mesh[_x].Nk[0 + i * eq_num] / ( 2.0 * betta * dt ) ) ) / ( 3.0 * dx ) - 2.0
+	matrA.coeffRef( 8 + i * eq_num, 9 + r * eq_num ) = ( 2.0 * ( newmark_B[0 + i * eq_num] + mesh[_x].Nk[0 + i * eq_num] / ( 2.0 * betta * dt ) ) ) / ( 3.0 * dx ) - 2.0
 				/ ( 3.0 * dx * dx * mu * sigma_y );
 
-	matr_A[9 + i * eq_num][1 + i * eq_num] = ( mu * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) / ( 2.0 * betta * dt );
-	matr_A[9 + i * eq_num][4 + i * eq_num] = -( ( By1 * mu * sigma_x ) / ( 4.0 * betta * dt ) );
-	matr_A[9 + i * eq_num][8 + i * eq_num] = sigma_x_mu;
-	matr_A[9 + i * eq_num][9 + i * eq_num] = mu * ( newmark_B[1 + i * eq_num] + mesh[_x].Nk[1 + i * eq_num] / ( 2.0 * betta * dt ) ) * sigma_x;
+	matrA.coeffRef( 9 + i * eq_num, 1 + i * eq_num ) = ( mu * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) / ( 2.0 * betta * dt );
+	matrA.coeffRef( 9 + i * eq_num, 4 + i * eq_num ) = -( ( By1 * mu * sigma_x ) / ( 4.0 * betta * dt ) );
+	matrA.coeffRef( 9 + i * eq_num, 8 + i * eq_num ) = sigma_x_mu;
+	matrA.coeffRef( 9 + i * eq_num, 9 + i * eq_num ) = mu * ( newmark_B[1 + i * eq_num] + mesh[_x].Nk[1 + i * eq_num] / ( 2.0 * betta * dt ) ) * sigma_x;
 
-	vect_f[2 + i * eq_num] = ( h * ( 3.0 * eps_x_0 * mu * ( -4.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + r * eq_num] + By1 * mesh[_x].Nk[4 + r * eq_num] )
+	vectF( 2 + i * eq_num ) = ( h * ( 3.0 * eps_x_0 * mu * ( -4.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + r * eq_num] + By1 * mesh[_x].Nk[4 + r * eq_num] )
 			* mesh[_x].Nk[8 + i * eq_num] + 2.0 * betta * dt * ( 8.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num]
 			- 2.0 * mesh[_x].Nk[9 + i * eq_num] * ( 4.0 * mesh[_x].Nk[9 + r * eq_num] + 3.0 * newmark_B[1 + r * eq_num] * eps_x_0 * mu * mesh[_x].Nk[8 + i * eq_num] )
 			+ 3.0 * dx * mu * ( 4.0 * newmark_A[0 + i * eq_num] * rho + newmark_B[0 + i * eq_num] * By1 * By1 * sigma_z ) ) ) )
 			/ ( 24.0 * betta * dt * dx * mu );
 
-	vect_f[3 + i * eq_num] = ( 1.0 / ( 4.0 * betta * B22 * dt * dx ) ) * ( eps_x_0 * ( 2.0 * B12 * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[0 + r * eq_num]
+	vectF( 3 + i * eq_num ) = ( 1.0 / ( 4.0 * betta * B22 * dt * dx ) ) * ( eps_x_0 * ( 2.0 * B12 * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[0 + r * eq_num]
 			- 4.0 * dx * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[3 + i * eq_num]
 			+ B22 * By1 * dx * h * mesh[_x].Nk[5 + i * eq_num] ) * mesh[_x].Nk[8 + i * eq_num] + B22 * dx * h * mesh[_x].Nk[9 + i * eq_num]
 			* ( -4.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num] + By1 * mesh[_x].Nk[4 + i * eq_num] ) * sigma_x
@@ -374,7 +859,7 @@ void Solver::calc_system( int _x )
 			* ( B12 * newmark_B[0 + r * eq_num] * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 2.0 * newmark_A[1 + i * eq_num] * B22 * dx * rho
 			- 2.0 * B22 * dx * mesh[_x].Nk[9 + i * eq_num] * ( newmark_B[1 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[8 + i * eq_num] ) * sigma_x ) ) );
 
-	vect_f[6 + i * eq_num] = ( 1.0 / ( 12.0 * betta * B22 * dt * dx * dx ) ) * ( mesh[_x].Nk[9 + i * eq_num] * ( B12 * eps_x_0 * h * h * h * ( 2.0
+	vectF( 6 + i * eq_num ) = ( 1.0 / ( 12.0 * betta * B22 * dt * dx * dx ) ) * ( mesh[_x].Nk[9 + i * eq_num] * ( B12 * eps_x_0 * h * h * h * ( 2.0
 			* mesh[_x].Nk[4 + i * eq_num] - mesh[_x].Nk[4 + r * eq_num] ) * mesh[_x].Nk[8 + i * eq_num]
 			+ dx * dx * ( -12.0 * eps_x_0 * mesh[_x].Nk[6 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] + B22 * h * h * h * mesh[_x].Nk[9 + i * eq_num]
 			* mesh[_x].Nk[5 + i * eq_num] * sigma_x ) ) - betta * dt * ( 12.0 * newmark_B[6 + i * eq_num] * dx * dx * eps_x_0 * mesh[_x].Nk[9 + i * eq_num]
@@ -382,7 +867,7 @@ void Solver::calc_system( int _x )
 			+ h * h * h * ( B12 * ( -2.0 * newmark_B[4 + i * eq_num] + newmark_B[4 + r * eq_num] ) * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num]
 			+ B22 * dx * dx * ( newmark_A[5 + i * eq_num] * rho - newmark_B[5 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) ) ) );
 
-	vect_f[7 + i * eq_num] = ( 1.0 / ( 1728.0 * betta * betta * dt * dt * dx * dx ) ) * ( -3.0 * eps_x_0 * h * h * h
+	vectF( 7 + i * eq_num ) = ( 1.0 / ( 1728.0 * betta * betta * dt * dt * dx * dx ) ) * ( -3.0 * eps_x_0 * h * h * h
 			* mesh[_x].Nk[9 + i * eq_num] * ( ( 4.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + r * eq_num] ) * ( 4.0 * mesh[_x].Nk[1 + i * eq_num]
 			- mesh[_x].Nk[1 + r * eq_num]) + By1 * ( -4.0 * mesh[_x].Nk[4 + i * eq_num] + mesh[_x].Nk[4 + r * eq_num] ) ) * mesh[_x].Nk[5 + r * eq_num]
 			+ betta * dt * h * ( newmark_B[5 + r * eq_num] * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 16.0 * mesh[_x].Nk[9 + r * eq_num]
@@ -418,11 +903,11 @@ void Solver::calc_system( int _x )
 			+ 9.0 * By1 * By1 * ( 12.0 * newmark_B[4 + i * eq_num] * dx * dx * h * sigma_x + ( 2.0 * newmark_B[4 + i * eq_num] - newmark_B[4 + r * eq_num] )
 			* h * h * h * sigma_z ) ) );
 
-	vect_f[8 + i * eq_num] = ( 12.0 * betta * newmark_B[9 + i * eq_num] * dt * dx + 4.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[0 + i * eq_num]
+	vectF( 8 + i * eq_num ) = ( 12.0 * betta * newmark_B[9 + i * eq_num] * dt * dx + 4.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[0 + i * eq_num]
 			- 4.0 * mesh[_x].Nk[9 + r * eq_num] * mesh[_x].Nk[0 + i * eq_num] - 3.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[0 + r * eq_num] )
 			/ ( 12.0 * betta * dt * dx );
 
-	vect_f[9 + i * eq_num] = -( ( mu * ( betta * newmark_B[4 + i * eq_num] * By1 * dt + mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num] ) * sigma_x )
+	vectF( 9 + i * eq_num ) = -( ( mu * ( betta * newmark_B[4 + i * eq_num] * By1 * dt + mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num] ) * sigma_x )
 			/ ( 2.0 * betta * dt ) );
 
 	i = nx - 1;
@@ -432,91 +917,91 @@ void Solver::calc_system( int _x )
 	jj = i - 2;
 	
 	//for the right line:
-	matr_A[0 + i * eq_num][1 + j * eq_num] = 1.0 / ( 2.0 * dx );
-	matr_A[0 + i * eq_num][2 + i * eq_num] = 1.0 / ( h * B66 );
+	matrA.coeffRef( 0 + i * eq_num, 1 + j * eq_num ) = 1.0 / ( 2.0 * dx );
+	matrA.coeffRef( 0 + i * eq_num, 2 + i * eq_num ) = 1.0 / ( h * B66 );
 
-	matr_A[1 + i * eq_num][0 + j * eq_num] = B12 / ( B22 * 2.0 * dx );
-	matr_A[1 + i * eq_num][3 + i * eq_num] = 1.0 / ( h * B22 );
+	matrA.coeffRef( 1 + i * eq_num, 0 + j * eq_num ) = B12 / ( B22 * 2.0 * dx );
+	matrA.coeffRef( 1 + i * eq_num, 3 + i * eq_num ) = 1.0 / ( h * B22 );
 
-	matr_A[2 + i * eq_num][0 + j * eq_num] = ( ( 3.0 * B12 * B12 - 4.0 * B11 * B22 ) * h ) / ( 4.0 * B22 * dx * dx );
-	matr_A[2 + i * eq_num][0 + i * eq_num] = ( 2.0 * B11 * h ) / dx / dx - ( B12 * B12 * h ) / ( B22 * dx * dx ) + ( h * ( 8.0 * rho + By1 * By1 * dt * sigma_z ) )
+	matrA.coeffRef( 2 + i * eq_num, 0 + j * eq_num ) = ( ( 3.0 * B12 * B12 - 4.0 * B11 * B22 ) * h ) / ( 4.0 * B22 * dx * dx );
+	matrA.coeffRef( 2 + i * eq_num, 0 + i * eq_num ) = ( 2.0 * B11 * h ) / dx / dx - ( B12 * B12 * h ) / ( B22 * dx * dx ) + ( h * ( 8.0 * rho + By1 * By1 * dt * sigma_z ) )
 				/ ( 8.0 * betta * dt * dt );
-	matr_A[2 + i * eq_num][1 + j * eq_num] = -( ( eps_x_0 * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 4.0 * betta * dt * dx ) );
-	matr_A[2 + i * eq_num][3 + j * eq_num] = B12 / ( 2.0 * B22 * dx );
-	matr_A[2 + i * eq_num][4 + j * eq_num] = ( By1 * eps_x_0 * h * mesh[_x].Nk[8 + i * eq_num] ) / ( 8.0 * betta * dt * dx );
-	matr_A[2 + i * eq_num][8 + i * eq_num] = ( eps_x_0 * h * ( 2.0 * newmark_B[4 + j * eq_num] * betta * By1 * dt - 2.0 * mesh[_x].Nk[9 + i * eq_num]
+	matrA.coeffRef( 2 + i * eq_num, 1 + j * eq_num ) = -( ( eps_x_0 * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 4.0 * betta * dt * dx ) );
+	matrA.coeffRef( 2 + i * eq_num, 3 + j * eq_num ) = B12 / ( 2.0 * B22 * dx );
+	matrA.coeffRef( 2 + i * eq_num, 4 + j * eq_num ) = ( By1 * eps_x_0 * h * mesh[_x].Nk[8 + i * eq_num] ) / ( 8.0 * betta * dt * dx );
+	matrA.coeffRef( 2 + i * eq_num, 8 + i * eq_num ) = ( eps_x_0 * h * ( 2.0 * newmark_B[4 + j * eq_num] * betta * By1 * dt - 2.0 * mesh[_x].Nk[9 + i * eq_num]
 				* ( 2.0 * newmark_B[1 + j * eq_num] * betta * dt + mesh[_x].Nk[1 + j * eq_num] )
 				+ By1 * mesh[_x].Nk[4 + j * eq_num] ) ) / ( 8.0 * betta * dt * dx);
-	matr_A[2 + i * eq_num][9 + i * eq_num] = ( h * ( 8.0 * betta * dt * ( 2.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + j * eq_num] ) - 3.0 * eps_x_0 * mu
+	matrA.coeffRef( 2 + i * eq_num, 9 + i * eq_num ) = ( h * ( 8.0 * betta * dt * ( 2.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + j * eq_num] ) - 3.0 * eps_x_0 * mu
 				* ( 2.0 * newmark_B[1 + j * eq_num] * betta * dt + mesh[_x].Nk[1 + j * eq_num] )
 				* mesh[_x].Nk[8 + i * eq_num] ) ) / ( 12.0 * betta * dt * dx * mu );
-	matr_A[2 + i * eq_num][9 + j * eq_num] = -( ( 2.0 * h * mesh[_x].Nk[9 + i * eq_num] ) / ( 3.0 * dx * mu ) );
+	matrA.coeffRef( 2 + i * eq_num, 9 + j * eq_num ) = -( ( 2.0 * h * mesh[_x].Nk[9 + i * eq_num] ) / ( 3.0 * dx * mu ) );
 
-	matr_A[3 + i * eq_num][0 + j * eq_num] = ( B12 * eps_x_0 * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 4.0 * B22 * betta * dt * dx );
-	matr_A[3 + i * eq_num][1 + j * eq_num] = -( ( B66 * h ) / ( 4.0 * dx * dx ) );
-	matr_A[3 + i * eq_num][1 + i * eq_num] = ( B66 * h ) / dx / dx + ( h * ( 2.0 * rho + dt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) )
+	matrA.coeffRef( 3 + i * eq_num, 0 + j * eq_num ) = ( B12 * eps_x_0 * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 4.0 * B22 * betta * dt * dx );
+	matrA.coeffRef( 3 + i * eq_num, 1 + j * eq_num ) = -( ( B66 * h ) / ( 4.0 * dx * dx ) );
+	matrA.coeffRef( 3 + i * eq_num, 1 + i * eq_num ) = ( B66 * h ) / dx / dx + ( h * ( 2.0 * rho + dt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) )
 				 / ( 2.0 * betta * dt * dt );
-	matr_A[3 + i * eq_num][2 + j * eq_num] = 1.0 / ( 2.0 * dx );
-	matr_A[3 + i * eq_num][3 + i * eq_num] = ( eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 2.0 * B22 * betta * dt );
-	matr_A[3 + i * eq_num][4 + i * eq_num] = -( ( By1 * h * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) / ( 4.0 * betta * dt ) );
-	matr_A[3 + i * eq_num][5 + i * eq_num] = -( ( By1 * eps_x_0 * h * mesh[_x].Nk[8 + i * eq_num] ) / ( 4.0 * betta * dt ) );
-	matr_A[3 + i * eq_num][8 + i * eq_num] = ( eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * ( 4.0 * newmark_B[3 + i * eq_num] * betta * dt * dx + B12 * h
+	matrA.coeffRef( 3 + i * eq_num, 2 + j * eq_num ) = 1.0 / ( 2.0 * dx );
+	matrA.coeffRef( 3 + i * eq_num, 3 + i * eq_num ) = ( eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 2.0 * B22 * betta * dt );
+	matrA.coeffRef( 3 + i * eq_num, 4 + i * eq_num ) = -( ( By1 * h * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) / ( 4.0 * betta * dt ) );
+	matrA.coeffRef( 3 + i * eq_num, 5 + i * eq_num ) = -( ( By1 * eps_x_0 * h * mesh[_x].Nk[8 + i * eq_num] ) / ( 4.0 * betta * dt ) );
+	matrA.coeffRef( 3 + i * eq_num, 8 + i * eq_num ) = ( eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * ( 4.0 * newmark_B[3 + i * eq_num] * betta * dt * dx + B12 * h
 				* ( 2.0 * newmark_B[0 + j * eq_num] * betta * dt + mesh[_x].Nk[0 + j * eq_num] )
 				+ 2.0 * dx * mesh[_x].Nk[3 + i * eq_num] ) - B22 * dx * h * ( By1 * eps_x_0 * ( 2.0 * newmark_B[5 + i * eq_num] * betta * dt + mesh[_x].Nk[5 + i * eq_num] )
 				- 4.0 * betta * dt * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) )
 				/ ( 4.0 * B22 * betta * dt * dx );
-	matr_A[3 + i * eq_num][9 + i * eq_num] = ( 1.0 / ( 4.0 * B22 * betta * dt * dx ) ) * ( eps_x_0 * ( 4.0 * newmark_B[3 + i * eq_num] * betta * dt * dx
+	matrA.coeffRef( 3 + i * eq_num, 9 + i * eq_num ) = ( 1.0 / ( 4.0 * B22 * betta * dt * dx ) ) * ( eps_x_0 * ( 4.0 * newmark_B[3 + i * eq_num] * betta * dt * dx
 				+ B12 * h * ( 2.0 * newmark_B[0 + j * eq_num] * betta * dt + mesh[_x].Nk[0 + j * eq_num] ) + 2.0 * dx * mesh[_x].Nk[3 + i * eq_num] )
 				* mesh[_x].Nk[8 + i * eq_num] + B22 * dx * h * ( ( 4.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num] - By1 * mesh[_x].Nk[4 + i * eq_num] )
 				* sigma_x + 2.0 * betta * dt * ( 2.0 * Jx - newmark_B[4 + i * eq_num] * By1 * sigma_x + 4.0 * newmark_B[1 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * sigma_x
 				+ 2.0 * mesh[_x].Nk[8 + i * eq_num] * sigma_x ) ) );
 
-	matr_A[4 + i * eq_num][5 + i * eq_num] = 1.0;
+	matrA.coeffRef( 4 + i * eq_num, 5 + i * eq_num ) = 1.0;
 
-	matr_A[5 + i * eq_num][4 + j * eq_num] = -B12 / ( B22 * dx * dx );
-	matr_A[5 + i * eq_num][4 + i * eq_num] = 2.0 * B12 / ( B22 * dx * dx );
-	matr_A[5 + i * eq_num][6 + i * eq_num] = -12.0 / ( B22 * h * h * h );
+	matrA.coeffRef( 5 + i * eq_num, 4 + j * eq_num ) = -B12 / ( B22 * dx * dx );
+	matrA.coeffRef( 5 + i * eq_num, 4 + i * eq_num ) = 2.0 * B12 / ( B22 * dx * dx );
+	matrA.coeffRef( 5 + i * eq_num, 6 + i * eq_num ) = -12.0 / ( B22 * h * h * h );
 
-	matr_A[6 + i * eq_num][4 + j * eq_num] = ( B12 * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 24.0 * B22 * betta * dt * dx * dx );
-	matr_A[6 + i * eq_num][4 + i * eq_num] =  -( ( B12 * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 12.0 * B22 * betta * dt * dx * dx ) );
-	matr_A[6 + i * eq_num][5 + j * eq_num] = h * h * h * B66 / ( 6.0 * dx * dx );
-	matr_A[6 + i * eq_num][5 + i * eq_num] = -( ( B66 * h * h * h ) / ( 3.0 * dx * dx ) ) - ( h * h * h * rho ) / ( 12.0 * betta * dt * dt )
+	matrA.coeffRef( 6 + i * eq_num, 4 + j * eq_num ) = ( B12 * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 24.0 * B22 * betta * dt * dx * dx );
+	matrA.coeffRef( 6 + i * eq_num, 4 + i * eq_num ) =  -( ( B12 * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 12.0 * B22 * betta * dt * dx * dx ) );
+	matrA.coeffRef( 6 + i * eq_num, 5 + j * eq_num ) = h * h * h * B66 / ( 6.0 * dx * dx );
+	matrA.coeffRef( 6 + i * eq_num, 5 + i * eq_num ) = -( ( B66 * h * h * h ) / ( 3.0 * dx * dx ) ) - ( h * h * h * rho ) / ( 12.0 * betta * dt * dt )
 				- ( h * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) / ( 24.0 * betta * dt );
-	matr_A[6 + i * eq_num][6 + i * eq_num] = ( eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 2.0 * B22 * betta * dt );
-	matr_A[6 + i * eq_num][7 + i * eq_num] = 1.0;
-	matr_A[6 + i * eq_num][8 + i * eq_num] = ( B12 * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( -2.0 * newmark_B[4 + i * eq_num] + newmark_B[4 + j * eq_num]
+	matrA.coeffRef( 6 + i * eq_num, 6 + i * eq_num ) = ( eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 2.0 * B22 * betta * dt );
+	matrA.coeffRef( 6 + i * eq_num, 7 + i * eq_num ) = 1.0;
+	matrA.coeffRef( 6 + i * eq_num, 8 + i * eq_num ) = ( B12 * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( -2.0 * newmark_B[4 + i * eq_num] + newmark_B[4 + j * eq_num]
 				+ ( -2.0 * mesh[_x].Nk[4 + i * eq_num] + mesh[_x].Nk[4 + j * eq_num] )
 				/ ( 2.0 * betta * dt ) ) ) / ( 12.0 * B22 * dx * dx ) + (eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * ( newmark_B[6 + i * eq_num] + mesh[_x].Nk[6 + i * eq_num]
 				/ ( 2.0 * betta * dt ) ) ) / B22;
-	matr_A[6 + i * eq_num][9 + i * eq_num] = ( B12 * eps_x_0 * h * h * h * ( -2.0 * newmark_B[4 + i * eq_num] + newmark_B[4 + j * eq_num] + ( -2.0 * mesh[_x].Nk[4 + i * eq_num]
+	matrA.coeffRef( 6 + i * eq_num, 9 + i * eq_num ) = ( B12 * eps_x_0 * h * h * h * ( -2.0 * newmark_B[4 + i * eq_num] + newmark_B[4 + j * eq_num] + ( -2.0 * mesh[_x].Nk[4 + i * eq_num]
 				 + mesh[_x].Nk[4 + j * eq_num] ) / ( 2.0 * betta * dt ) )
 				 * mesh[_x].Nk[8 + i * eq_num] ) / ( 12.0 * B22 * dx * dx ) + ( eps_x_0 * ( newmark_B[6 + i * eq_num] + mesh[_x].Nk[6 + i * eq_num] / ( 2.0 * betta * dt ) )
 				 * mesh[_x].Nk[8 + i * eq_num] ) / B22 - ( 1.0 / 6.0 ) * h * h * h
 				 * mesh[_x].Nk[9 + i * eq_num] * ( newmark_B[5 + i * eq_num] + mesh[_x].Nk[5 + i * eq_num] / ( 2.0 * betta * dt ) ) * sigma_x;
 	
 
-	matr_A[7 + i * eq_num][1 + j * eq_num] = -( ( eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 4.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + j * eq_num] )
+	matrA.coeffRef( 7 + i * eq_num, 1 + j * eq_num ) = -( ( eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 4.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + j * eq_num] )
 				 * ( 2.0 * newmark_B[5 + j * eq_num] * betta * dt + mesh[_x].Nk[5 + j * eq_num] ) )
 				 / ( 1728.0 * betta * betta * dt * dt * dx * dx ) );
-	matr_A[7 + i * eq_num][1 + i * eq_num] = ( eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 4.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + j * eq_num] )
+	matrA.coeffRef( 7 + i * eq_num, 1 + i * eq_num ) = ( eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 4.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + j * eq_num] )
 				 * ( 2.0 * newmark_B[5 + j * eq_num] * betta * dt + mesh[_x].Nk[5 + j * eq_num])
 				 - 108.0 * betta * By1 * dt * dx * dx * h * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) / ( 432.0 * betta * betta * dt * dt * dx * dx );
-	matr_A[7 + i * eq_num][4 + ( jj - 1 ) * eq_num] = -( ( ( B12 * B12 - B11 * B22 + 2.0 * B12 * B66 ) * h * h * h ) / ( 12.0 * B22 * dx * dx * dx * dx ) );
-	matr_A[7 + i * eq_num][4 + jj * eq_num] = ( ( 3.0 * B12 * B12 * B12 - 3.0 * B11 * B12 * B22 + 6.0 * B12 * B12 * B66 + 2.0 * B11 * B22 * B66 ) * h * h * h )
+	matrA.coeffRef( 7 + i * eq_num, 4 + ( jj - 1 ) * eq_num ) = -( ( ( B12 * B12 - B11 * B22 + 2.0 * B12 * B66 ) * h * h * h ) / ( 12.0 * B22 * dx * dx * dx * dx ) );
+	matrA.coeffRef( 7 + i * eq_num, 4 + jj * eq_num ) = ( ( 3.0 * B12 * B12 * B12 - 3.0 * B11 * B12 * B22 + 6.0 * B12 * B12 * B66 + 2.0 * B11 * B22 * B66 ) * h * h * h )
 				 / ( 12.0 * B12 * B22 * dx * dx * dx * dx );
-	matr_A[7 + i * eq_num][4 + j * eq_num] = -( ( 1.0 / ( 1152.0 * B12 * B22 * betta * betta * dt * dt * dx * dx * dx * dx ) )
+	matrA.coeffRef( 7 + i * eq_num, 4 + j * eq_num ) = -( ( 1.0 / ( 1152.0 * B12 * B22 * betta * betta * dt * dt * dx * dx * dx * dx ) )
 				 * ( h * h * h * ( 192.0 * B12 * B12 * B12 * betta * betta * dt * dt + 384.0 * B12 * B12 * B66 * betta * betta * dt * dt
 				 + 768.0 * B11 * B22 * B66 * betta * betta * dt * dt + B12 * B22 * ( -192.0 * B11 * betta * betta * dt * dt
 				 + dx * dx * ( -2.0 * newmark_B[5 + j * eq_num] * betta * By1 * dt * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] - By1 * eps_x_0 * mesh[_x].Nk[9 + i * eq_num]
 				 * mesh[_x].Nk[5 + j * eq_num] + 16.0 * betta * ( 6.0 * rho + dt
 				 * mesh[_x].Nk[9 + i * eq_num] * ( mesh[_x].Nk[9 + i * eq_num] + 2.0 * mesh[_x].Nk[9 + j * eq_num] ) * sigma_y ) + 12.0 * betta * By1 * By1 * dt * sigma_z ) ) ) ) );
-	matr_A[7 + i * eq_num][4 + i * eq_num] = ( 1.0 / ( 288.0 * B12 * B22 * betta * betta * dt * dt * dx * dx * dx * dx ) ) * ( -24.0 * B12 * B12 * B12
+	matrA.coeffRef( 7 + i * eq_num, 4 + i * eq_num ) = ( 1.0 / ( 288.0 * B12 * B22 * betta * betta * dt * dt * dx * dx * dx * dx ) ) * ( -24.0 * B12 * B12 * B12
 				 * betta* betta * dt * dt * h * h * h - 48.0 * B12 * B12 * B66 * betta * betta * dt * dt * h * h * h + 240.0 * B11 * B22 * B66 * betta * betta
 				 * dt* dt * h * h * h + B12 * B22 * h * ( 24.0 * B11 * betta * betta * dt * dt * h * h + dx * dx * ( -2.0 * newmark_B[5 + j * eq_num] * betta * By1 * dt
 				 * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] - By1 * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + j * eq_num] + 24.0 * betta
 				 * ( 2.0 * ( 6.0 * dx * dx + h * h ) * rho
 				 + dt * h * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * sigma_y ) + 6.0 * betta * By1 * By1 * dt * ( 6.0 * dx * dx * sigma_x + h * h * sigma_z ) ) ) );
-	matr_A[7 + i * eq_num][5 + j * eq_num] = -( ( 1.0 / ( 3456.0 * betta * betta * dt * dt * dx * dx ) ) * ( eps_x_0 * h * h * h * ( 24.0
+	matrA.coeffRef( 7 + i * eq_num, 5 + j * eq_num ) = -( ( 1.0 / ( 3456.0 * betta * betta * dt * dt * dx * dx ) ) * ( eps_x_0 * h * h * h * ( 24.0
 				 * newmark_B[4 + i * eq_num] * betta * By1 * dt * mesh[_x].Nk[9 + i * eq_num] - 6.0 * newmark_B[4 + j * eq_num] * betta * By1 * dt * mesh[_x].Nk[9 + i * eq_num]
 				 - 64.0 * newmark_B[1 + i * eq_num] * betta * dt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] + 16.0 * newmark_B[1 + j * eq_num] * betta
 				 * dt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] + 16.0 * newmark_B[1 + i * eq_num] * betta * dt * mesh[_x].Nk[9 + i * eq_num]
@@ -528,24 +1013,24 @@ void Solver::calc_system( int _x )
 				 - 3.0 * By1 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[4 + j * eq_num] + 48.0 * betta * dt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num]
 				 + 48.0 * betta * dt * mesh[_x].Nk[9 + j * eq_num] * mesh[_x].Nk[8 + i * eq_num] + 48.0 * betta * dt * mesh[_x].Nk[9 + i * eq_num]
 				 * mesh[_x].Nk[8 + j * eq_num] ) ) );
-	matr_A[7 + i * eq_num][5 + i * eq_num] = ( eps_x_0 * ( -6.0 * dx * dx * h + h * h * h ) * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] )
+	matrA.coeffRef( 7 + i * eq_num, 5 + i * eq_num ) = ( eps_x_0 * ( -6.0 * dx * dx * h + h * h * h ) * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] )
 				 / ( 12.0 * betta * dt * dx * dx );
-	matr_A[7 + i * eq_num][6 + j * eq_num] = -( ( B12 + 2.0 * B66 ) / ( B22 * dx * dx ) );
-	matr_A[7 + i * eq_num][6 + i * eq_num] = ( 2.0 * ( B12 + 2.0 * B66 ) ) / ( B22 * dx * dx );
-	matr_A[7 + i * eq_num][8 + j * eq_num] =  -( ( eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 2.0 * newmark_B[5 + j * eq_num] * betta * dt
+	matrA.coeffRef( 7 + i * eq_num, 6 + j * eq_num ) = -( ( B12 + 2.0 * B66 ) / ( B22 * dx * dx ) );
+	matrA.coeffRef( 7 + i * eq_num, 6 + i * eq_num ) = ( 2.0 * ( B12 + 2.0 * B66 ) ) / ( B22 * dx * dx );
+	matrA.coeffRef( 7 + i * eq_num, 8 + j * eq_num ) =  -( ( eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 2.0 * newmark_B[5 + j * eq_num] * betta * dt
 				 + mesh[_x].Nk[5 + j * eq_num] ) ) / ( 72.0 * betta * dt * dx * dx ) );
-	matr_A[7 + i * eq_num][8 + i * eq_num] =  -( ( 1.0 / ( 72.0 * betta * dt * dx * dx ) ) * ( h * ( eps_x_0 * ( 12.0 * newmark_B[5 + i * eq_num] * betta * dt * ( 6.0
+	matrA.coeffRef( 7 + i * eq_num, 8 + i * eq_num ) =  -( ( 1.0 / ( 72.0 * betta * dt * dx * dx ) ) * ( h * ( eps_x_0 * ( 12.0 * newmark_B[5 + i * eq_num] * betta * dt * ( 6.0
 				 * dx * dx - h * h )
 				 * mesh[_x].Nk[9 + i * eq_num] + 2.0 * newmark_B[5 + j * eq_num] * betta * dt * h * h * ( mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + j * eq_num] )
 				 - 6.0 * ( -6.0 * dx * dx + h * h ) * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[5 + i * eq_num] + h * h * ( mesh[_x].Nk[9 + i * eq_num]
 				 + mesh[_x].Nk[9 + j * eq_num] )
 				 * mesh[_x].Nk[5 + j * eq_num] ) + 36.0 * betta * By1 * dt * dx * dx * sigma_x ) ) );
-	matr_A[7 + i * eq_num][9 + j * eq_num] = -( ( 1.0 / ( 1728.0 * betta * betta * dt * dt * dx * dx ) ) * ( h * h * h * ( eps_x_0 * ( 2.0 * newmark_B[5 + j * eq_num] * betta * dt
+	matrA.coeffRef( 7 + i * eq_num, 9 + j * eq_num ) = -( ( 1.0 / ( 1728.0 * betta * betta * dt * dt * dx * dx ) ) * ( h * h * h * ( eps_x_0 * ( 2.0 * newmark_B[5 + j * eq_num] * betta * dt
 				 + mesh[_x].Nk[5 + j * eq_num] ) * ( 8.0 * newmark_B[1 + i * eq_num] * betta * dt * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + i * eq_num]
 				 * ( 2.0 * newmark_B[1 + j * eq_num] * betta * dt - 4.0 * mesh[_x].Nk[1 + i * eq_num] + mesh[_x].Nk[1 + j * eq_num] ) + 24.0 * betta * dt
 				 * mesh[_x].Nk[8 + i * eq_num] )
 				 + 48.0 * betta * dt * mesh[_x].Nk[9 + i * eq_num] * ( 2.0 * newmark_B[4 + j * eq_num] * betta * dt + mesh[_x].Nk[4 + j * eq_num] ) * sigma_y ) ) );
-	matr_A[7 + i * eq_num][9 + i * eq_num] = ( 1.0 / ( 3456.0 * betta * betta * dt * dt ) ) * ( h * ( -1728.0 * betta * dt * eps_x_0
+	matrA.coeffRef( 7 + i * eq_num, 9 + i * eq_num ) = ( 1.0 / ( 3456.0 * betta * betta * dt * dt ) ) * ( h * ( -1728.0 * betta * dt * eps_x_0
 				 * ( 2.0 * newmark_B[5 + i * eq_num] * betta * dt + mesh[_x].Nk[5 + i * eq_num] ) * mesh[_x].Nk[8 + i * eq_num] + ( 144.0 * betta * dt * eps_x_0 * h
 				 * h * ( 4.0 * newmark_B[5 + i * eq_num] * betta * dt - 2.0 * newmark_B[5 + j * eq_num] * betta * dt + 2.0 * mesh[_x].Nk[5 + i * eq_num]
 				 - mesh[_x].Nk[5 + j * eq_num] ) * mesh[_x].Nk[8 + i * eq_num] ) / dx / dx + ( 1.0 / dx / dx) * ( eps_x_0 * h * h * ( 2.0 * newmark_B[5 + j * eq_num]
@@ -560,26 +1045,26 @@ void Solver::calc_system( int _x )
 				 * ( mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + j * eq_num] ) + 6.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[4 + i * eq_num]
 				 - ( mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + j * eq_num] ) * mesh[_x].Nk[4 + j * eq_num] ) * sigma_y ) / dx / dx ) );
 	
-	matr_A[8 + i * eq_num][0 + j * eq_num] = -( mesh[_x].Nk[9 + i * eq_num] / ( 4.0 * betta * dt * dx ) );
-	matr_A[8 + i * eq_num][0 + i * eq_num] = ( ( 4.0 * mesh[_x].Nk[9 + i * eq_num] ) / 3.0 - ( 4.0 * mesh[_x].Nk[9 + j * eq_num] ) / 3.0 ) / ( 4.0 * betta * dt * dx );
-	matr_A[8 + i * eq_num][9 + j * eq_num] = -( ( 2.0 * ( newmark_B[0 + i * eq_num] + mesh[_x].Nk[0 + i * eq_num] / ( 2.0 * betta * dt ) ) ) / ( 3.0 * dx ) ) - 2.0
+	matrA.coeffRef( 8 + i * eq_num, 0 + j * eq_num ) = -( mesh[_x].Nk[9 + i * eq_num] / ( 4.0 * betta * dt * dx ) );
+	matrA.coeffRef( 8 + i * eq_num, 0 + i * eq_num ) = ( ( 4.0 * mesh[_x].Nk[9 + i * eq_num] ) / 3.0 - ( 4.0 * mesh[_x].Nk[9 + j * eq_num] ) / 3.0 ) / ( 4.0 * betta * dt * dx );
+	matrA.coeffRef( 8 + i * eq_num, 9 + j * eq_num ) = -( ( 2.0 * ( newmark_B[0 + i * eq_num] + mesh[_x].Nk[0 + i * eq_num] / ( 2.0 * betta * dt ) ) ) / ( 3.0 * dx ) ) - 2.0
 				 / ( 3.0 * dx * dx * mu * sigma_y );
-	matr_A[8 + i * eq_num][9 + i * eq_num] = 1.0 / ( 2.0 * betta * dt ) + ( 2.0 * ( newmark_B[0 + i * eq_num] + mesh[_x].Nk[0 + i * eq_num] / ( 2.0 * betta * dt ) ) )
+	matrA.coeffRef( 8 + i * eq_num, 9 + i * eq_num ) = 1.0 / ( 2.0 * betta * dt ) + ( 2.0 * ( newmark_B[0 + i * eq_num] + mesh[_x].Nk[0 + i * eq_num] / ( 2.0 * betta * dt ) ) )
 				 / ( 3.0 * dx )
 				 + ( -newmark_B[0 + j * eq_num] - mesh[_x].Nk[0 + j * eq_num] / ( 2.0 * betta * dt ) ) / ( 2.0 * dx ) + 2.0 / ( 3.0 * dx * dx * mu * sigma_y );
 
-	matr_A[9 + i * eq_num][1 + i * eq_num] = ( mu * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) / ( 2.0 * betta * dt );
-	matr_A[9 + i * eq_num][4 + i * eq_num] = -( ( By1 * mu * sigma_x ) / ( 4.0 * betta * dt ) );
-	matr_A[9 + i * eq_num][8 + i * eq_num] = sigma_x_mu;
-	matr_A[9 + i * eq_num][9 + i * eq_num] = mu * ( newmark_B[1 + i * eq_num] + mesh[_x].Nk[1 + i * eq_num] / ( 2.0 * betta * dt ) ) * sigma_x;
+	matrA.coeffRef( 9 + i * eq_num, 1 + i * eq_num ) = ( mu * mesh[_x].Nk[9 + i * eq_num] * sigma_x ) / ( 2.0 * betta * dt );
+	matrA.coeffRef( 9 + i * eq_num, 4 + i * eq_num ) = -( ( By1 * mu * sigma_x ) / ( 4.0 * betta * dt ) );
+	matrA.coeffRef( 9 + i * eq_num, 8 + i * eq_num ) = sigma_x_mu;
+	matrA.coeffRef( 9 + i * eq_num, 9 + i * eq_num ) = mu * ( newmark_B[1 + i * eq_num] + mesh[_x].Nk[1 + i * eq_num] / ( 2.0 * betta * dt ) ) * sigma_x;
 
-	vect_f[2 + i * eq_num] = ( h * ( 3.0 * eps_x_0 * mu * ( 4.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + j * eq_num] - By1 * mesh[_x].Nk[4 + j * eq_num] )
+	vectF( 2 + i * eq_num ) = ( h * ( 3.0 * eps_x_0 * mu * ( 4.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + j * eq_num] - By1 * mesh[_x].Nk[4 + j * eq_num] )
 				 * mesh[_x].Nk[8 + i * eq_num] + 2.0 * betta * dt * ( -8.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num]
 				 + mesh[_x].Nk[9 + i * eq_num] * ( 8.0 * mesh[_x].Nk[9 + j * eq_num] + 6.0 * newmark_B[1 + j * eq_num] * eps_x_0 * mu * mesh[_x].Nk[8 + i * eq_num] )
 				 + 3.0 * dx * mu * ( 4.0 * newmark_A[0 + i * eq_num] * rho + newmark_B[0 + i * eq_num] * By1 * By1 * sigma_z ) ) ) )
 				 / ( 24.0 * betta * dt * dx * mu );
 
-	vect_f[3 + i * eq_num] = ( 1.0 / ( 4.0 * B22 * betta * dt * dx ) ) * ( -4.0 * newmark_B[3 + i * eq_num] * betta * dt * dx * eps_x_0 * mesh[_x].Nk[9 + i * eq_num]
+	vectF( 3 + i * eq_num ) = ( 1.0 / ( 4.0 * B22 * betta * dt * dx ) ) * ( -4.0 * newmark_B[3 + i * eq_num] * betta * dt * dx * eps_x_0 * mesh[_x].Nk[9 + i * eq_num]
 				 * mesh[_x].Nk[8 + i * eq_num]
 				 - 2.0 * B12 * eps_x_0 * h * mesh[_x].Nk[9 + i * eq_num] * ( newmark_B[0 + j * eq_num] * betta * dt + mesh[_x].Nk[0 + j * eq_num] )
 				 * mesh[_x].Nk[8 + i * eq_num] + dx * ( -4.0 * eps_x_0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[3 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num]
@@ -588,7 +1073,7 @@ void Solver::calc_system( int _x )
 				 - 4.0 * ( newmark_B[1 + i * eq_num] * betta * dt * mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num] + betta * dt
 				 * mesh[_x].Nk[8 + i * eq_num] ) ) * sigma_x ) );
 
-	vect_f[6 + i * eq_num] = ( 1.0 / ( 12.0 * B22 * betta * dt * dx * dx ) ) * ( -12.0 * newmark_B[6 + i * eq_num] * betta * dt * dx * dx * eps_x_0
+	vectF( 6 + i * eq_num ) = ( 1.0 / ( 12.0 * B22 * betta * dt * dx * dx ) ) * ( -12.0 * newmark_B[6 + i * eq_num] * betta * dt * dx * dx * eps_x_0
 				 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num]
 				 + B12 * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 2.0 * newmark_B[4 + i * eq_num] * betta * dt - newmark_B[4 + j * eq_num] * betta * dt
 				 + 2.0 * mesh[_x].Nk[4 + i * eq_num] - mesh[_x].Nk[4 + j * eq_num] ) * mesh[_x].Nk[8 + i * eq_num]
@@ -596,7 +1081,7 @@ void Solver::calc_system( int _x )
 				 * ( ( -newmark_A[5 + i * eq_num] ) * betta * dt * rho + mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num]
 				 * ( newmark_B[5 + i * eq_num] * betta * dt + mesh[_x].Nk[5 + i * eq_num] ) * sigma_x ) ) );
 
-	vect_f[7 + i * eq_num] = ( 1.0 / ( 1728.0 * betta * betta * dt * dt * dx * dx ) ) * ( -3.0 * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num]
+	vectF( 7 + i * eq_num ) = ( 1.0 / ( 1728.0 * betta * betta * dt * dt * dx * dx ) ) * ( -3.0 * eps_x_0 * h * h * h * mesh[_x].Nk[9 + i * eq_num]
 				 * ( ( 4.0 * mesh[_x].Nk[9 + i * eq_num] - mesh[_x].Nk[9 + j * eq_num] )
 				 * ( 4.0 * mesh[_x].Nk[1 + i * eq_num] - mesh[_x].Nk[1 + j * eq_num] ) + By1 * ( -4.0 * mesh[_x].Nk[4 + i * eq_num] + mesh[_x].Nk[4 + j * eq_num] ) )
 				 * mesh[_x].Nk[5 + j * eq_num] + betta * dt * h * ( newmark_B[5 + j * eq_num] * eps_x_0 * h * h * mesh[_x].Nk[9 + i * eq_num] * ( 16.0
@@ -631,11 +1116,11 @@ void Solver::calc_system( int _x )
 				 * ( 12.0 * newmark_B[4 + i * eq_num]
 				 * dx * dx * h * sigma_x + ( 2.0 * newmark_B[4 + i * eq_num] - newmark_B[4 + j * eq_num] ) * h * h * h * sigma_z ) ) );
 
-	vect_f[8 + i * eq_num] = ( 12.0 * newmark_B[9 + i * eq_num] * betta * dt * dx - 4.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[0 + i * eq_num]
+	vectF( 8 + i * eq_num ) = ( 12.0 * newmark_B[9 + i * eq_num] * betta * dt * dx - 4.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[0 + i * eq_num]
 				 + 4.0 * mesh[_x].Nk[9 + j * eq_num] * mesh[_x].Nk[0 + i * eq_num] + 3.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[0 + j * eq_num] )
 				 / ( 12.0 * betta * dt * dx );
 
-	vect_f[9 + i * eq_num] = -( ( mu * ( newmark_B[4 + i * eq_num] * betta * By1 * dt + mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num] ) * sigma_x )
+	vectF( 9 + i * eq_num ) = -( ( mu * ( newmark_B[4 + i * eq_num] * betta * By1 * dt + mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num] ) * sigma_x )
 				 / ( 2.0 * betta * dt ) );
 
 	for( int i = 1; i < nx - 1; ++i )
@@ -657,113 +1142,113 @@ void Solver::calc_system( int _x )
 		j = i - 1;
 		jj = i - 2;
 
-		matr_A[0 + i * eq_num][1 + r * eq_num] = -1.0 / ( 2.0 * dx );
-		matr_A[0 + i * eq_num][1 + j * eq_num] = 1.0 / ( 2.0 * dx );
-		matr_A[0 + i * eq_num][2 + i * eq_num] = 1.0 / ( h * B66 );
+		matrA.coeffRef( 0 + i * eq_num, 1 + r * eq_num ) = -1.0 / ( 2.0 * dx );
+		matrA.coeffRef( 0 + i * eq_num, 1 + j * eq_num ) = 1.0 / ( 2.0 * dx );
+		matrA.coeffRef( 0 + i * eq_num, 2 + i * eq_num ) = 1.0 / ( h * B66 );
 
-		matr_A[1 + i * eq_num][0 + r * eq_num] = - B12 / ( B22 * 2.0 * dx );
-		matr_A[1 + i * eq_num][0 + j * eq_num] = B12 / ( B22 * 2.0 * dx );
-		matr_A[1 + i * eq_num][3 + i * eq_num] = 1.0 / ( h * B22 );
+		matrA.coeffRef( 1 + i * eq_num, 0 + r * eq_num ) = - B12 / ( B22 * 2.0 * dx );
+		matrA.coeffRef( 1 + i * eq_num, 0 + j * eq_num ) = B12 / ( B22 * 2.0 * dx );
+		matrA.coeffRef( 1 + i * eq_num, 3 + i * eq_num ) = 1.0 / ( h * B22 );
 
-		matr_A[2 + i * eq_num][0 + r * eq_num] = ( B12 * B12 / B22 - B11 ) * h / ( dx * dx );
-		matr_A[2 + i * eq_num][0 + j * eq_num] = ( B12 * B12 / B22 - B11 ) * h / ( dx * dx );
-		matr_A[2 + i * eq_num][0 + i * eq_num] = rho * h * 2.0 / ( Btdt * dt ) - ( B12 * B12 / B22 - B11 ) * 2.0 * h / ( dx * dx ) + h * sigma_z * By1 * By1 / ( 4.0 * Btdt );
-		matr_A[2 + i * eq_num][1 + r * eq_num] = eps_x_0 * h / ( 2.0 * Btdt * dx ) * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num];
-		matr_A[2 + i * eq_num][1 + j * eq_num] = -eps_x_0 * h / ( 2.0 * Btdt * dx ) * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num];
-		matr_A[2 + i * eq_num][3 + r * eq_num] = -B12 / ( B22 * 2.0 * dx );
-		matr_A[2 + i * eq_num][3 + j * eq_num] = B12 / ( B22 * 2.0 * dx );
-		matr_A[2 + i * eq_num][4 + r * eq_num] = -eps_x_0 * h * By1 / ( 4.0 * Btdt * dx ) * mesh[_x].Nk[8 + i * eq_num];
-		matr_A[2 + i * eq_num][4 + j * eq_num] = eps_x_0 * h * By1 / ( 4.0 * Btdt * dx ) * mesh[_x].Nk[8 + i * eq_num];
-		matr_A[2 + i * eq_num][8 + i * eq_num] = ( eps_x_0 * h / ( 2.0 * dx ) * mesh[_x].Nk[9 + i * eq_num] * ( 1.0 / Btdt * ( mesh[_x].Nk[1 + r * eq_num] - mesh[_x].Nk[1 + j * eq_num] ) 
+		matrA.coeffRef( 2 + i * eq_num, 0 + r * eq_num ) = ( B12 * B12 / B22 - B11 ) * h / ( dx * dx );
+		matrA.coeffRef( 2 + i * eq_num, 0 + j * eq_num ) = ( B12 * B12 / B22 - B11 ) * h / ( dx * dx );
+		matrA.coeffRef( 2 + i * eq_num, 0 + i * eq_num ) = rho * h * 2.0 / ( Btdt * dt ) - ( B12 * B12 / B22 - B11 ) * 2.0 * h / ( dx * dx ) + h * sigma_z * By1 * By1 / ( 4.0 * Btdt );
+		matrA.coeffRef( 2 + i * eq_num, 1 + r * eq_num ) = eps_x_0 * h / ( 2.0 * Btdt * dx ) * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num];
+		matrA.coeffRef( 2 + i * eq_num, 1 + j * eq_num ) = -eps_x_0 * h / ( 2.0 * Btdt * dx ) * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num];
+		matrA.coeffRef( 2 + i * eq_num, 3 + r * eq_num ) = -B12 / ( B22 * 2.0 * dx );
+		matrA.coeffRef( 2 + i * eq_num, 3 + j * eq_num ) = B12 / ( B22 * 2.0 * dx );
+		matrA.coeffRef( 2 + i * eq_num, 4 + r * eq_num ) = -eps_x_0 * h * By1 / ( 4.0 * Btdt * dx ) * mesh[_x].Nk[8 + i * eq_num];
+		matrA.coeffRef( 2 + i * eq_num, 4 + j * eq_num ) = eps_x_0 * h * By1 / ( 4.0 * Btdt * dx ) * mesh[_x].Nk[8 + i * eq_num];
+		matrA.coeffRef( 2 + i * eq_num, 8 + i * eq_num ) = ( eps_x_0 * h / ( 2.0 * dx ) * mesh[_x].Nk[9 + i * eq_num] * ( 1.0 / Btdt * ( mesh[_x].Nk[1 + r * eq_num] - mesh[_x].Nk[1 + j * eq_num] ) 
 				+newmark_B[1 + r * eq_num] - newmark_B[1 + j * eq_num] ) - eps_x_0 * h * By1 / ( 4.0 * dx ) * ( 1.0 / Btdt * ( mesh[_x].Nk[4 + r * eq_num] - mesh[_x].Nk[4 + j * eq_num] ) 
 				+newmark_B[4 + r * eq_num] - newmark_B[4 + j * eq_num] ) );
-		matr_A[2 + i * eq_num][9 + i * eq_num] = ( h / ( mu * 2.0 * dx ) * ( mesh[_x].Nk[9 + r * eq_num] - mesh[_x].Nk[9 + j * eq_num] ) + eps_x_0 * h / ( 2.0 * dx ) * mesh[_x].Nk[8 + i * eq_num] 
+		matrA.coeffRef( 2 + i * eq_num, 9 + i * eq_num ) = ( h / ( mu * 2.0 * dx ) * ( mesh[_x].Nk[9 + r * eq_num] - mesh[_x].Nk[9 + j * eq_num] ) + eps_x_0 * h / ( 2.0 * dx ) * mesh[_x].Nk[8 + i * eq_num] 
 				* ( 1.0 / Btdt * ( mesh[_x].Nk[1 + r * eq_num] - mesh[_x].Nk[1 + j * eq_num] ) 
 				+ newmark_B[1 + r * eq_num] - newmark_B[1 + j * eq_num] ) );
-		matr_A[2 + i * eq_num][9 + r * eq_num] = ( h / ( mu * 2.0 * dx ) * mesh[_x].Nk[9 + i * eq_num] );
-		matr_A[2 + i * eq_num][9 + j * eq_num] = ( -h / ( mu * 2.0 * dx ) * mesh[_x].Nk[9 + i * eq_num] );
+		matrA.coeffRef( 2 + i * eq_num, 9 + r * eq_num ) = ( h / ( mu * 2.0 * dx ) * mesh[_x].Nk[9 + i * eq_num] );
+		matrA.coeffRef( 2 + i * eq_num, 9 + j * eq_num ) = ( -h / ( mu * 2.0 * dx ) * mesh[_x].Nk[9 + i * eq_num] );
 
-		matr_A[3 + i * eq_num][0 + r * eq_num] = ( -B12 * eps_x_0 * h / ( 2.0 * Btdt * dx * B22 ) * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] );
-		matr_A[3 + i * eq_num][0 + j * eq_num] = ( B12 * eps_x_0 * h / ( 2.0 * Btdt * dx * B22 ) * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] );
-		matr_A[3 + i * eq_num][1 + i * eq_num] = ( rho * h * 2.0 / ( Btdt * dt ) + sigma_x * h / Btdt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] );
-		matr_A[3 + i * eq_num][2 + r * eq_num] = -1.0 / ( 2.0 * dx );
-		matr_A[3 + i * eq_num][2 + j * eq_num] = 1.0 / ( 2.0 * dx );
-		matr_A[3 + i * eq_num][3 + i * eq_num] = ( eps_x_0 / ( B22 * Btdt ) * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] );
-		matr_A[3 + i * eq_num][4 + i * eq_num] = ( -sigma_x * h * By1 / ( 2.0 * Btdt ) * mesh[_x].Nk[9 + i * eq_num] );
-		matr_A[3 + i * eq_num][5 + i * eq_num] = ( -eps_x_0 * h * By1 / ( 2.0 * Btdt ) * mesh[_x].Nk[8 + i * eq_num] );
-		matr_A[3 + i * eq_num][8 + i * eq_num] = ( mesh[_x].Nk[9 + i * eq_num] * ( sigma_x * h + eps_x_0 / B22 * ( 1.0 / Btdt * mesh[_x].Nk[3 + i * eq_num] + newmark_B[3 + i * eq_num] )
+		matrA.coeffRef( 3 + i * eq_num, 0 + r * eq_num ) = ( -B12 * eps_x_0 * h / ( 2.0 * Btdt * dx * B22 ) * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] );
+		matrA.coeffRef( 3 + i * eq_num, 0 + j * eq_num ) = ( B12 * eps_x_0 * h / ( 2.0 * Btdt * dx * B22 ) * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] );
+		matrA.coeffRef( 3 + i * eq_num, 1 + i * eq_num ) = ( rho * h * 2.0 / ( Btdt * dt ) + sigma_x * h / Btdt * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] );
+		matrA.coeffRef( 3 + i * eq_num, 2 + r * eq_num ) = -1.0 / ( 2.0 * dx );
+		matrA.coeffRef( 3 + i * eq_num, 2 + j * eq_num ) = 1.0 / ( 2.0 * dx );
+		matrA.coeffRef( 3 + i * eq_num, 3 + i * eq_num ) = ( eps_x_0 / ( B22 * Btdt ) * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] );
+		matrA.coeffRef( 3 + i * eq_num, 4 + i * eq_num ) = ( -sigma_x * h * By1 / ( 2.0 * Btdt ) * mesh[_x].Nk[9 + i * eq_num] );
+		matrA.coeffRef( 3 + i * eq_num, 5 + i * eq_num ) = ( -eps_x_0 * h * By1 / ( 2.0 * Btdt ) * mesh[_x].Nk[8 + i * eq_num] );
+		matrA.coeffRef( 3 + i * eq_num, 8 + i * eq_num ) = ( mesh[_x].Nk[9 + i * eq_num] * ( sigma_x * h + eps_x_0 / B22 * ( 1.0 / Btdt * mesh[_x].Nk[3 + i * eq_num] + newmark_B[3 + i * eq_num] )
 				- B12 * eps_x_0 * h / ( 2.0 * dx * B22 ) * ( 1.0 / Btdt * ( mesh[_x].Nk[0 + r * eq_num] - mesh[_x].Nk[0 + j * eq_num] ) + newmark_B[0 + r * eq_num] - newmark_B[0 + j * eq_num] ) )
 				- eps_x_0 * h * By1 / 2.0 * ( 1.0 / Btdt * mesh[_x].Nk[5 + i * eq_num] + newmark_B[5 + i * eq_num] ) );
-		matr_A[3 + i * eq_num][9 + i * eq_num] = ( mesh[_x].Nk[8 + i * eq_num] * ( sigma_x * h + eps_x_0 / B22 * ( 1.0 / Btdt * mesh[_x].Nk[3 + i * eq_num] + newmark_B[3 + i * eq_num] )
+		matrA.coeffRef( 3 + i * eq_num, 9 + i * eq_num ) = ( mesh[_x].Nk[8 + i * eq_num] * ( sigma_x * h + eps_x_0 / B22 * ( 1.0 / Btdt * mesh[_x].Nk[3 + i * eq_num] + newmark_B[3 + i * eq_num] )
 				- B12 * eps_x_0 * h / ( 2.0 * dx * B22 ) * ( 1.0 / Btdt * ( mesh[_x].Nk[0 + r * eq_num] - mesh[_x].Nk[0 + j * eq_num] ) + newmark_B[0 + r * eq_num] - newmark_B[0 + j * eq_num] ) )
 				+ 2.0 * sigma_x * h * mesh[_x].Nk[9 + i * eq_num] * ( 1.0 / Btdt * mesh[_x].Nk[1 + i * eq_num] + newmark_B[1 + i * eq_num] )
 				- sigma_x * h * By1 / 2.0 * ( 1.0 / Btdt * mesh[_x].Nk[4 + i * eq_num] + newmark_B[4 + i * eq_num] ) + h * Jx );
 
-		matr_A[4 + i * eq_num][5 + i * eq_num] = 1.0;
+		matrA.coeffRef( 4 + i * eq_num, 5 + i * eq_num ) = 1.0;
 
-		matr_A[5 + i * eq_num][4 + r * eq_num] = -B12 / ( B22 * dx * dx );
-		matr_A[5 + i * eq_num][4 + i * eq_num] = 2.0 * B12 / ( B22 * dx * dx );
-		matr_A[5 + i * eq_num][4 + j * eq_num] = -B12 / ( B22 * dx * dx );
-		matr_A[5 + i * eq_num][6 + i * eq_num] = -12.0 / ( B22 * h * h * h );
+		matrA.coeffRef( 5 + i * eq_num, 4 + r * eq_num ) = -B12 / ( B22 * dx * dx );
+		matrA.coeffRef( 5 + i * eq_num, 4 + i * eq_num ) = 2.0 * B12 / ( B22 * dx * dx );
+		matrA.coeffRef( 5 + i * eq_num, 4 + j * eq_num ) = -B12 / ( B22 * dx * dx );
+		matrA.coeffRef( 5 + i * eq_num, 6 + i * eq_num ) = -12.0 / ( B22 * h * h * h );
 
-		matr_A[6 + i * eq_num][4 + i * eq_num] = ( -h * h * h * B12 / B22 * eps_x_0 / ( 6.0 * dx * dx ) * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] * 1.0 / Btdt );
-		matr_A[6 + i * eq_num][4 + r * eq_num] = ( h * h * h * B12 / B22 * eps_x_0 / ( 12.0 * dx * dx ) * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] * 1.0 / Btdt );
-		matr_A[6 + i * eq_num][4 + j * eq_num] = ( h * h * h * B12 / B22 * eps_x_0 / ( 12.0 * dx * dx ) * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] * 1.0 / Btdt );
-		matr_A[6 + i * eq_num][5 + i * eq_num] = ( -rho * h * h * h / ( 6.0 * Btdt * dt ) - 2.0 * h * h * h * B66 / ( 6.0 * dx * dx )
+		matrA.coeffRef( 6 + i * eq_num, 4 + i * eq_num ) = ( -h * h * h * B12 / B22 * eps_x_0 / ( 6.0 * dx * dx ) * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] * 1.0 / Btdt );
+		matrA.coeffRef( 6 + i * eq_num, 4 + r * eq_num ) = ( h * h * h * B12 / B22 * eps_x_0 / ( 12.0 * dx * dx ) * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] * 1.0 / Btdt );
+		matrA.coeffRef( 6 + i * eq_num, 4 + j * eq_num ) = ( h * h * h * B12 / B22 * eps_x_0 / ( 12.0 * dx * dx ) * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] * 1.0 / Btdt );
+		matrA.coeffRef( 6 + i * eq_num, 5 + i * eq_num ) = ( -rho * h * h * h / ( 6.0 * Btdt * dt ) - 2.0 * h * h * h * B66 / ( 6.0 * dx * dx )
 				 - h * h * h * sigma_x * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] / ( 12.0 * Btdt ) );
-		matr_A[6 + i * eq_num][5 + r * eq_num] = h * h * h * B66 / ( 6.0 * dx * dx );
-		matr_A[6 + i * eq_num][5 + j * eq_num] = h * h * h * B66 / ( 6.0 * dx * dx );
-		matr_A[6 + i * eq_num][6 + i * eq_num] = ( eps_x_0 * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] / ( Btdt * B22 ) );
-		matr_A[6 + i * eq_num][7 + i * eq_num] = 1.0;
-		matr_A[6 + i * eq_num][8 + i * eq_num] = ( eps_x_0 / B22 * mesh[_x].Nk[9 + i * eq_num] * ( 1.0 / Btdt * mesh[_x].Nk[6 + i * eq_num] + newmark_B[6 + i * eq_num] )
+		matrA.coeffRef( 6 + i * eq_num, 5 + r * eq_num ) = h * h * h * B66 / ( 6.0 * dx * dx );
+		matrA.coeffRef( 6 + i * eq_num, 5 + j * eq_num ) = h * h * h * B66 / ( 6.0 * dx * dx );
+		matrA.coeffRef( 6 + i * eq_num, 6 + i * eq_num ) = ( eps_x_0 * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] / ( Btdt * B22 ) );
+		matrA.coeffRef( 6 + i * eq_num, 7 + i * eq_num ) = 1.0;
+		matrA.coeffRef( 6 + i * eq_num, 8 + i * eq_num ) = ( eps_x_0 / B22 * mesh[_x].Nk[9 + i * eq_num] * ( 1.0 / Btdt * mesh[_x].Nk[6 + i * eq_num] + newmark_B[6 + i * eq_num] )
 				 + h * h * h * B12 * eps_x_0 / ( 12.0 * B22 * dx * dx ) * mesh[_x].Nk[9 + i * eq_num] * ( 1.0 / Btdt * ( mesh[_x].Nk[4 + r * eq_num] - 2.0 * mesh[_x].Nk[4 + i * eq_num]
 				 + mesh[_x].Nk[4 + j * eq_num] ) + newmark_B[4 + r * eq_num] - 2.0 * newmark_B[4 + i * eq_num] + newmark_B[4 + j * eq_num] ) );
-		matr_A[6 + i * eq_num][9 + i * eq_num] = ( -h * h * h / 6.0 * sigma_x * mesh[_x].Nk[9 + i * eq_num] * ( 1.0 / Btdt * mesh[_x].Nk[5 + i * eq_num] + newmark_B[5 + i * eq_num] )
+		matrA.coeffRef( 6 + i * eq_num, 9 + i * eq_num ) = ( -h * h * h / 6.0 * sigma_x * mesh[_x].Nk[9 + i * eq_num] * ( 1.0 / Btdt * mesh[_x].Nk[5 + i * eq_num] + newmark_B[5 + i * eq_num] )
 				 + eps_x_0 / B22 * mesh[_x].Nk[8 + i * eq_num] * ( 1.0 / Btdt * mesh[_x].Nk[6 + i * eq_num] + newmark_B[6 + i * eq_num] )
 				 + h * h * h * eps_x_0 * B12 / ( 12.0 * B22 * dx * dx ) * mesh[_x].Nk[8 + i * eq_num] * ( 1.0 / Btdt * ( mesh[_x].Nk[4 + r * eq_num] - 2.0 * mesh[_x].Nk[4 + i * eq_num]
 				 + mesh[_x].Nk[4 + j * eq_num] ) + newmark_B[4 + r * eq_num] - 2.0 * newmark_B[4 + i * eq_num] + newmark_B[4 + j * eq_num] ) );
 
-		matr_A[7 + i * eq_num][1 + i * eq_num] = ( -sigma_x * h * By1 / Btdt / 2.0 * mesh[_x].Nk[9 + i * eq_num] );
-		matr_A[7 + i * eq_num][4 + i * eq_num] = ( rho * h * 2.0 / ( Btdt * dt ) + sigma_x * h / ( 4.0 * Btdt ) * ( By1 * By1 + 1.0 / 3.0 * By2 * By2 ) + rho * h * h * h / ( 3.0 * dx * dx * Btdt * dt )
+		matrA.coeffRef( 7 + i * eq_num, 1 + i * eq_num ) = ( -sigma_x * h * By1 / Btdt / 2.0 * mesh[_x].Nk[9 + i * eq_num] );
+		matrA.coeffRef( 7 + i * eq_num, 4 + i * eq_num ) = ( rho * h * 2.0 / ( Btdt * dt ) + sigma_x * h / ( 4.0 * Btdt ) * ( By1 * By1 + 1.0 / 3.0 * By2 * By2 ) + rho * h * h * h / ( 3.0 * dx * dx * Btdt * dt )
 				 + h * h * h / 6.0 * ( sigma_y * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] + sigma_z * By1 * By1 / 4.0 ) / ( dx * dx * Btdt ) );
-		matr_A[7 + i * eq_num][4 + r * eq_num] = ( -rho * h * h * h / ( 6.0 * dx * dx * Btdt * dt )
+		matrA.coeffRef( 7 + i * eq_num, 4 + r * eq_num ) = ( -rho * h * h * h / ( 6.0 * dx * dx * Btdt * dt )
 				 - h * h * h / ( 24.0 * dx * dx ) * sigma_y / Btdt * ( mesh[_x].Nk[9 + r * eq_num] - mesh[_x].Nk[9 + j * eq_num] )
 				 - h * h * h / 12.0 * ( sigma_y * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] + sigma_z * By1 * By1 / 4.0 ) / ( dx * dx * Btdt ) );
-		matr_A[7 + i * eq_num][4 + j * eq_num] = ( -rho * h * h * h / ( 6.0 * dx * dx * Btdt * dt )
+		matrA.coeffRef( 7 + i * eq_num, 4 + j * eq_num ) = ( -rho * h * h * h / ( 6.0 * dx * dx * Btdt * dt )
 				 + h * h * h / ( 24.0 * dx * dx * Btdt ) * sigma_y * mesh[_x].Nk[9 + i * eq_num] * ( mesh[_x].Nk[9 + r * eq_num] - mesh[_x].Nk[9 + j * eq_num] )
 				 - h * h * h / 12.0 * ( sigma_y * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] + sigma_z * By1 * By1 / 4.0 ) / ( dx * dx * Btdt ) );              
-		matr_A[7 + i * eq_num][4 + i * eq_num] = matr_A[7 + i * eq_num][4 + i * eq_num] - ( h * h * h / 2.0 * ( 2.0 * B66 * B12 / B22 - B11 + B12 * B12 / B22 ) / ( dx * dx * dx * dx ) );
-		matr_A[7 + i * eq_num][4 + r * eq_num] = matr_A[7 + i * eq_num][4 + r * eq_num] + ( h * h * h / 3.0 * ( 2.0 * B66 * B12 / B22 - B11 + B12 * B12 / B22 ) / ( dx * dx * dx * dx ) );
-		matr_A[7 + i * eq_num][4 + j * eq_num] = matr_A[7 + i * eq_num][4 + j * eq_num] + ( h * h * h / 3.0 * ( 2.0 * B66 * B12 / B22 - B11 + B12 * B12 / B22 ) / ( dx * dx * dx * dx ) );
+		matrA.coeffRef( 7 + i * eq_num, 4 + i * eq_num ) = matrA.coeffRef( 7 + i * eq_num, 4 + i * eq_num ) - ( h * h * h / 2.0 * ( 2.0 * B66 * B12 / B22 - B11 + B12 * B12 / B22 ) / ( dx * dx * dx * dx ) );
+		matrA.coeffRef( 7 + i * eq_num, 4 + r * eq_num ) = matrA.coeffRef( 7 + i * eq_num, 4 + r * eq_num ) + ( h * h * h / 3.0 * ( 2.0 * B66 * B12 / B22 - B11 + B12 * B12 / B22 ) / ( dx * dx * dx * dx ) );
+		matrA.coeffRef( 7 + i * eq_num, 4 + j * eq_num ) = matrA.coeffRef( 7 + i * eq_num, 4 + j * eq_num ) + ( h * h * h / 3.0 * ( 2.0 * B66 * B12 / B22 - B11 + B12 * B12 / B22 ) / ( dx * dx * dx * dx ) );
 		if( i != nx - 2 )
 		{
-			matr_A[7 + i * eq_num][4 + rr * eq_num] = ( -h * h * h / 12.0 * ( 2.0 * B66 * B12 / B22 - B11 + B12 * B12 / B22 ) / ( dx * dx * dx * dx ) );
+			matrA.coeffRef( 7 + i * eq_num, 4 + rr * eq_num ) = ( -h * h * h / 12.0 * ( 2.0 * B66 * B12 / B22 - B11 + B12 * B12 / B22 ) / ( dx * dx * dx * dx ) );
 		}
 		if( i != 1 )
 		{
-			matr_A[7 + i * eq_num][4 + jj * eq_num] = ( -h * h * h / 12.0 * ( 2.0 * B66 * B12 / B22 - B11 + B12 * B12 / B22 ) / ( dx * dx * dx * dx ) );        
+			matrA.coeffRef( 7 + i * eq_num, 4 + jj * eq_num ) = ( -h * h * h / 12.0 * ( 2.0 * B66 * B12 / B22 - B11 + B12 * B12 / B22 ) / ( dx * dx * dx * dx ) );        
 		}
-		matr_A[7 + i * eq_num][5 + i * eq_num] = ( -eps_x_0 * h / Btdt * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num]
+		matrA.coeffRef( 7 + i * eq_num, 5 + i * eq_num ) = ( -eps_x_0 * h / Btdt * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num]
 				 + h * h * h / 6.0 * eps_x_0 * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] / ( dx * dx * Btdt ) );
-		matr_A[7 + i * eq_num][5 + r * eq_num] = ( -h * h * h / 12.0 * eps_x_0 * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] / ( dx * dx * Btdt )
+		matrA.coeffRef( 7 + i * eq_num, 5 + r * eq_num ) = ( -h * h * h / 12.0 * eps_x_0 * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] / ( dx * dx * Btdt )
 				 - h * h * h / 12.0 * eps_x_0 * ( (mesh[_x].Nk[8 + r * eq_num] - mesh[_x].Nk[8 + j * eq_num] ) * mesh[_x].Nk[9 + i * eq_num] + ( mesh[_x].Nk[9 + r * eq_num]
 				 - mesh[_x].Nk[9 + j * eq_num] ) * mesh[_x].Nk[8 + i * eq_num] ) / ( dx * dx * 4.0 * Btdt ) );
-		matr_A[7 + i * eq_num][5 + j * eq_num] = ( -h * h * h / 12.0 * eps_x_0 * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] / ( dx * dx * Btdt )
+		matrA.coeffRef( 7 + i * eq_num, 5 + j * eq_num ) = ( -h * h * h / 12.0 * eps_x_0 * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] / ( dx * dx * Btdt )
 				 + h * h * h / 12.0 * eps_x_0 * ( ( mesh[_x].Nk[8 + r * eq_num] - mesh[_x].Nk[8 + j * eq_num] ) * mesh[_x].Nk[9 + i * eq_num] + ( mesh[_x].Nk[9 + r * eq_num]
 				 - mesh[_x].Nk[9 + j * eq_num] ) * mesh[_x].Nk[8 + i * eq_num] ) / ( dx * dx * 4.0 * Btdt ) );
-		matr_A[7 + i * eq_num][6 + i * eq_num] = ( 2.0 * ( B12 + 2.0 * B66 ) / ( dx * dx * B22 ) );
-		matr_A[7 + i * eq_num][6 + r * eq_num] = ( -1.0 * ( B12 + 2.0 * B66 ) / ( dx * dx * B22 ) );
-		matr_A[7 + i * eq_num][6 + j * eq_num] = ( -1.0 * ( B12 + 2.0 * B66 ) / ( dx * dx * B22 ) );
-		matr_A[7 + i * eq_num][8 + i * eq_num] = ( -sigma_x * h * By1 / 2.0 - eps_x_0 * h * mesh[_x].Nk[9 + i * eq_num] * ( 1.0 / Btdt * mesh[_x].Nk[5 + i * eq_num] + newmark_B[5 + i * eq_num] )
+		matrA.coeffRef( 7 + i * eq_num, 6 + i * eq_num ) = ( 2.0 * ( B12 + 2.0 * B66 ) / ( dx * dx * B22 ) );
+		matrA.coeffRef( 7 + i * eq_num, 6 + r * eq_num ) = ( -1.0 * ( B12 + 2.0 * B66 ) / ( dx * dx * B22 ) );
+		matrA.coeffRef( 7 + i * eq_num, 6 + j * eq_num ) = ( -1.0 * ( B12 + 2.0 * B66 ) / ( dx * dx * B22 ) );
+		matrA.coeffRef( 7 + i * eq_num, 8 + i * eq_num ) = ( -sigma_x * h * By1 / 2.0 - eps_x_0 * h * mesh[_x].Nk[9 + i * eq_num] * ( 1.0 / Btdt * mesh[_x].Nk[5 + i * eq_num] + newmark_B[5 + i * eq_num] )
 				 - h * h * h * eps_x_0 / ( 48.0 * dx * dx ) * ( mesh[_x].Nk[9 + r * eq_num] - mesh[_x].Nk[9 + j * eq_num] ) * ( 1.0 / Btdt * ( mesh[_x].Nk[5 + r * eq_num]
 				 - mesh[_x].Nk[5 + j * eq_num] ) + newmark_B[5 + r * eq_num] - newmark_B[5 + j * eq_num] )
 				 - h * h * h * eps_x_0 / ( 12.0 * dx * dx ) * mesh[_x].Nk[9 + i * eq_num] * ( 1.0 / Btdt * ( mesh[_x].Nk[5 + r * eq_num] - 2.0 * mesh[_x].Nk[5 + i * eq_num]
 				 + mesh[_x].Nk[5 + j * eq_num] ) + newmark_B[5 + r * eq_num] - 2.0 * newmark_B[5 + i * eq_num] + newmark_B[5 + j * eq_num] ) );
-		matr_A[7 + i * eq_num][8 + r * eq_num] = ( -h * h * h * eps_x_0 / ( 48.0 * dx * dx ) * mesh[_x].Nk[9 + i * eq_num] * ( 1.0 / Btdt * ( mesh[_x].Nk[5 + r * eq_num]
+		matrA.coeffRef( 7 + i * eq_num, 8 + r * eq_num ) = ( -h * h * h * eps_x_0 / ( 48.0 * dx * dx ) * mesh[_x].Nk[9 + i * eq_num] * ( 1.0 / Btdt * ( mesh[_x].Nk[5 + r * eq_num]
 				 - mesh[_x].Nk[5 + j * eq_num] ) + newmark_B[5 + r * eq_num] - newmark_B[5 + j * eq_num] ) );
-		matr_A[7 + i * eq_num][8 + j * eq_num] = ( h * h * h * eps_x_0 / ( 48.0 * dx * dx ) * mesh[_x].Nk[9 + i * eq_num] * ( 1.0 / Btdt * ( mesh[_x].Nk[5 + r * eq_num]
+		matrA.coeffRef( 7 + i * eq_num, 8 + j * eq_num ) = ( h * h * h * eps_x_0 / ( 48.0 * dx * dx ) * mesh[_x].Nk[9 + i * eq_num] * ( 1.0 / Btdt * ( mesh[_x].Nk[5 + r * eq_num]
 				 - mesh[_x].Nk[5 + j * eq_num] ) + newmark_B[5 + r * eq_num] - newmark_B[5 + j * eq_num] ) );           
-		matr_A[7 + i * eq_num][9 + i * eq_num] = ( -sigma_x * h * By1 / 2.0 * ( 1.0 / Btdt * mesh[_x].Nk[1 + i * eq_num] + newmark_B[1 + i * eq_num] )
+		matrA.coeffRef( 7 + i * eq_num, 9 + i * eq_num ) = ( -sigma_x * h * By1 / 2.0 * ( 1.0 / Btdt * mesh[_x].Nk[1 + i * eq_num] + newmark_B[1 + i * eq_num] )
 				 - eps_x_0 * h * mesh[_x].Nk[8 + i * eq_num] * ( 1.0 / Btdt * mesh[_x].Nk[5 + i * eq_num] + newmark_B[5 + i * eq_num] )
 				 - h * h * h * eps_x_0 / ( 48.0 * dx * dx ) * ( mesh[_x].Nk[8 + r * eq_num] - mesh[_x].Nk[8 + j * eq_num] ) * ( 1.0 / Btdt * ( mesh[_x].Nk[5 + r * eq_num]
 				 - mesh[_x].Nk[5 + j * eq_num] ) + newmark_B[5 + r * eq_num] - newmark_B[5 + j * eq_num] )
@@ -773,29 +1258,29 @@ void Solver::calc_system( int _x )
 				 + mesh[_x].Nk[4 + j * eq_num] ) + newmark_B[4 + r * eq_num] - 2.0 * newmark_B[4 + i * eq_num] + newmark_B[4 + j * eq_num] )
 				 - h * h * h * eps_x_0 * mesh[_x].Nk[8 + i * eq_num] / ( 12.0 * dx * dx ) * ( 1.0 / Btdt * ( mesh[_x].Nk[5 + r * eq_num] - 2.0 * mesh[_x].Nk[5 + i * eq_num]
 				 + mesh[_x].Nk[5 + j * eq_num] ) + newmark_B[5 + r * eq_num] - 2.0 * newmark_B[5 + i * eq_num] + newmark_B[5 + j * eq_num] ) );
-		matr_A[7 + i * eq_num][9 + r * eq_num] = ( -h * h * h * sigma_y / ( 24.0 * dx * dx ) * mesh[_x].Nk[9 + i * eq_num] * ( 1.0 / Btdt * ( mesh[_x].Nk[4 + r * eq_num]
+		matrA.coeffRef( 7 + i * eq_num, 9 + r * eq_num ) = ( -h * h * h * sigma_y / ( 24.0 * dx * dx ) * mesh[_x].Nk[9 + i * eq_num] * ( 1.0 / Btdt * ( mesh[_x].Nk[4 + r * eq_num]
 				 - mesh[_x].Nk[4 + j * eq_num] ) + newmark_B[4 + r * eq_num] - newmark_B[4 + j * eq_num] )
 				 - h * h * h * eps_x_0 / ( 48.0 * dx * dx ) * mesh[_x].Nk[8 + i * eq_num] * ( 1.0 / Btdt * (mesh[_x].Nk[5 + r * eq_num]
 				 - mesh[_x].Nk[5 + j * eq_num] ) + newmark_B[5 + r * eq_num] - newmark_B[5 + j * eq_num] ) );
-		matr_A[7 + i * eq_num][9 + j * eq_num] = ( h * h * h * sigma_y / ( 24.0 * dx * dx ) * mesh[_x].Nk[9 + i * eq_num] * ( 1.0 / Btdt * (mesh[_x].Nk[4 + r * eq_num]
+		matrA.coeffRef( 7 + i * eq_num, 9 + j * eq_num ) = ( h * h * h * sigma_y / ( 24.0 * dx * dx ) * mesh[_x].Nk[9 + i * eq_num] * ( 1.0 / Btdt * (mesh[_x].Nk[4 + r * eq_num]
 				 - mesh[_x].Nk[4 + j * eq_num] ) + newmark_B[4 + r * eq_num] - newmark_B[4 + j * eq_num] ) 
 				 + h * h * h * eps_x_0 / ( 48.0 * dx * dx ) * mesh[_x].Nk[8 + i * eq_num] * ( 1.0 / Btdt * ( mesh[_x].Nk[5 + r * eq_num]
 				 - mesh[_x].Nk[5 + j * eq_num] ) + newmark_B[5 + r * eq_num] - newmark_B[5 + j * eq_num] ) ); 
 
-		matr_A[8 + i * eq_num][0 + i * eq_num] = ( 1.0 / ( 2.0 * dx * Btdt ) * ( mesh[_x].Nk[9 + r * eq_num] - mesh[_x].Nk[9 + j * eq_num] ) );
-		matr_A[8 + i * eq_num][0 + r * eq_num] = ( 1.0 / ( 2.0 * dx * Btdt ) * mesh[_x].Nk[9 + i * eq_num] );
-		matr_A[8 + i * eq_num][0 + j * eq_num] = ( -1.0 / ( 2.0 * dx * Btdt ) * mesh[_x].Nk[9 + i * eq_num] );
-		matr_A[8 + i * eq_num][9 + i * eq_num] = ( 2.0 / ( sigma_y_mu * dx * dx ) + 1 / Btdt + 1.0 / ( 2.0 * dx ) * ( 1.0 / Btdt * ( mesh[_x].Nk[0 + r * eq_num] - mesh[_x].Nk[0 + j * eq_num] )
+		matrA.coeffRef( 8 + i * eq_num, 0 + i * eq_num ) = ( 1.0 / ( 2.0 * dx * Btdt ) * ( mesh[_x].Nk[9 + r * eq_num] - mesh[_x].Nk[9 + j * eq_num] ) );
+		matrA.coeffRef( 8 + i * eq_num, 0 + r * eq_num ) = ( 1.0 / ( 2.0 * dx * Btdt ) * mesh[_x].Nk[9 + i * eq_num] );
+		matrA.coeffRef( 8 + i * eq_num, 0 + j * eq_num ) = ( -1.0 / ( 2.0 * dx * Btdt ) * mesh[_x].Nk[9 + i * eq_num] );
+		matrA.coeffRef( 8 + i * eq_num, 9 + i * eq_num ) = ( 2.0 / ( sigma_y_mu * dx * dx ) + 1 / Btdt + 1.0 / ( 2.0 * dx ) * ( 1.0 / Btdt * ( mesh[_x].Nk[0 + r * eq_num] - mesh[_x].Nk[0 + j * eq_num] )
 				 + newmark_B[0 + r * eq_num] - newmark_B[0 + j * eq_num] ) );
-		matr_A[8 + i * eq_num][9 + r * eq_num] = ( -1.0 / ( sigma_y_mu * dx * dx ) + 1.0 / 2.0 / dx * ( mesh[_x].Nk[0 + i * eq_num] / Btdt + newmark_B[0 + i * eq_num] ) );
-		matr_A[8 + i * eq_num][9 + j * eq_num] = ( -1.0 / ( sigma_y_mu * dx * dx ) - 1.0 / 2.0 / dx * ( mesh[_x].Nk[0 + i * eq_num] / Btdt + newmark_B[0 + i * eq_num] ) );
+		matrA.coeffRef( 8 + i * eq_num, 9 + r * eq_num ) = ( -1.0 / ( sigma_y_mu * dx * dx ) + 1.0 / 2.0 / dx * ( mesh[_x].Nk[0 + i * eq_num] / Btdt + newmark_B[0 + i * eq_num] ) );
+		matrA.coeffRef( 8 + i * eq_num, 9 + j * eq_num ) = ( -1.0 / ( sigma_y_mu * dx * dx ) - 1.0 / 2.0 / dx * ( mesh[_x].Nk[0 + i * eq_num] / Btdt + newmark_B[0 + i * eq_num] ) );
 
-		matr_A[9 + i * eq_num][1 + i * eq_num] = sigma_x_mu / Btdt * mesh[_x].Nk[9 + i * eq_num];
-		matr_A[9 + i * eq_num][4 + i * eq_num] = -sigma_x_mu * By1 / 4.0 / betta / dt;
-		matr_A[9 + i * eq_num][8 + i * eq_num] = sigma_x_mu;
-		matr_A[9 + i * eq_num][9 + i * eq_num] = sigma_x_mu * ( 1.0 / Btdt * mesh[_x].Nk[1 + i * eq_num] + newmark_B[1 + i * eq_num] );
+		matrA.coeffRef( 9 + i * eq_num, 1 + i * eq_num ) = sigma_x_mu / Btdt * mesh[_x].Nk[9 + i * eq_num];
+		matrA.coeffRef( 9 + i * eq_num, 4 + i * eq_num ) = -sigma_x_mu * By1 / 4.0 / betta / dt;
+		matrA.coeffRef( 9 + i * eq_num, 8 + i * eq_num ) = sigma_x_mu;
+		matrA.coeffRef( 9 + i * eq_num, 9 + i * eq_num ) = sigma_x_mu * ( 1.0 / Btdt * mesh[_x].Nk[1 + i * eq_num] + newmark_B[1 + i * eq_num] );
 
-		vect_f[2 + i * eq_num] = ( - ( ( 2 * (B11 - B12 * B12 / B22) * h) / dx / dx + ( h * rho ) / ( betta * dt * dt ) + ( By1 * By1 * h * sigma_z ) / ( 8 * betta * dt ) ) ) 
+		vectF( 2 + i * eq_num ) = ( - ( ( 2 * (B11 - B12 * B12 / B22) * h) / dx / dx + ( h * rho ) / ( betta * dt * dt ) + ( By1 * By1 * h * sigma_z ) / ( 8 * betta * dt ) ) ) 
 			* mesh[_x].Nk[0 + i * eq_num] +	h * rho * ( newmark_A[0 + i * eq_num] + mesh[_x].Nk[0 + i * eq_num] / ( betta * dt * dt) ) + ( 1 / 4 ) * By1 * By1 * h * sigma_z 
 			* ( newmark_B[0 + i * eq_num] + mesh[_x].Nk[0 + i * eq_num] / ( 2 * betta * dt ) ) + ( ( B11 - B12 * B12 / B22 ) * h * mesh[_x].Nk[0 + r * eq_num] ) / dx / dx 
 			+ ( ( B11 - B12 * B12 / B22 ) * h * mesh[_x].Nk[0 + j * eq_num] ) / dx / dx - ( ( B11 - B12 * B12 / B22 ) * h * ( -2 * mesh[_x].Nk[0 + i * eq_num] + mesh[_x].Nk[0 + r * eq_num] 
@@ -815,7 +1300,7 @@ void Solver::calc_system( int _x )
 			- mesh[_x].Nk[9 + i * eq_num] * ( ( h * ( mesh[_x].Nk[9 + r * eq_num] - mesh[_x].Nk[9 + j * eq_num] ) ) / ( 2 * dx * mu ) + ( eps_x_0 * h * ( newmark_B[1 + r * eq_num] 
 			- newmark_B[1 + j * eq_num] + ( mesh[_x].Nk[1 + r * eq_num] - mesh[_x].Nk[1 + j * eq_num] ) / ( 2 * betta * dt ) ) * mesh[_x].Nk[8 + i * eq_num] ) / ( 2 * dx ) );
 
-		vect_f[3 + i * eq_num] = h * Jx * mesh[_x].Nk[9 + i * eq_num] - ( ( h * rho ) / ( betta * dt * dt ) + ( h *sigma_x * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] )
+		vectF( 3 + i * eq_num ) = h * Jx * mesh[_x].Nk[9 + i * eq_num] - ( ( h * rho ) / ( betta * dt * dt ) + ( h *sigma_x * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] )
 			/ ( 2 * betta * dt ) ) * mesh[_x].Nk[1 + i * eq_num] + h * rho * ( newmark_A[1 + i * eq_num] + mesh[_x].Nk[1 + i * eq_num] / ( betta * dt * dt ) ) 
 			+ h * sigma_x * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * ( newmark_B[1 + i * eq_num] + mesh[_x].Nk[1 + i * eq_num] / ( 2 * betta * dt ) ) 
 			+ mesh[_x].Nk[2 + r * eq_num] / ( 2 * dx ) - ( mesh[_x].Nk[2 + r * eq_num] - mesh[_x].Nk[2 + j * eq_num] ) / ( 2 * dx ) - mesh[_x].Nk[2 + j * eq_num]
@@ -837,7 +1322,7 @@ void Solver::calc_system( int _x )
 			* mesh[_x].Nk[8 + i * eq_num] ) / ( 2 * B22 * dx ) + ( eps_x_0 * ( newmark_B[3 + i * eq_num] + mesh[_x].Nk[3 + i * eq_num] / ( 2 * betta * dt ) ) 
 			* mesh[_x].Nk[8 + i * eq_num] ) / B22 );
 
-		vect_f[6 + i * eq_num] = ( -rho * h * h * h / 12.0 * newmark_A[5 + i * eq_num] + sigma_x * h * h * h / 12.0 * ( 1.0 / betta / dt * mesh[_x].Nk[5 + i * eq_num]
+		vectF( 6 + i * eq_num ) = ( -rho * h * h * h / 12.0 * newmark_A[5 + i * eq_num] + sigma_x * h * h * h / 12.0 * ( 1.0 / betta / dt * mesh[_x].Nk[5 + i * eq_num]
 			+ newmark_B[5 + i * eq_num] ) * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] - eps_x_0 / B22 * mesh[_x].Nk[9 + i * eq_num]
 			* mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[6 + i * eq_num] / 2.0 / betta / dt - eps_x_0 / B22 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num]
 			* ( mesh[_x].Nk[6 + i * eq_num] / 2.0 / betta / dt + newmark_B[6 + i * eq_num] ) - eps_x_0 * h * h * h / 12.0 * mesh[_x].Nk[8 + i * eq_num]
@@ -846,7 +1331,7 @@ void Solver::calc_system( int _x )
 			* ( 1.0 / 2.0 / betta / dt * ( mesh[_x].Nk[4 + r * eq_num] - 2.0 * mesh[_x].Nk[4 + i * eq_num] + mesh[_x].Nk[4 + j * eq_num] )
 			+ newmark_B[4 + r * eq_num] - 2.0 * newmark_B[4 + i * eq_num] + newmark_B[4 + j * eq_num] ) ) / al;
 
-		vect_f[7 + i * eq_num] = ( rho * h * newmark_A[4 + i * eq_num] + Pimp + sigma_x * h / 4.0 * By1 * By1 * newmark_B[4 + i * eq_num]
+		vectF( 7 + i * eq_num ) = ( rho * h * newmark_A[4 + i * eq_num] + Pimp + sigma_x * h / 4.0 * By1 * By1 * newmark_B[4 + i * eq_num]
 			+ sigma_x * h * By1 / 4.0 / betta / dt * mesh[_x].Nk[1 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num]
 			+ eps_x_0 * h / 2.0 / betta / dt * mesh[_x].Nk[5 + i * eq_num] * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num]
 			+ eps_x_0 * h * mesh[_x].Nk[8 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] * ( 1.0 / 2.0 / betta / dt * mesh[_x].Nk[5 + i * eq_num] + newmark_B[5 + i * eq_num] ) - h / 2.0 * By1 * Jx
@@ -867,7 +1352,7 @@ void Solver::calc_system( int _x )
 			+ newmark_B[5 + r * eq_num] - 2.0 * newmark_B[5 + i * eq_num] + newmark_B[5 + j * eq_num] ) ) / al
 			- ( By1 * By1 * h * h * h * sigma_z / 48.0 * ( newmark_B[4 + r * eq_num] - 2.0 * newmark_B[4 + i * eq_num] + newmark_B[4 + j * eq_num] ) ) / dx / dx / al;
 
-		vect_f[8 + i * eq_num] = newmark_B[9 + i * eq_num] + mesh[_x].Nk[9 + i * eq_num] / ( 2 * betta * dt ) - ( mesh[_x].Nk[0 + r * eq_num] * mesh[_x].Nk[9 + i * eq_num] ) 
+		vectF( 8 + i * eq_num ) = newmark_B[9 + i * eq_num] + mesh[_x].Nk[9 + i * eq_num] / ( 2 * betta * dt ) - ( mesh[_x].Nk[0 + r * eq_num] * mesh[_x].Nk[9 + i * eq_num] ) 
 			/ ( 4 * betta * dt * dx ) - ( 1 / ( 2 * betta * dt ) + 2 / ( dx * dx * mu * sigma_y ) + ( newmark_B[0 + r * eq_num] - newmark_B[0 + j * eq_num] 
 			+ ( mesh[_x].Nk[0 + r * eq_num] - mesh[_x].Nk[0 + j * eq_num] )	/ ( 2 * betta * dt ) ) / ( 2 * dx ) ) * mesh[_x].Nk[9 + i * eq_num] 
 			+ ( ( newmark_B[0 + r * eq_num] - newmark_B[0 + j * eq_num] + ( mesh[_x].Nk[0 + r * eq_num] - mesh[_x].Nk[0 + j * eq_num] ) 
@@ -878,106 +1363,375 @@ void Solver::calc_system( int _x )
 			- ( newmark_B[0 + i * eq_num] + mesh[_x].Nk[0 + i * eq_num] / ( 2 * betta * dt ) ) / ( 2 * dx ) ) * mesh[_x].Nk[9 + j * eq_num] 
 			- ( -2 * mesh[_x].Nk[9 + i * eq_num] + mesh[_x].Nk[9 + r * eq_num] + mesh[_x].Nk[9 + j * eq_num] ) / ( dx * dx * mu * sigma_y );
 
-		vect_f[9 + i * eq_num] = -( ( mu * sigma_x * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num] ) / ( 2 * betta * dt ) ) + ( By1 * mu * sigma_x 
+		vectF( 9 + i * eq_num ) = -( ( mu * sigma_x * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[1 + i * eq_num] ) / ( 2 * betta * dt ) ) + ( By1 * mu * sigma_x 
 			* mesh[_x].Nk[4 + i * eq_num] ) / ( 4 * betta * dt ) - ( 1 / 2 ) * By1 * mu * sigma_x * ( newmark_B[4 + i * eq_num] + mesh[_x].Nk[4 + i * eq_num] / ( 2 * betta * dt ) );
 	}
 }
 
-void Solver::rgkCalc( int thrNum, int hom, const vector<PL_NUM>& x, PL_NUM *x1 )	
+void Solver::rgkCalc( const Matrix<PL_NUM, Dynamic, Dynamic>& x, Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1>* x1 )	
 {
-	for( int i = 0; i < varNum; ++i ) 
-	{
-		rgkF1[thrNum][i] = 0.0;
-		rgkF4[thrNum][i] = 0.0;
-	}
+	//f1 = dy * Fhi( y, x )//see the theory, I'm not sure about these comments
+	rgkF1 = dy * matrAprev * x;
+	rgkF1.col( varNum / 2 ) += dy * vectFprev;	
 
-	//this is just rolled out RgK
-	PL_NUM tmpProd = 0.0;
-	for( int i = 0; i < varNum; ++i ) //f1 = dy * Fhi( y, x )//see the theory, I'm not sure about these comments
-	{				
-		for( int j = lb[i]; j < rb[i]; j = j + 5 ) 
-		{
-			rgkF1[thrNum][i] += matr_A_prev[i][j] * (x)[j];
-			rgkF1[thrNum][i] += matr_A_prev[i][j + 1] * (x)[j + 1];
-			rgkF1[thrNum][i] += matr_A_prev[i][j + 2] * (x)[j + 2];
-			rgkF1[thrNum][i] += matr_A_prev[i][j + 3] * (x)[j + 3];
-			rgkF1[thrNum][i] += matr_A_prev[i][j + 4] * (x)[j + 4];
-		}
-		rgkF1[thrNum][i] *= dy;
-		rgkF2[thrNum][i] = rgkF1[thrNum][i];
-		rgkF3[thrNum][i] = rgkF1[thrNum][i];
-	}
-	if( hom != 0 ) 
-	{
-		for( int i = 0; i < varNum; ++i ) 
-		{
-			rgkF1[thrNum][i] += dy * vect_f_prev[i];
-			rgkF2[thrNum][i] += dy * vect_f_prev[i];
-			rgkF3[thrNum][i] += dy * vect_f_prev[i];
-		}
-	}
-	for( int i = 0; i < varNum; ++i )		//f2 = dy * Fhi( y, x + d21 * f1 )
-	{
-		tmpProd = 0.0;
-		for( int j = lb[i]; j < rb[i]; j = j + 5 ) 
-		{
-			tmpProd += matr_A_prev[i][j] * rgkF1[thrNum][j];
-			tmpProd += matr_A_prev[i][j + 1] * rgkF1[thrNum][j + 1];
-			tmpProd += matr_A_prev[i][j + 2] * rgkF1[thrNum][j + 2];
-			tmpProd += matr_A_prev[i][j + 3] * rgkF1[thrNum][j + 3];
-			tmpProd += matr_A_prev[i][j + 4] * rgkF1[thrNum][j + 4];
-		}
-		rgkF2[thrNum][i] += dy * rgkD21 * tmpProd;
-		rgkF3[thrNum][i] += dy * rgkD31 * tmpProd;
-	}
-	for( int i = 0; i < varNum; ++i ) //f3 = dy * Fhi( y, x + d31 * f1 + d32 * f2 )
-	{
-		tmpProd = 0.0;
-		for( int j = lb[i]; j < rb[i]; j = j + 5 ) 
-		{
-			tmpProd += matr_A_prev[i][j] * rgkF2[thrNum][j];
-			tmpProd += matr_A_prev[i][j + 1] * rgkF2[thrNum][j + 1];
-			tmpProd += matr_A_prev[i][j + 2] * rgkF2[thrNum][j + 2];
-			tmpProd += matr_A_prev[i][j + 3] * rgkF2[thrNum][j + 3];
-			tmpProd += matr_A_prev[i][j + 4] * rgkF2[thrNum][j + 4];
-		}
-		rgkF3[thrNum][i] += dy * rgkD32 * tmpProd;
-	}
-	for( int i = 0; i < varNum; ++i ) //f4 = dy * Fhi( y + dy, x + d41 * f1 + d42 * f2 + d43 * f3 )
-	{
-		tmpProd = 0.0;
-		for( int j = lb[i]; j < rb[i]; j = j + 5 ) 
-		{
-			tmpProd += matr_A[i][j] * ( (x)[j] + rgkD41 * rgkF1[thrNum][j] + rgkD42 * rgkF2[thrNum][j] + rgkD43 * rgkF3[thrNum][j] );
-			tmpProd += matr_A[i][j + 1] * ( (x)[j + 1] + rgkD41 * rgkF1[thrNum][j + 1] + rgkD42 * rgkF2[thrNum][j + 1] + rgkD43 * rgkF3[thrNum][j + 1] );
-			tmpProd += matr_A[i][j + 2] * ( (x)[j + 2] + rgkD41 * rgkF1[thrNum][j + 2] + rgkD42 * rgkF2[thrNum][j + 2] + rgkD43 * rgkF3[thrNum][j + 2] );
-			tmpProd += matr_A[i][j + 3] * ( (x)[j + 3] + rgkD41 * rgkF1[thrNum][j + 3] + rgkD42 * rgkF2[thrNum][j + 3] + rgkD43 * rgkF3[thrNum][j + 3] );
-			tmpProd += matr_A[i][j + 4] * ( (x)[j + 4] + rgkD41 * rgkF1[thrNum][j + 4] + rgkD42 * rgkF2[thrNum][j + 4] + rgkD43 * rgkF3[thrNum][j + 4] );
-		}
-		rgkF4[thrNum][i] += dy * tmpProd;
-	}
-	if( hom != 0 ) 
-	{
-		for( int i = 0; i < varNum; ++i ) 
-		{
-			rgkF4[thrNum][i] += dy * vect_f[i];
-		}
-	}
+	//f2 = dy * Fhi( y, x + d21 * f1 )
+	rgkF2 = dy * matrAprev * ( x + rgkD21 *  rgkF1 );
+	rgkF2.col( varNum / 2 ) += dy * vectFprev;	
 
-	for( int i = 0; i < varNum; ++i ) 
-	{
-		(x1)[i] = (x)[i] + rgkC1 * rgkF1[thrNum][i] + rgkC2 * rgkF2[thrNum][i] + rgkC3 * rgkF3[thrNum][i] + rgkC4 * rgkF4[thrNum][i];
-	}
+	//f3 = dy * Fhi( y, x + d31 * f1 + d32 * f2 )
+	rgkF3 = dy * matrAprev * ( x + rgkD31 * rgkF1 + rgkD32 * rgkF2 );
+	rgkF3.col( varNum / 2 ) += dy * vectFprev;	
+
+	//f4 = dy * Fhi( y + dy, x + d41 * f1 + d42 * f2 + d43 * f3 )
+	rgkF4 = dy * matrA * ( x + rgkD41 * rgkF1 + rgkD42 * rgkF2 + rgkD43 * rgkF3 );
+	rgkF4.col( varNum / 2 ) += dy * vectF;
+
+	( *x1 ) = x + rgkC1 * rgkF1 + rgkC2 * rgkF2 + rgkC3 * rgkF3 + rgkC4 * rgkF4;
 }
 
-void Solver::walkthrough( int mode )
+//void Solver::rgkCalc( int thrNum, int hom, const vector<PL_NUM>& x, PL_NUM *x1 )	
+//{
+//	for( int i = 0; i < varNum; ++i ) 
+//	{
+//		rgkF1[thrNum][i] = 0.0;
+//		rgkF4[thrNum][i] = 0.0;
+//	}
+//
+//	//this is just rolled out RgK
+//	PL_NUM tmpProd = 0.0;
+//	for( int i = 0; i < varNum; ++i ) //f1 = dy * Fhi( y, x )//see the theory, I'm not sure about these comments
+//	{				
+//		for( int j = lb[i]; j < rb[i]; j = j + 5 ) 
+//		{
+//			rgkF1[thrNum][i] += matrAprev( i, j ) * (x)[j];
+//			rgkF1[thrNum][i] += matrAprev( i, j + 1 ) * (x)[j + 1];
+//			rgkF1[thrNum][i] += matrAprev( i, j + 2 ) * (x)[j + 2];
+//			rgkF1[thrNum][i] += matrAprev( i, j + 3 ) * (x)[j + 3];
+//			rgkF1[thrNum][i] += matrAprev( i, j + 4 ) * (x)[j + 4];
+//		}
+//		rgkF1[thrNum][i] *= dy;
+//		rgkF2[thrNum][i] = rgkF1[thrNum][i];
+//		rgkF3[thrNum][i] = rgkF1[thrNum][i];
+//	}
+//	if( hom != 0 ) 
+//	{
+//		for( int i = 0; i < varNum; ++i ) 
+//		{
+//			rgkF1[thrNum][i] += dy * vectFprev( i );
+//			rgkF2[thrNum][i] += dy * vectFprev( i );
+//			rgkF3[thrNum][i] += dy * vectFprev( i );
+//		}
+//	}
+//	for( int i = 0; i < varNum; ++i )		//f2 = dy * Fhi( y, x + d21 * f1 )
+//	{
+//		tmpProd = 0.0;
+//		for( int j = lb[i]; j < rb[i]; j = j + 5 ) 
+//		{
+//			tmpProd += matrAprev( i, j ) * rgkF1[thrNum][j];
+//			tmpProd += matrAprev( i, j + 1 ) * rgkF1[thrNum][j + 1];
+//			tmpProd += matrAprev( i, j + 2 ) * rgkF1[thrNum][j + 2];
+//			tmpProd += matrAprev( i, j + 3 ) * rgkF1[thrNum][j + 3];
+//			tmpProd += matrAprev( i, j + 4 ) * rgkF1[thrNum][j + 4];
+//		}
+//		rgkF2[thrNum][i] += dy * rgkD21 * tmpProd;
+//		rgkF3[thrNum][i] += dy * rgkD31 * tmpProd;
+//	}
+//	for( int i = 0; i < varNum; ++i ) //f3 = dy * Fhi( y, x + d31 * f1 + d32 * f2 )
+//	{
+//		tmpProd = 0.0;
+//		for( int j = lb[i]; j < rb[i]; j = j + 5 ) 
+//		{
+//			tmpProd += matrAprev( i, j ) * rgkF2[thrNum][j];
+//			tmpProd += matrAprev( i, j + 1 ) * rgkF2[thrNum][j + 1];
+//			tmpProd += matrAprev( i, j + 2 ) * rgkF2[thrNum][j + 2];
+//			tmpProd += matrAprev( i, j + 3 ) * rgkF2[thrNum][j + 3];
+//			tmpProd += matrAprev( i, j + 4 ) * rgkF2[thrNum][j + 4];
+//		}
+//		rgkF3[thrNum][i] += dy * rgkD32 * tmpProd;
+//	}
+//	for( int i = 0; i < varNum; ++i ) //f4 = dy * Fhi( y + dy, x + d41 * f1 + d42 * f2 + d43 * f3 )
+//	{
+//		tmpProd = 0.0;
+//		for( int j = lb[i]; j < rb[i]; j = j + 5 ) 
+//		{
+//			tmpProd += matrA( i, j ) * ( (x)[j] + rgkD41 * rgkF1[thrNum][j] + rgkD42 * rgkF2[thrNum][j] + rgkD43 * rgkF3[thrNum][j] );
+//			tmpProd += matrA( i, j + 1 ) * ( (x)[j + 1] + rgkD41 * rgkF1[thrNum][j + 1] + rgkD42 * rgkF2[thrNum][j + 1] + rgkD43 * rgkF3[thrNum][j + 1] );
+//			tmpProd += matrA( i, j + 2 ) * ( (x)[j + 2] + rgkD41 * rgkF1[thrNum][j + 2] + rgkD42 * rgkF2[thrNum][j + 2] + rgkD43 * rgkF3[thrNum][j + 2] );
+//			tmpProd += matrA( i, j + 3 ) * ( (x)[j + 3] + rgkD41 * rgkF1[thrNum][j + 3] + rgkD42 * rgkF2[thrNum][j + 3] + rgkD43 * rgkF3[thrNum][j + 3] );
+//			tmpProd += matrA( i, j + 4 ) * ( (x)[j + 4] + rgkD41 * rgkF1[thrNum][j + 4] + rgkD42 * rgkF2[thrNum][j + 4] + rgkD43 * rgkF3[thrNum][j + 4] );
+//		}
+//		rgkF4[thrNum][i] += dy * tmpProd;
+//	}
+//	if( hom != 0 ) 
+//	{
+//		for( int i = 0; i < varNum; ++i ) 
+//		{
+//			rgkF4[thrNum][i] += dy * vectF( i );
+//		}
+//	}
+//
+//	for( int i = 0; i < varNum; ++i ) 
+//	{
+//		(x1)[i] = (x)[i] + rgkC1 * rgkF1[thrNum][i] + rgkC2 * rgkF2[thrNum][i] + rgkC3 * rgkF3[thrNum][i] + rgkC4 * rgkF4[thrNum][i];
+//	}
+//}
+
+//void Solver::walkthrough( int mode )
+//{
+//	//Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2> orthoCheck1;
+//
+//	time_t tBeg;
+//	time_t rgkT = 0;
+//	time_t orthoT = 0;
+//	time_t qrTime = 0;
+//
+//	calc_Newmark_AB( 0, mode );
+//	calc_system( 0 );
+//
+//	orthoBuilder->resetOrthoDoneInfo();
+//
+//	int active = 1;		//how many nodes in a row we have, on which orthonormalization was not performed. 
+//						//We need this to know whem we can switch to ABM method
+//
+//	//integrate and orthonorm
+//	int _x = 0;
+//	int PhiInd = 0;
+//	int totalRgkSteps = 0;
+//	tBeg = 0;
+//#pragma omp parallel //firstprivate( baseVect )
+//	{
+//	for( _x; _x < Km - 1; )
+//	{
+//		int rgkIsDone = 0;
+//		if( omp_get_thread_num() == 0 )
+//		{
+//			for( int i = 0; i < EQ_NUM * NUMBER_OF_LINES; ++i )
+//			{
+//				for( int j = lb[i]; j < rb[i]; ++j )
+//				{
+//					matrAprev[i][j] = matr_A[i][j];
+//				}
+//				vect_f_prev[i] = vect_f[i];
+//			}
+//
+//			calc_Newmark_AB( _x + 1, mode );
+//			calc_system( _x + 1 );
+//			tBeg = time( 0 );
+//		}
+//		#pragma omp barrier
+//		
+//		#pragma omp for		//calculating new Phi's for ABM method
+//		for( int vNum = 0; vNum < varNum / 2; ++vNum )
+//		{
+//			for( int i = 0; i < varNum; ++i )
+//			{
+//				PL_NUM sum = 0.0;
+//				for( int j = lb[i]; j < rb[i]; ++j )
+//				{
+//					sum += matr_A_prev[i][j] * orthoBuilder->zi[_x][vNum][j];
+//				}
+//				tempPhi[vNum][i] = sum;
+//			}
+//		}
+//		#pragma omp barrier
+//		if( omp_get_thread_num() == 0 )
+//		{
+//			for( int i = 0; i < varNum; ++i )
+//			{
+//				PL_NUM sum = 0.0;
+//				for( int j = lb[i]; j < rb[i]; ++j )
+//				{
+//					sum += matr_A_prev[i][j] * orthoBuilder->z5[_x][j];
+//				}
+//				tempPhi[varNum / 2][i] = sum + vect_f_prev[i];
+//			}
+//
+//
+//			PhiInd = 0;
+//			if( active <= ABM_STAGE_NUM )
+//			{
+//				PhiInd = active - 1;
+//			}
+//			else
+//			{
+//				for( int stage = 0; stage < ABM_STAGE_NUM - 1; ++stage )
+//				{
+//					for( int vNum = 0; vNum < varNum / 2 + 1; ++vNum )
+//					{
+//						for( int j = 0; j < varNum; ++j )
+//						{
+//							Phi[stage][vNum][j] = Phi[stage + 1][vNum][j];
+//						}
+//					}
+//				}
+//				PhiInd = ABM_STAGE_NUM - 1;
+//			}
+//		}
+//		#pragma omp barrier
+//		#pragma omp for
+//		for( int vNum = 0; vNum < varNum / 2 + 1; ++vNum )
+//		{
+//			for( int i = 0; i < varNum; ++i )
+//			{
+//				Phi[PhiInd][vNum][i] = tempPhi[vNum][i];
+//			}
+//		}
+//		#pragma omp barrier
+//
+//		#pragma omp for
+//		for( int vNum = 0; vNum < varNum / 2 + 1; ++vNum )
+//		{
+//			if( active >= ABM_STAGE_NUM )
+//			{
+//				//use ABM method
+//				//predictor
+//				if( vNum < varNum / 2 )
+//				{
+//					for( int i = 0; i < varNum; ++i )
+//					{
+//						/*decompVect[vNum][i]*/tempPhi[vNum][i] = orthoBuilder->zi[_x][vNum][i]  + dy / 24.0l
+//													* ( 55.0l * Phi[3][vNum][i] - 59.0l * Phi[2][vNum][i] + 37.0l * Phi[1][vNum][i] - 9.0l * Phi[0][vNum][i] );
+//					}
+//				}
+//				else
+//				{
+//					for( int i = 0; i < varNum; ++i )
+//					{
+//						/*decompVect[vNum][i]*/tempPhi[vNum][i] = orthoBuilder->z5[_x][i]  + dy / 24.0l
+//													* ( 55.0l * Phi[3][vNum][i] - 59.0l * Phi[2][vNum][i] + 37.0l * Phi[1][vNum][i] - 9.0l * Phi[0][vNum][i] );
+//					}
+//				}
+//				//corrector
+//				for( int i = 0; i < varNum; ++i )
+//				{
+//					tempPhi2[vNum][i] = 0.0;
+//					for( int j = lb[i]; j < rb[i]; ++j )
+//					{
+//						tempPhi2[vNum][i] += matr_A[i][j] * tempPhi[vNum][j];
+//					}
+//					if( vNum == varNum / 2 )
+//					{
+//						tempPhi2[vNum][i] += vect_f[i];
+//					}
+//				}
+//				if( vNum < varNum / 2 )
+//				{
+//					for( int i = 0; i < varNum; ++i )
+//					{
+//						decompVect[vNum][i] = orthoBuilder->zi[_x][vNum][i]  + dy / 24.0l
+//													* ( 9.0l * tempPhi2[vNum][i] + 19.0l * Phi[3][vNum][i] - 5.0l * Phi[2][vNum][i] + Phi[1][vNum][i] );
+//					}
+//				}
+//				else
+//				{
+//					for( int i = 0; i < varNum; ++i )
+//					{
+//						decompVect[vNum][i] = orthoBuilder->z5[_x][i]  + dy / 24.0l
+//													* ( 9.0l * tempPhi2[vNum][i] + 19.0l * Phi[3][vNum][i] - 5.0l * Phi[2][vNum][i] + Phi[1][vNum][i] );
+//					}
+//				}
+//			}
+//			else
+//			{
+//				if( vNum < varNum / 2 )		//for general basis solutions
+//				{	
+//					//rungeKutta->calc3( matr_A_prev, matr_A, vect_f_prev, vect_f, dy, omp_get_thread_num(), 0, orthoBuilder->zi[_x][vNum], decompVect[vNum] );
+//					rgkCalc( omp_get_thread_num(), 0, orthoBuilder->zi[_x][vNum], decompVect[vNum] );
+//				}
+//				else	//for particular solution
+//				{
+//					//rungeKutta->calc3( matr_A_prev, matr_A, vect_f_prev, vect_f, dy, omp_get_thread_num(), 1, orthoBuilder->z5[_x], decompVect[varNum / 2] );
+//					rgkCalc( omp_get_thread_num(), 1, orthoBuilder->z5[_x], decompVect[varNum / 2] );
+//				}
+//				if( omp_get_thread_num() == 0 )
+//				{
+//					rgkIsDone = 1;
+//				}
+//			}
+//		}
+//		#pragma omp barrier
+//
+//		if( omp_get_thread_num() == 0 )
+//		{
+//			rgkT += time( 0 ) - tBeg;
+//
+//			//tBeg = time( 0 );
+//			if( rgkIsDone )
+//			{
+//				++totalRgkSteps;
+//			}
+//
+//			for( int i = 0; i < EQ_NUM * NUMBER_OF_LINES / 2 + 1; ++i )
+//			{
+//				for( int j = 0; j < EQ_NUM * NUMBER_OF_LINES; ++j )
+//				{
+//					decompVectOrtho[i][j] = decompVect[i][j];
+//					//qrA( j, i ) = decompVect[i][j];
+//				}
+//			}
+//
+//			//for( int vNum = 0; vNum < varNum / 2 + 1; ++vNum )
+//			//{
+//			//	tBeg = time( 0 );
+//			//	orthoBuilder->orthonorm( vNum, _x, decompVectOrtho[vNum] );
+//			//	orthoT += time( 0 ) - tBeg;
+//			//}
+//			tBeg = time( 0 );
+//			orthoBuilder->orthonorm( _x, decompVectOrtho );
+//			orthoT += time( 0 ) - tBeg;
+//
+//			//tBeg = time( 0 );
+//			//qr.compute( qrA );
+//			//qrTime += time( 0 ) - tBeg;
+//
+//			if( orthoBuilder->checkOrtho( _x, decompVectOrtho, decompVect ) == 1 )			
+//			{
+//				active = 1;		//if orthonormalization has been performed, we have to restart the ABM method
+//				for( int i = 0; i < EQ_NUM * NUMBER_OF_LINES / 2 + 1; ++i )
+//				{
+//					for( int j = 0; j < EQ_NUM * NUMBER_OF_LINES; ++j )
+//					{
+//						decompVect[i][j] = decompVectOrtho[i][j];
+//					}
+//				}
+//				orthoBuilder->setOrthoDoneInfo( _x );
+//				orthoBuilder->setNextSolVects( _x, decompVectOrtho );
+//				//cout << " --- at x = " << _x << " ortho is needed\n";
+//			}
+//			else
+//			{
+//				++active;	//if no orthonormalization has been done, we have one more solution that can be used in ABM method
+//				orthoBuilder->setNextSolVects( _x, decompVect );
+//			}
+//
+//			++_x;
+//
+//			//orthoT += time( 0 ) - tBeg;
+//		}
+//		#pragma omp barrier
+//	}
+//	}
+//
+//	cout << " == rgkT \t" << rgkT << endl;
+//	cout << " == orthoT \t" << orthoT << endl;
+//	cout << " == qrTime \t" << qrTime << endl;
+//	cout << " == rgk to total ratio: " << ( float )totalRgkSteps / ( float )( Km - 1 ) << endl;
+//
+//	orthoBuilder->buildSolution( &mesh );
+//
+//	for( int _x = 0; _x < Km; ++_x )
+//	{
+//		orthoBuilder->flushO( _x );
+//	}
+//}
+
+void Solver::walkthrough( int mode )	//sequential version
 {
 	//Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2> orthoCheck1;
 
 	time_t tBeg;
 	time_t rgkT = 0;
 	time_t orthoT = 0;
-	time_t qrTime = 0;
 
 	calc_Newmark_AB( 0, mode );
 	calc_system( 0 );
@@ -988,227 +1742,107 @@ void Solver::walkthrough( int mode )
 						//We need this to know whem we can switch to ABM method
 
 	//integrate and orthonorm
-	int _x = 0;
 	int PhiInd = 0;
 	int totalRgkSteps = 0;
 	tBeg = 0;
-#pragma omp parallel //firstprivate( baseVect )
-	{
-	for( _x; _x < Km - 1; )
+
+	for( int _x = 0; _x < Km - 1; ++_x )
 	{
 		int rgkIsDone = 0;
-		if( omp_get_thread_num() == 0 )
-		{
-			for( int i = 0; i < EQ_NUM * NUMBER_OF_LINES; ++i )
-			{
-				for( int j = lb[i]; j < rb[i]; ++j )
-				{
-					matr_A_prev[i][j] = matr_A[i][j];
-				}
-				vect_f_prev[i] = vect_f[i];
-			}
 
-			calc_Newmark_AB( _x + 1, mode );
-			calc_system( _x + 1 );
-			tBeg = time( 0 );
+		matrAprev = matrA;
+		vectFprev = vectF;
+
+		calc_Newmark_AB( _x + 1, mode );
+		calc_system( _x + 1 );
+		tBeg = time( 0 );
+
+		tempPhi = matrAprev * orthoBuilder->zi[_x];
+		tempPhi.col( varNum / 2 ) += vectFprev;
+
+		PhiInd = 0;
+		if( active <= ABM_STAGE_NUM )
+		{
+			PhiInd = active - 1;
 		}
-		#pragma omp barrier
-		
-		#pragma omp for		//calculating new Phi's for ABM method
-		for( int vNum = 0; vNum < varNum / 2; ++vNum )
+		else
 		{
-			for( int i = 0; i < varNum; ++i )
+			for( int stage = 0; stage < ABM_STAGE_NUM - 1; ++stage )
 			{
-				PL_NUM sum = 0.0;
-				for( int j = lb[i]; j < rb[i]; ++j )
-				{
-					sum += matr_A_prev[i][j] * orthoBuilder->zi[_x][vNum][j];
-				}
-				tempPhi[vNum][i] = sum;
+				Phi[stage] = Phi[stage + 1];
 			}
+			PhiInd = ABM_STAGE_NUM - 1;
 		}
-		#pragma omp barrier
-		if( omp_get_thread_num() == 0 )
+		Phi[PhiInd] = tempPhi;
+
+		if( active >= ABM_STAGE_NUM )
 		{
-			for( int i = 0; i < varNum; ++i )
-			{
-				PL_NUM sum = 0.0;
-				for( int j = lb[i]; j < rb[i]; ++j )
-				{
-					sum += matr_A_prev[i][j] * orthoBuilder->z5[_x][j];
-				}
-				tempPhi[varNum / 2][i] = sum + vect_f_prev[i];
-			}
+			//use ABM method
+			//predictor
+			tempPhi = orthoBuilder->zi[_x] + dy / 24.0l * ( 55.0l * Phi[3] - 59.0l * Phi[2] + 37.0l * Phi[1] - 9.0l * Phi[0] );
+			//corrector
+			tempPhi2 = matrA * tempPhi;
+			tempPhi2.col( varNum / 2 ) += vectF;
+			//assignment
+			decompVect = orthoBuilder->zi[_x] + dy / 24.0l * ( 9.0l * tempPhi2 + 19.0l * Phi[3] - 5.0l * Phi[2] + Phi[1] );
+		}
+		else
+		{
+			rgkCalc( orthoBuilder->zi[_x], &decompVect );
+		}
 
+		rgkT += time( 0 ) - tBeg;
 
-			PhiInd = 0;
-			if( active <= ABM_STAGE_NUM )
+		//tBeg = time( 0 );
+		if( rgkIsDone )
+		{
+			++totalRgkSteps;
+		}
+
+		for( int i = 0; i < EQ_NUM * NUMBER_OF_LINES / 2 + 1; ++i )
+		{
+			for( int j = 0; j < EQ_NUM * NUMBER_OF_LINES; ++j )
 			{
-				PhiInd = active - 1;
-			}
-			else
-			{
-				for( int stage = 0; stage < ABM_STAGE_NUM - 1; ++stage )
-				{
-					for( int vNum = 0; vNum < varNum / 2 + 1; ++vNum )
-					{
-						for( int j = 0; j < varNum; ++j )
-						{
-							Phi[stage][vNum][j] = Phi[stage + 1][vNum][j];
-						}
-					}
-				}
-				PhiInd = ABM_STAGE_NUM - 1;
+				decompVectOrtho[i][j] = decompVect( j, i );
 			}
 		}
-		#pragma omp barrier
-		#pragma omp for
-		for( int vNum = 0; vNum < varNum / 2 + 1; ++vNum )
+
+		//decompVectOrtho = decompVect;
+
+		//for( int vNum = 0; vNum < varNum / 2 + 1; ++vNum )
+		//{
+		//	tBeg = time( 0 );
+		//	orthoBuilder->orthonorm( vNum, _x, decompVectOrtho[vNum] );
+		//	orthoT += time( 0 ) - tBeg;
+		//}
+		tBeg = time( 0 );
+		orthoBuilder->orthonorm( _x, decompVectOrtho );
+		orthoT += time( 0 ) - tBeg;
+
+		if( orthoBuilder->checkOrtho( _x, decompVectOrtho, decompVect ) == 1 )			
 		{
-			for( int i = 0; i < varNum; ++i )
-			{
-				Phi[PhiInd][vNum][i] = tempPhi[vNum][i];
-			}
-		}
-		#pragma omp barrier
-
-		#pragma omp for
-		for( int vNum = 0; vNum < varNum / 2 + 1; ++vNum )
-		{
-			if( active >= ABM_STAGE_NUM )
-			{
-				//use ABM method
-				//predictor
-				if( vNum < varNum / 2 )
-				{
-					for( int i = 0; i < varNum; ++i )
-					{
-						/*decompVect[vNum][i]*/tempPhi[vNum][i] = orthoBuilder->zi[_x][vNum][i]  + dy / 24.0l
-													* ( 55.0l * Phi[3][vNum][i] - 59.0l * Phi[2][vNum][i] + 37.0l * Phi[1][vNum][i] - 9.0l * Phi[0][vNum][i] );
-					}
-				}
-				else
-				{
-					for( int i = 0; i < varNum; ++i )
-					{
-						/*decompVect[vNum][i]*/tempPhi[vNum][i] = orthoBuilder->z5[_x][i]  + dy / 24.0l
-													* ( 55.0l * Phi[3][vNum][i] - 59.0l * Phi[2][vNum][i] + 37.0l * Phi[1][vNum][i] - 9.0l * Phi[0][vNum][i] );
-					}
-				}
-				//corrector
-				for( int i = 0; i < varNum; ++i )
-				{
-					tempPhi2[vNum][i] = 0.0;
-					for( int j = lb[i]; j < rb[i]; ++j )
-					{
-						tempPhi2[vNum][i] += matr_A[i][j] * tempPhi[vNum][j];
-					}
-					if( vNum == varNum / 2 )
-					{
-						tempPhi2[vNum][i] += vect_f[i];
-					}
-				}
-				if( vNum < varNum / 2 )
-				{
-					for( int i = 0; i < varNum; ++i )
-					{
-						decompVect[vNum][i] = orthoBuilder->zi[_x][vNum][i]  + dy / 24.0l
-													* ( 9.0l * tempPhi2[vNum][i] + 19.0l * Phi[3][vNum][i] - 5.0l * Phi[2][vNum][i] + Phi[1][vNum][i] );
-					}
-				}
-				else
-				{
-					for( int i = 0; i < varNum; ++i )
-					{
-						decompVect[vNum][i] = orthoBuilder->z5[_x][i]  + dy / 24.0l
-													* ( 9.0l * tempPhi2[vNum][i] + 19.0l * Phi[3][vNum][i] - 5.0l * Phi[2][vNum][i] + Phi[1][vNum][i] );
-					}
-				}
-			}
-			else
-			{
-				if( vNum < varNum / 2 )		//for general basis solutions
-				{	
-					//rungeKutta->calc3( matr_A_prev, matr_A, vect_f_prev, vect_f, dy, omp_get_thread_num(), 0, orthoBuilder->zi[_x][vNum], decompVect[vNum] );
-					rgkCalc( omp_get_thread_num(), 0, orthoBuilder->zi[_x][vNum], decompVect[vNum] );
-				}
-				else	//for particular solution
-				{
-					//rungeKutta->calc3( matr_A_prev, matr_A, vect_f_prev, vect_f, dy, omp_get_thread_num(), 1, orthoBuilder->z5[_x], decompVect[varNum / 2] );
-					rgkCalc( omp_get_thread_num(), 1, orthoBuilder->z5[_x], decompVect[varNum / 2] );
-				}
-				if( omp_get_thread_num() == 0 )
-				{
-					rgkIsDone = 1;
-				}
-			}
-		}
-		#pragma omp barrier
-
-		if( omp_get_thread_num() == 0 )
-		{
-			rgkT += time( 0 ) - tBeg;
-
-			//tBeg = time( 0 );
-			if( rgkIsDone )
-			{
-				++totalRgkSteps;
-			}
-
+			active = 1;		//if orthonormalization has been performed, we have to restart the ABM method
 			for( int i = 0; i < EQ_NUM * NUMBER_OF_LINES / 2 + 1; ++i )
 			{
 				for( int j = 0; j < EQ_NUM * NUMBER_OF_LINES; ++j )
 				{
-					decompVectOrtho[i][j] = decompVect[i][j];
-					//qrA( j, i ) = decompVect[i][j];
+					decompVect( j, i ) = decompVectOrtho[i][j];
 				}
 			}
-
-			//for( int vNum = 0; vNum < varNum / 2 + 1; ++vNum )
-			//{
-			//	tBeg = time( 0 );
-			//	orthoBuilder->orthonorm( vNum, _x, decompVectOrtho[vNum] );
-			//	orthoT += time( 0 ) - tBeg;
-			//}
-			tBeg = time( 0 );
-			orthoBuilder->orthonorm( _x, decompVectOrtho );
-			orthoT += time( 0 ) - tBeg;
-
-			//tBeg = time( 0 );
-			//qr.compute( qrA );
-			//qrTime += time( 0 ) - tBeg;
-
-			if( orthoBuilder->checkOrtho( _x, decompVectOrtho, decompVect ) == 1 )			
-			{
-				active = 1;		//if orthonormalization has been performed, we have to restart the ABM method
-				for( int i = 0; i < EQ_NUM * NUMBER_OF_LINES / 2 + 1; ++i )
-				{
-					for( int j = 0; j < EQ_NUM * NUMBER_OF_LINES; ++j )
-					{
-						decompVect[i][j] = decompVectOrtho[i][j];
-					}
-				}
-				orthoBuilder->setOrthoDoneInfo( _x );
-				orthoBuilder->setNextSolVects( _x, decompVectOrtho );
-				//cout << " --- at x = " << _x << " ortho is needed\n";
-			}
-			else
-			{
-				++active;	//if no orthonormalization has been done, we have one more solution that can be used in ABM method
-				orthoBuilder->setNextSolVects( _x, decompVect );
-			}
-
-			++_x;
-
-			//orthoT += time( 0 ) - tBeg;
+			orthoBuilder->setOrthoDoneInfo( _x );
+			orthoBuilder->setNextSolVects( _x, decompVectOrtho );
+			//cout << " --- at x = " << _x << " ortho is needed\n";
 		}
-		#pragma omp barrier
-	}
+		else
+		{
+			++active;	//if no orthonormalization has been done, we have one more solution that can be used in ABM method
+			orthoBuilder->zi[_x + 1] = decompVect;
+		}
+
 	}
 
 	cout << " == rgkT \t" << rgkT << endl;
 	cout << " == orthoT \t" << orthoT << endl;
-	cout << " == qrTime \t" << qrTime << endl;
 	cout << " == rgk to total ratio: " << ( float )totalRgkSteps / ( float )( Km - 1 ) << endl;
 
 	orthoBuilder->buildSolution( &mesh );
@@ -1218,6 +1852,7 @@ void Solver::walkthrough( int mode )
 		orthoBuilder->flushO( _x );
 	}
 }
+
 
 void Solver::updateDerivs()
 {
@@ -1238,11 +1873,11 @@ void Solver::pre_step()
 {
 	for( int i = 0; i < nx; ++i )			//TODO check indexes
 	{
-		orthoBuilder->zi[0][i * eq_num / 2 + 0][i * eq_num + 2] = 1.0;
-		orthoBuilder->zi[0][i * eq_num / 2 + 1][i * eq_num + 3] = 1.0;
-		orthoBuilder->zi[0][i * eq_num / 2 + 2][i * eq_num + 5] = 1.0;
-		orthoBuilder->zi[0][i * eq_num / 2 + 3][i * eq_num + 7] = 1.0;
-		orthoBuilder->zi[0][( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 1] = -1.0;
+		orthoBuilder->zi[0]( i * eq_num + 2, i * eq_num / 2 + 0 ) = 1.0;
+		orthoBuilder->zi[0]( i * eq_num + 3, i * eq_num / 2 + 1 ) = 1.0;
+		orthoBuilder->zi[0]( i * eq_num + 5, i * eq_num / 2 + 2 ) = 1.0;
+		orthoBuilder->zi[0]( i * eq_num + 7, i * eq_num / 2 + 3 ) = 1.0;
+		orthoBuilder->zi[0]( ( i + 1 ) * eq_num - 1, ( i + 1 ) * eq_num / 2 - 1 ) = -1.0;
 	}
 	//z5s are already zeros
 
@@ -1261,25 +1896,20 @@ void Solver::do_step()
 	{
 		cout << " = walk\n";
 		calc_Newmark_AB( 0, 1 );
-		for( int i = 0; i < varNum; ++i ) 			//TODO check indexes
-		{
-			for( int j = 0; j < varNum / 2; ++j )
-			{
-				orthoBuilder->zi[0][j][i] = 0;			//TODO lags here
-			}
-			orthoBuilder->z5[0][i] = 0;
-		}
+
+		orthoBuilder->zi[0] = Matrix<PL_NUM, Dynamic, Dynamic>::Zero( EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1 );
+
 		for( int i = 0; i < nx; ++i )			//TODO check indexes
 		{
-			orthoBuilder->zi[0][i * eq_num / 2 + 0][i * eq_num + 2] = 1.0;
-			orthoBuilder->zi[0][i * eq_num / 2 + 1][i * eq_num + 3] = 1.0;
-			orthoBuilder->zi[0][i * eq_num / 2 + 2][i * eq_num + 5] = 1.0;
-			orthoBuilder->zi[0][i * eq_num / 2 + 3][i * eq_num + 7] = 1.0;
-			orthoBuilder->zi[0][( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 2] = mesh[0].Nk1[i * eq_num + 1] / betta / 2.0 / dt + newmark_B[i * eq_num + 1];
-			orthoBuilder->zi[0][( i + 1 ) * eq_num / 2 - 1][( i + 1 ) * eq_num - 1] = -1.0;
+			orthoBuilder->zi[0]( i * eq_num + 2, i * eq_num / 2 + 0 ) = 1.0;
+			orthoBuilder->zi[0]( i * eq_num + 3, i * eq_num / 2 + 1 ) = 1.0;
+			orthoBuilder->zi[0]( i * eq_num + 5, i * eq_num / 2 + 2 ) = 1.0;
+			orthoBuilder->zi[0]( i * eq_num + 7, i * eq_num / 2 + 3 ) = 1.0;
+			orthoBuilder->zi[0]( ( i + 1 ) * eq_num - 2, ( i + 1 ) * eq_num / 2 - 1 ) = mesh[0].Nk1[i * eq_num + 1] / betta / 2.0 / dt + newmark_B[i * eq_num + 1];
+			orthoBuilder->zi[0]( ( i + 1 ) * eq_num - 1, ( i + 1 ) * eq_num / 2 - 1 ) = -1.0;
 
-			orthoBuilder->z5[0][i * eq_num + 8] = newmark_B[i * eq_num + 1] * mesh[0].Nk1[i * eq_num + 9] - newmark_B[i * eq_num + 4] * By0;
-			orthoBuilder->z5[0][i * eq_num + 9] = -mesh[0].Nk1[i * eq_num + 9];
+			orthoBuilder->zi[0]( i * eq_num + 8, varNum / 2 ) = newmark_B[i * eq_num + 1] * mesh[0].Nk1[i * eq_num + 9] - newmark_B[i * eq_num + 4] * By0;
+			orthoBuilder->zi[0]( i * eq_num + 9, varNum / 2 ) = -mesh[0].Nk1[i * eq_num + 9];
 		}
 
 		for( int i = 0; i < Km; ++i )
@@ -1540,14 +2170,14 @@ void Solver::dumpMatrA( int _x )
 	{
 		for( int j = 0; j < EQ_NUM * NUMBER_OF_LINES; ++j )
 		{
-			of << matr_A[i][j] << " ";
+			//of << matrA( i, j ) << " ";
 		}
 		of << endl;
 	}
 	of << endl;
 	for( int i = 0; i < EQ_NUM * NUMBER_OF_LINES; ++i )
 	{
-		of << vect_f[i] << endl;
+		of << vectF( i ) << endl;
 	}
 
 	of << hp << " " << B66 << " " << B12 << " " << B22 << " " << B11 << " " << dx << endl;

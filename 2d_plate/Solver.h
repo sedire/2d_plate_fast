@@ -14,6 +14,7 @@
 #include <iomanip>
 #include <omp.h>
 #include <Eigen/Eigen>
+#include <Eigen/Sparse>
 
 using std::cout;
 using std::vector;
@@ -103,19 +104,33 @@ private:
 
 	vector<VarVect> mesh;		//2d mesh for solution.
 
-	PL_NUM matr_A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES];
-	PL_NUM vect_f[EQ_NUM * NUMBER_OF_LINES];		//vector f on right part of nonlinear system at certain t and x
-	PL_NUM matr_A_prev[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES];	//to look back in Rgk
-	PL_NUM vect_f_prev[EQ_NUM * NUMBER_OF_LINES];		//vector f on right part of nonlinear system at certain t and x, to look back in Rgk
+	//PL_NUM matr_A[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES];
+	//PL_NUM vect_f[EQ_NUM * NUMBER_OF_LINES];		//vector f on right part of nonlinear system at certain t and x
+	//PL_NUM matr_A_prev[EQ_NUM * NUMBER_OF_LINES][EQ_NUM * NUMBER_OF_LINES];	//to look back in Rgk
+	//PL_NUM vect_f_prev[EQ_NUM * NUMBER_OF_LINES];		//vector f on right part of nonlinear system at certain t and x, to look back in Rgk
+
+	//Matrix<PL_NUM, Dynamic, Dynamic> matrA;
+	//Matrix<PL_NUM, Dynamic, Dynamic> matrAprev;
+	SparseMatrix<PL_NUM> matrA;
+	SparseMatrix<PL_NUM> matrAprev;
+	Matrix<PL_NUM, Dynamic, 1> vectF;
+	Matrix<PL_NUM, Dynamic, 1> vectFprev;
 
 	PL_NUM newmark_A[EQ_NUM * NUMBER_OF_LINES];
 	PL_NUM newmark_B[EQ_NUM * NUMBER_OF_LINES];
-	PL_NUM decompVect[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES];
+	//PL_NUM decompVect[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES];
 	PL_NUM decompVectOrtho[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES];
 
-	PL_NUM tempPhi[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES];
-	PL_NUM tempPhi2[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES];
-	PL_NUM Phi[ABM_STAGE_NUM][EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES];
+	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1> decompVect;
+	//Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1> decompVectOrtho;
+
+	//PL_NUM tempPhi[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES];
+	//PL_NUM tempPhi2[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES];
+	//PL_NUM Phi[ABM_STAGE_NUM][EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES];
+
+	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1> tempPhi;
+	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1> tempPhi2;
+	Matrix<PL_NUM, Dynamic, Dynamic>* Phi;
 
 	//Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES, RowMajor> Ma;
 	//bounds on the iterators of Matrix A
@@ -127,15 +142,26 @@ private:
 	PL_NUM rgkC1, rgkC2, rgkC3, rgkC4;
 	PL_NUM rgkD21, rgkD32, rgkD31, rgkD43, rgkD42, rgkD41;
 
-	PL_NUM rgkF1[NUM_OF_THREADS][EQ_NUM * NUMBER_OF_LINES];
-	PL_NUM rgkF2[NUM_OF_THREADS][EQ_NUM * NUMBER_OF_LINES];
-	PL_NUM rgkF3[NUM_OF_THREADS][EQ_NUM * NUMBER_OF_LINES];
-	PL_NUM rgkF4[NUM_OF_THREADS][EQ_NUM * NUMBER_OF_LINES];
+	//PL_NUM rgkF1[NUM_OF_THREADS][EQ_NUM * NUMBER_OF_LINES];
+	//PL_NUM rgkF2[NUM_OF_THREADS][EQ_NUM * NUMBER_OF_LINES];
+	//PL_NUM rgkF3[NUM_OF_THREADS][EQ_NUM * NUMBER_OF_LINES];
+	//PL_NUM rgkF4[NUM_OF_THREADS][EQ_NUM * NUMBER_OF_LINES];
+
+	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1> rgkF1;
+	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1> rgkF2;
+	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1> rgkF3;
+	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1> rgkF4;
 
 	//RungeKutta* rungeKutta;
 	OrthoBuilder* orthoBuilder;
 
+	HouseholderQR<Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1> > qr;
+	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1> qrA;
+	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES> qrQ;
+	//Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1> qrR;
+
 	void rgkCalc( int thrNum, int hom, const vector<PL_NUM>& x, PL_NUM* x1 );
+	void rgkCalc( const Matrix<PL_NUM, Dynamic, Dynamic>& x, Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1>* x1 );	
 
 	void calc_Newmark_AB( int _x, int mode );		//don't really know why we need this stuff with mode need to FIX
 	void calc_system( int _x );

@@ -42,6 +42,7 @@ public:
 	virtual void setParams();
 	virtual void orthonorm( int baseV, int n, PL_NUM* NtoOrt ) {};
 	virtual void orthonorm( int y, PL_NUM NtoOrt[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] ) {};	//this version should orthonorm all 
+	virtual void orthonorm( int y, Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1>* NtoOrt ) {};	//this version should orthonorm all 
 	virtual void buildSolution( vector<VarVect>* _mesh ) {};
 	virtual void flushO( int x );
 	virtual void setInitVects( const vector<PL_NUM>& N1, const vector<PL_NUM>& N2, const vector<PL_NUM>& N3, const vector<PL_NUM>& N4, const vector<PL_NUM>& N5 );
@@ -50,18 +51,20 @@ public:
 	inline virtual void setNextSolVects( int n, const PL_NUM decompVect[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] ) {};
 	inline virtual int checkOrtho( int n, 
 									PL_NUM vectSetOrtho[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES], 
-									PL_NUM vectSetOrig[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] ) { return 1; };
+									//const Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1>& vectSetOrtho,
+									const Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1>& vectSetOrig ) { return 1; };
 
 	inline PL_NUM getInfNorm( PL_NUM* vect, int vectSize );
-	void LUsolve( vector<vector<PL_NUM>>& AA, vector<PL_NUM>& ff, vector<PL_NUM>* xx );
+	//void LUsolve( vector<vector<PL_NUM>>& AA, vector<PL_NUM>& ff, vector<PL_NUM>* xx );
 	//PL_NUM zi[NODES_ON_Y][EQ_NUM * NUMBER_OF_LINES / 2][EQ_NUM * NUMBER_OF_LINES];
-	vector<vector<vector<PL_NUM> > > zi;
-	vector<vector<PL_NUM> > z5;//[NODES_ON_Y][EQ_NUM * NUMBER_OF_LINES];
+	//vector<vector<vector<PL_NUM> > > zi;
+	//vector<vector<PL_NUM> > z5;//[NODES_ON_Y][EQ_NUM * NUMBER_OF_LINES];
+	Matrix<PL_NUM, Dynamic, Dynamic>* zi;
 protected:
 	const int varNum;
 	const int Km;
-	vector<vector<PL_NUM>> LL;
-	vector<vector<PL_NUM>> UU;
+	//vector<vector<PL_NUM>> LL;
+	//vector<vector<PL_NUM>> UU;
 	vector<bool> orthoDone;
 	PL_NUM omega2[EQ_NUM * NUMBER_OF_LINES / 2];
 	PL_NUM omegaPar[NUM_OF_THREADS];
@@ -78,6 +81,7 @@ public:
 	~OrthoBuilderGodunov() {};
 	void orthonorm( int baseV, int n, PL_NUM* NtoOrt );
 	void orthonorm( int y, PL_NUM NtoOrt[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] );	//this version should orthonorm all 
+	void orthonorm( int y, Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1>* NtoOrt ) {};	//this version should orthonorm all 
 	void buildSolution( vector<VarVect>* _mesh );
 };
 
@@ -88,6 +92,7 @@ public:
 	~OrthoBuilderGSh() {};
 	void orthonorm( int baseV, int n, PL_NUM* NtoOrt );
 	void orthonorm( int y, PL_NUM NtoOrt[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] );	//this version should orthonorm all 
+	void orthonorm( int y, Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1>* NtoOrt );	//this version should orthonorm all 
 	void buildSolution( vector<VarVect>* _mesh );
 
 	void calcScalarProdsPar( int baseV, int n, vector<PL_NUM>* NtoOrt );
@@ -96,9 +101,14 @@ public:
 	inline void setNextSolVects( int n, const PL_NUM decompVect[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] );
 	inline int checkOrtho( int n, 
 							PL_NUM vectSetOrtho[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES], 
-							PL_NUM vectSetOrig[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] );
+							//const Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1>& vectSetOrtho,
+							const Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1>& vectSetOrig  );
 private:
 	OrthoBuilderGSh();
+
+	HouseholderQR<Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1> > qr;
+	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES> qrQ;
+	Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1> qrR;
 };
 
 #endif

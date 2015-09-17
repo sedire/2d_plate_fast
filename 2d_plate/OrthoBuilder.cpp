@@ -6,8 +6,6 @@ SolInfo::~SolInfo() {}
 void SolInfo::setup( int _varNum )
 {
 	o.resize( ( _varNum / 2 + 1 ) * ( _varNum / 2 + 2 ) / 2, 0.0 );		//the matrix is diagonal. such size is to store less  TODO: maybe I can make the size smaller by 1
-	//zi.resize( _varNum / 2, vector< PL_NUM>( _varNum, 0.0 ) );
-	//z5.resize( _varNum, 0.0 );
 	//C.resize( _varNum / 2, 0.0 );				//FIXME may be another size here
 }
 
@@ -19,21 +17,26 @@ void SolInfo::flushO()
 	}
 }
 
-OrthoBuilder::~OrthoBuilder() {}
+OrthoBuilder::~OrthoBuilder() { delete[] zi; }
 OrthoBuilder::OrthoBuilder( const int _varNum, const int _Km ) :
 	varNum( _varNum ),
 	Km( _Km ),
-	zi( NODES_ON_Y, vector<vector<PL_NUM> >( EQ_NUM * NUMBER_OF_LINES / 2, vector<PL_NUM>( EQ_NUM * NUMBER_OF_LINES, 0.0 ) ) ),
-	z5( NODES_ON_Y, vector<PL_NUM>( EQ_NUM * NUMBER_OF_LINES, 0.0 ) )
+	zi( 0 )
+	//zi( NODES_ON_Y, vector<vector<PL_NUM> >( EQ_NUM * NUMBER_OF_LINES / 2, vector<PL_NUM>( EQ_NUM * NUMBER_OF_LINES, 0.0 ) ) ),
+	//z5( NODES_ON_Y, vector<PL_NUM>( EQ_NUM * NUMBER_OF_LINES, 0.0 ) )
 {
-
+	zi = new Matrix<PL_NUM, Dynamic, Dynamic>[NODES_ON_Y];
+	for( int i = 0; i < NODES_ON_Y; ++i )
+	{
+		zi[i] = Matrix<PL_NUM, Dynamic, Dynamic>::Zero( EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1 );
+	}
 }
 
 OrthoBuilderGSh::OrthoBuilderGSh( int _varNum, int _Km ) :
 	OrthoBuilder( _varNum, _Km )
 {
-	LL.resize( varNum / 2, vector<PL_NUM>( varNum / 2, 0.0 ) );
-	UU.resize( varNum / 2, vector<PL_NUM>( varNum / 2, 0.0 ) );
+	//LL.resize( varNum / 2, vector<PL_NUM>( varNum / 2, 0.0 ) );
+	//UU.resize( varNum / 2, vector<PL_NUM>( varNum / 2, 0.0 ) );
 }
 
 OrthoBuilderGodunov::OrthoBuilderGodunov( int _varNum, int _Km ):
@@ -64,14 +67,6 @@ void OrthoBuilder::setParams()
 	}
 
 	orthoDone.resize( Km - 1, 0 );
-
-	for( int i = 0; i < NODES_ON_Y; ++i )
-	{
-		for( int j = 0; j < EQ_NUM * NUMBER_OF_LINES; ++j )
-		{
-			z5[i][j] = 0.0;
-		}
-	}
 }
 
 void OrthoBuilder::setInitVects( const vector<PL_NUM>& N1, const vector<PL_NUM>& N2, const vector<PL_NUM>& N3, const vector<PL_NUM>& N4, const vector<PL_NUM>& N5 )
@@ -92,132 +87,132 @@ void OrthoBuilder::resetOrthoDoneInfo()
 	}
 }
 
-void OrthoBuilder::LUsolve( vector<vector<PL_NUM>>& AA, vector<PL_NUM>& ff, vector<PL_NUM>* xx )
-{
-	if( AA.size() < 1 )
-	{
-		cout << "ERROR in LUsolve: AA.size() is less than 1\n";
-		return;
-	}
-	if( ff.size() < 1 )
-	{
-		cout << "ERROR in LUsolve: ff.size() is less than 1\n";
-		return;
-	}
-	if( xx == 0 )
-	{
-		cout << "ERROR in LUsolve: xx is null\n";
-		return;
-	}
-	size_t AAsize = AA.size();
-
-	vector<PL_NUM> storage( AAsize, 0.0 );
-	PL_NUM tmpNum = 0;
-
-	int nzRow = 0;
-	if( fabs( AA[0][0] ) < ALMOST_ZERO )		//TODO may be I can join this and the next block. I mean the checks on AA[i][j] != 0
-	{
-		//make AA[0][0] nonzero by changing the order of rows 
-		int nzFound = false;
-		for( nzRow; nzRow < AAsize; ++nzRow )
-		{
-			if( fabs( AA[nzRow][0] ) > ALMOST_ZERO )			//CHECK, may be it is better to put != 0 here
-			{
-				nzFound = true;
-				break;
-			}
-		}
-		if( nzFound == false )
-		{
-			cout << "ERROR in LUsolve: no nonzero elements found\n";
-			return;
-		}
-
-		for( int col = 0; col < AAsize; ++col )
-		{
-			storage[col] = AA[nzRow][col];
-			AA[nzRow][col] = AA[0][col];
-			AA[0][col] = storage[col];
-		}
-		tmpNum = ff[nzRow];
-		ff[nzRow] = ff[0];
-		ff[0] = tmpNum;
-	}
-	for( int i = 0; i < AAsize; ++i )
-	{
-		if( fabs( AA[i][i] ) < ALMOST_ZERO )				//TODO may be there should be fabs( ) < DELTA?
-		{
-			for( int row = i + 1; row < AAsize; ++row )
-			{
-				if( fabs( AA[row][i] ) > ALMOST_ZERO )			//TODO may be there should be fabs( ) > DELTA?
-				{
-					for( int col = 0; col < AAsize; ++col )
-					{
-						storage[col] = AA[row][col];			//TODO may be we don't need a whole vector here, just single number. (I mean storage)
-						AA[row][col] = AA[i][col];
-						AA[i][col] = storage[col];
-					}
-					tmpNum = ff[row];
-					ff[row] = ff[i];
-					ff[i] = tmpNum;
-					break;
-				}
-			}
-		}
-	}
-
-	for( int i = 0; i < AAsize; ++i )
-	{
-		if( fabs( AA[i][i] ) < ALMOST_ZERO )
-		{
-			cout << "WARNING in LUsolve: AA has less than ALMOST_ZERO on diagonal and may be singular\n";
-		}
-	}
-
-	//vector<vector<PL_NUM>> LL( AAsize, vector<PL_NUM>( AAsize, 0.0 ) );			//TODO here we can use less memory, UU and LL are trialgular
-	//vector<vector<PL_NUM>> UU( AAsize, vector<PL_NUM>( AAsize, 0.0 ) );			//TODO initialization of arrays is slow
-
-	//Crout's algorithm, theory is in book: Kincaid, Cheney - Numerical analysis: mathematics of scientific computing
-	for( int k = 0; k < AAsize; ++k )
-	{
-		UU[k][k] = 1;
-		for( int i = k; i < AAsize; ++i )
-		{
-			LL[i][k] = AA[i][k];
-			for( int s = 0; s <= k - 1; ++s )
-			{
-				LL[i][k] -= LL[i][s] * UU[s][k];
-			}
-		}
-		for( int j = k + 1; j < AAsize; ++j )
-		{
-			UU[k][j] = AA[k][j];
-			for( int s = 0; s <= k - 1; ++s )
-			{
-				UU[k][j] -= LL[k][s] * UU[s][j];
-			}
-			UU[k][j] /= LL[k][k];
-		}
-	}
-
-	//now we can find xx, by solving LL * zz = ff and then UU * x = zz; for theory look at the same book as for LU decomposition
-	for( int i = 0; i < AAsize; ++i )
-	{
-		(*xx)[i] = ff[i];
-		for( int  j = 0; j <= i - 1; ++j )
-		{
-			(*xx)[i] -= LL[i][j] * (*xx)[j];
-		}
-		(*xx)[i] /= LL[i][i];
-	}
-	for( int i = AAsize - 1; i >= 0; --i )
-	{
-		for( int  j = i + 1; j < AAsize; ++j )
-		{
-			(*xx)[i] -= UU[i][j] * (*xx)[j];
-		}
-	}
-}
+//void OrthoBuilder::LUsolve( vector<vector<PL_NUM>>& AA, vector<PL_NUM>& ff, vector<PL_NUM>* xx )
+//{
+//	if( AA.size() < 1 )
+//	{
+//		cout << "ERROR in LUsolve: AA.size() is less than 1\n";
+//		return;
+//	}
+//	if( ff.size() < 1 )
+//	{
+//		cout << "ERROR in LUsolve: ff.size() is less than 1\n";
+//		return;
+//	}
+//	if( xx == 0 )
+//	{
+//		cout << "ERROR in LUsolve: xx is null\n";
+//		return;
+//	}
+//	size_t AAsize = AA.size();
+//
+//	vector<PL_NUM> storage( AAsize, 0.0 );
+//	PL_NUM tmpNum = 0;
+//
+//	int nzRow = 0;
+//	if( fabs( AA[0][0] ) < ALMOST_ZERO )		//TODO may be I can join this and the next block. I mean the checks on AA[i][j] != 0
+//	{
+//		//make AA[0][0] nonzero by changing the order of rows 
+//		int nzFound = false;
+//		for( nzRow; nzRow < AAsize; ++nzRow )
+//		{
+//			if( fabs( AA[nzRow][0] ) > ALMOST_ZERO )			//CHECK, may be it is better to put != 0 here
+//			{
+//				nzFound = true;
+//				break;
+//			}
+//		}
+//		if( nzFound == false )
+//		{
+//			cout << "ERROR in LUsolve: no nonzero elements found\n";
+//			return;
+//		}
+//
+//		for( int col = 0; col < AAsize; ++col )
+//		{
+//			storage[col] = AA[nzRow][col];
+//			AA[nzRow][col] = AA[0][col];
+//			AA[0][col] = storage[col];
+//		}
+//		tmpNum = ff[nzRow];
+//		ff[nzRow] = ff[0];
+//		ff[0] = tmpNum;
+//	}
+//	for( int i = 0; i < AAsize; ++i )
+//	{
+//		if( fabs( AA[i][i] ) < ALMOST_ZERO )				//TODO may be there should be fabs( ) < DELTA?
+//		{
+//			for( int row = i + 1; row < AAsize; ++row )
+//			{
+//				if( fabs( AA[row][i] ) > ALMOST_ZERO )			//TODO may be there should be fabs( ) > DELTA?
+//				{
+//					for( int col = 0; col < AAsize; ++col )
+//					{
+//						storage[col] = AA[row][col];			//TODO may be we don't need a whole vector here, just single number. (I mean storage)
+//						AA[row][col] = AA[i][col];
+//						AA[i][col] = storage[col];
+//					}
+//					tmpNum = ff[row];
+//					ff[row] = ff[i];
+//					ff[i] = tmpNum;
+//					break;
+//				}
+//			}
+//		}
+//	}
+//
+//	for( int i = 0; i < AAsize; ++i )
+//	{
+//		if( fabs( AA[i][i] ) < ALMOST_ZERO )
+//		{
+//			cout << "WARNING in LUsolve: AA has less than ALMOST_ZERO on diagonal and may be singular\n";
+//		}
+//	}
+//
+//	//vector<vector<PL_NUM>> LL( AAsize, vector<PL_NUM>( AAsize, 0.0 ) );			//TODO here we can use less memory, UU and LL are trialgular
+//	//vector<vector<PL_NUM>> UU( AAsize, vector<PL_NUM>( AAsize, 0.0 ) );			//TODO initialization of arrays is slow
+//
+//	//Crout's algorithm, theory is in book: Kincaid, Cheney - Numerical analysis: mathematics of scientific computing
+//	for( int k = 0; k < AAsize; ++k )
+//	{
+//		UU[k][k] = 1;
+//		for( int i = k; i < AAsize; ++i )
+//		{
+//			LL[i][k] = AA[i][k];
+//			for( int s = 0; s <= k - 1; ++s )
+//			{
+//				LL[i][k] -= LL[i][s] * UU[s][k];
+//			}
+//		}
+//		for( int j = k + 1; j < AAsize; ++j )
+//		{
+//			UU[k][j] = AA[k][j];
+//			for( int s = 0; s <= k - 1; ++s )
+//			{
+//				UU[k][j] -= LL[k][s] * UU[s][j];
+//			}
+//			UU[k][j] /= LL[k][k];
+//		}
+//	}
+//
+//	//now we can find xx, by solving LL * zz = ff and then UU * x = zz; for theory look at the same book as for LU decomposition
+//	for( int i = 0; i < AAsize; ++i )
+//	{
+//		(*xx)[i] = ff[i];
+//		for( int  j = 0; j <= i - 1; ++j )
+//		{
+//			(*xx)[i] -= LL[i][j] * (*xx)[j];
+//		}
+//		(*xx)[i] /= LL[i][i];
+//	}
+//	for( int i = AAsize - 1; i >= 0; --i )
+//	{
+//		for( int  j = i + 1; j < AAsize; ++j )
+//		{
+//			(*xx)[i] -= UU[i][j] * (*xx)[j];
+//		}
+//	}
+//}
 
 
 void OrthoBuilderGodunov::orthonorm( int baseV, int n, PL_NUM* NtoOrt )
@@ -269,16 +264,12 @@ void OrthoBuilderGodunov::buildSolution( vector<VarVect>* _mesh )
 
 inline void OrthoBuilderGSh::setNextSolVects( int n, const PL_NUM decompVect[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] )
 {
-	for( int vNum = 0; vNum < EQ_NUM * NUMBER_OF_LINES / 2; ++vNum )
+	for( int vNum = 0; vNum < EQ_NUM * NUMBER_OF_LINES / 2 + 1; ++vNum )
 	{
 		for( int j = 0; j < EQ_NUM * NUMBER_OF_LINES; ++j )
 		{
-			zi[n + 1][vNum][j] = decompVect[vNum][j];
+			zi[n + 1]( j, vNum ) = decompVect[vNum][j];
 		}
-	}
-	for( int j = 0; j < EQ_NUM * NUMBER_OF_LINES; ++j )
-	{
-		z5[n + 1][j] = decompVect[EQ_NUM * NUMBER_OF_LINES / 2][j];
 	}
 }
 
@@ -304,7 +295,8 @@ inline PL_NUM OrthoBuilder::getInfNorm( PL_NUM* vect, int vectSize )
 
 inline int OrthoBuilderGSh::checkOrtho( int n, 
 									PL_NUM vectSetOrtho[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES], 
-									PL_NUM vectSetOrig[EQ_NUM * NUMBER_OF_LINES / 2 + 1][EQ_NUM * NUMBER_OF_LINES] )
+									//const Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1>& vectSetOrtho,
+									const Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1>& vectSetOrig  )
 {
 	int ret = 0;
 	PL_NUM eps = ORTHONORM_CHECK_EPS;
@@ -312,8 +304,9 @@ inline int OrthoBuilderGSh::checkOrtho( int n,
 	//check for the main basis vectors
 	for( int vNum = 1; vNum < EQ_NUM * NUMBER_OF_LINES / 2; ++vNum )
 	{
-		if( getInfNorm( vectSetOrtho[vNum], EQ_NUM * NUMBER_OF_LINES ) * solInfoMap[n + 1].o[vNum * ( vNum + 1 ) / 2 + vNum] <
-			eps * getInfNorm( vectSetOrig[vNum], EQ_NUM * NUMBER_OF_LINES ) )
+		if( getInfNorm( vectSetOrtho[vNum], EQ_NUM * NUMBER_OF_LINES )
+			/*vectSetOrtho.col( vNum ).lpNorm<Infinity>() * solInfoMap[n + 1].o[vNum * ( vNum + 1 ) / 2 + vNum]*/ <
+			eps * vectSetOrig.col( vNum ).lpNorm<Infinity>() )
 		{
 			ret = 1;
 			break;
@@ -322,8 +315,9 @@ inline int OrthoBuilderGSh::checkOrtho( int n,
 
 	if( ret != 1 )	//check for the vector of particular solution
 	{
-		if( getInfNorm( vectSetOrtho[EQ_NUM * NUMBER_OF_LINES / 2], EQ_NUM * NUMBER_OF_LINES ) <
-			eps * getInfNorm( vectSetOrig[EQ_NUM * NUMBER_OF_LINES / 2], EQ_NUM * NUMBER_OF_LINES ) )
+		if( getInfNorm( vectSetOrtho[EQ_NUM * NUMBER_OF_LINES / 2], EQ_NUM * NUMBER_OF_LINES )
+			/*vectSetOrtho.col( varNum / 2 ).lpNorm<Infinity>()*/ <
+			eps * vectSetOrig.col( varNum / 2 ).lpNorm<Infinity>() )
 		{
 			ret = 1;
 		}
@@ -345,7 +339,7 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are
 		{
 			norm += NtoOrt[i] * NtoOrt[i];
 		}
-		norm = sqrtf( norm );
+		norm = sqrtl( norm );
 		for( int i = 0; i < varNum / 2; ++i )
 		{
 			omega2[i] = 0.0;
@@ -356,11 +350,11 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are
 			for( int k = 0; k < varNum; ++k )
 			{
 				//solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += solInfoMap[n + 1].zi[baseV][k] * solInfoMap[n + 1].zi[bvIt][k];		
-				solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += NtoOrt[k] * zi[n + 1][bvIt][k];			
+				solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += NtoOrt[k] * zi[n + 1]( k, bvIt );			
 			}
 			for( int k = 0; k < varNum; ++k )
 			{
-				NtoOrt[k] -= solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] * zi[n + 1][bvIt][k];
+				NtoOrt[k] -= solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] * zi[n + 1]( k, bvIt );
 			}
 		}
 
@@ -374,7 +368,7 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are
 		{
 			for( int k = 0; k < varNum; ++k )
 			{
-				zi[n + 1][baseV][k] = NtoOrt[k] / solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV];
+				zi[n + 1]( k, baseV ) = NtoOrt[k] / solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + baseV];
 			}
 		}
 		else
@@ -384,11 +378,11 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are
 			{
 				for( int k = 0; k < varNum; ++k )
 				{
-					omega2[bvIt] += NtoOrt[k] * zi[n + 1][bvIt][k];
+					omega2[bvIt] += NtoOrt[k] * zi[n + 1]( k, bvIt );
 				}
 				for( int k = 0; k < varNum; ++k )
 				{
-					NtoOrt[k] -= omega2[bvIt] * zi[n + 1][bvIt][k];
+					NtoOrt[k] -= omega2[bvIt] * zi[n + 1]( k, bvIt );
 				}
 			}
 			for( int k = 0; k < varNum; ++k )
@@ -398,7 +392,7 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are
 			omega2[baseV] = sqrtl( fabs( omega2[baseV] ) );
 			for( int k = 0; k < varNum; ++k )
 			{
-				zi[n + 1][baseV][k] = NtoOrt[k] / omega2[baseV];
+				zi[n + 1]( k, baseV ) = NtoOrt[k] / omega2[baseV];
 				//	(*NtoOrt)[k] = solInfoMap[n + 1].zi[baseV][k];
 			}
 			for( int bvIt = 0; bvIt < baseV; ++bvIt )
@@ -415,16 +409,16 @@ void OrthoBuilderGSh::orthonorm( int baseV, int n, PL_NUM* NtoOrt )		//baseV are
 		{
 			for( int k = 0; k < varNum; ++k )
 			{
-				solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += NtoOrt[k] * zi[n + 1][bvIt][k];
+				solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] += NtoOrt[k] * zi[n + 1]( k, bvIt );
 			}
 			for( int k = 0; k < varNum; ++k )
 			{
-				NtoOrt[k] -= solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] * zi[n + 1][bvIt][k];
+				NtoOrt[k] -= solInfoMap[n + 1].o[baseV * ( baseV + 1 ) / 2 + bvIt] * zi[n + 1]( k, bvIt );
 			}
 		}
 		for( int k = 0; k < varNum; ++k )
 		{
-			z5[n + 1][k] = NtoOrt[k];
+			zi[n + 1]( k, varNum / 2 ) = NtoOrt[k];
 		}
 	}
 }
@@ -442,7 +436,7 @@ void OrthoBuilderGSh::orthonorm( int y, PL_NUM NtoOrt[EQ_NUM * NUMBER_OF_LINES /
 		{
 			norm += NtoOrt[baseVNum][i] * NtoOrt[baseVNum][i];
 		}
-		norm = sqrtf( norm );
+		norm = sqrtl( norm );
 		for( int i = 0; i < varNum / 2; ++i )
 		{
 			omega2[i] = 0.0;
@@ -518,6 +512,30 @@ void OrthoBuilderGSh::orthonorm( int y, PL_NUM NtoOrt[EQ_NUM * NUMBER_OF_LINES /
 	}
 }
 
+void OrthoBuilderGSh::orthonorm( int y, Matrix<PL_NUM, EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1>* NtoOrt )
+{
+	qr.compute( *NtoOrt );
+
+	qrQ = qr.householderQ();
+	( *NtoOrt ) = qrQ.block<EQ_NUM * NUMBER_OF_LINES, EQ_NUM * NUMBER_OF_LINES / 2 + 1>( 0, 0 );
+	
+	qrR = qr.matrixQR().triangularView<Upper>();
+
+	( *NtoOrt ).col( varNum / 2 ) *= qrR( varNum / 2, varNum / 2 );
+
+	for( int baseVNum = 0; baseVNum < varNum / 2; ++baseVNum )
+	{
+		for( int bvIt = 0; bvIt < baseVNum + 1; ++bvIt )
+		{
+			solInfoMap[y + 1].o[baseVNum * ( baseVNum + 1 ) / 2 + bvIt] = qrR( bvIt, baseVNum );
+		}
+	}
+	for( int bvIt = 0; bvIt < varNum / 2; ++bvIt )
+	{
+		solInfoMap[y + 1].o[varNum / 2 * ( varNum / 2 + 1 ) / 2 + bvIt] = qrR( bvIt, varNum / 2 );
+	}
+}
+
 void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 {
 	static const int msize = NUMBER_OF_LINES * EQ_NUM / 2;
@@ -549,17 +567,17 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 	{
 		for( int vNum = 0; vNum < varNum / 2; ++vNum )
 		{
-			M( line * _a + 0, vNum ) = zi[Km - 1][vNum][line * EQ_NUM + 0];		//TODO potential lags here!
-			M( line * _a + 1, vNum ) = zi[Km - 1][vNum][line * EQ_NUM + 1];
-			M( line * _a + 2, vNum ) = zi[Km - 1][vNum][line * EQ_NUM + 4];
-			M( line * _a + 3, vNum ) = zi[Km - 1][vNum][line * EQ_NUM + 6];
-			M( line * _a + 4, vNum ) = zi[Km - 1][vNum][line * EQ_NUM + 8];
+			M( line * _a + 0, vNum ) = zi[Km - 1]( line * EQ_NUM + 0, vNum );		//TODO potential lags here!
+			M( line * _a + 1, vNum ) = zi[Km - 1]( line * EQ_NUM + 1, vNum );
+			M( line * _a + 2, vNum ) = zi[Km - 1]( line * EQ_NUM + 4, vNum );
+			M( line * _a + 3, vNum ) = zi[Km - 1]( line * EQ_NUM + 6, vNum );
+			M( line * _a + 4, vNum ) = zi[Km - 1]( line * EQ_NUM + 8, vNum );
 		}
-		f11( line * _a + 0 ) = -z5[Km - 1][line * EQ_NUM + 0];
-		f11( line * _a + 1 ) = -z5[Km - 1][line * EQ_NUM + 1];
-		f11( line * _a + 2 ) = -z5[Km - 1][line * EQ_NUM + 4];
-		f11( line * _a + 3 ) = -z5[Km - 1][line * EQ_NUM + 6];
-		f11( line * _a + 4 ) = -z5[Km - 1][line * EQ_NUM + 8];
+		f11( line * _a + 0 ) = -zi[Km - 1]( line * EQ_NUM + 0, varNum / 2 );
+		f11( line * _a + 1 ) = -zi[Km - 1]( line * EQ_NUM + 1, varNum / 2 );
+		f11( line * _a + 2 ) = -zi[Km - 1]( line * EQ_NUM + 4, varNum / 2 );
+		f11( line * _a + 3 ) = -zi[Km - 1]( line * EQ_NUM + 6, varNum / 2 );
+		f11( line * _a + 4 ) = -zi[Km - 1]( line * EQ_NUM + 8, varNum / 2 );
 	}
 
 	//EigenSolver<Matrix<PL_NUM, msize, msize, RowMajor>> es( M );
@@ -635,10 +653,9 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 		(*_mesh)[Km - 1].Nk1[i] = 0.0;
 		for( int vNum = 0; vNum < varNum / 2; ++vNum )
 		{
-			(*_mesh)[Km - 1].Nk1[i] += Cx1[vNum] * zi[Km - 1][vNum][i];			//FIXME lags may happen here
+			(*_mesh)[Km - 1].Nk1[i] += Cx1[vNum] * zi[Km - 1]( i, vNum );			//FIXME lags may happen here
 		}
-		/*(*_mesh)[_x].Nk1[i] += solInfoMap[_x].z5[i];*/
-		(*_mesh)[Km - 1].Nk1[i] += z5[Km - 1][i];
+		(*_mesh)[Km - 1].Nk1[i] += zi[Km - 1]( i, varNum / 2 );
 	}
 
 	//all the other points:
@@ -675,10 +692,10 @@ void OrthoBuilderGSh::buildSolution( vector<VarVect>* _mesh )
 			(*_mesh)[_x].Nk1[i] = 0.0;
 			for( int vNum = 0; vNum < varNum / 2; ++vNum )
 			{
-				(*_mesh)[_x].Nk1[i] += Cx[vNum] * zi[_x][vNum][i];			//FIXME lags may happen here
+				(*_mesh)[_x].Nk1[i] += Cx[vNum] * zi[_x]( i, vNum );			//FIXME lags may happen here
 			}
 			/*(*_mesh)[_x].Nk1[i] += solInfoMap[_x].z5[i];*/
-			(*_mesh)[_x].Nk1[i] += z5[_x][i];
+			(*_mesh)[_x].Nk1[i] += zi[_x]( i, varNum / 2 );
 		}
 	}
 
