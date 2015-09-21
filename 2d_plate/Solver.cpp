@@ -253,7 +253,7 @@ void Solver::calc_system( int _x )
 {
 	PL_NUM h = hp;
 	PL_NUM Btdt = 2 * dt * betta;
-	PL_NUM Jx = J0 * exp( -( cur_t ) / tauC ) * sin( omega * ( cur_t ) );  
+	PL_NUM Jx = J0;// * exp( -( cur_t ) / tauC ) * sin( omega * ( cur_t ) );  
 	PL_NUM Pimp = 0.0;//p0 * sin( 100.0 * _MMM_PI * ( cur_t ) );
 
 	//strip load
@@ -423,8 +423,8 @@ void Solver::calc_system( int _x )
 			* mesh[_x].Nk[8 + i * eq_num] + 2.0 * betta * dt * ( 8.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num]
 			- 2.0 * mesh[_x].Nk[9 + i * eq_num] * ( 4.0 * mesh[_x].Nk[9 + r * eq_num] + 3.0 * newmark_B[1 + r * eq_num] * eps_x_0 * mu * mesh[_x].Nk[8 + i * eq_num] )
 			+ 3.0 * dx * mu * ( 4.0 * newmark_A[0 + i * eq_num] * rho + newmark_B[0 + i * eq_num] * By1 * By1 * sigma_z ) ) ) )
-			/ ( 24.0 * betta * dt * dx * mu )
-			- ( B11 * alpha1 + B12 * alpha2 ) * h * solThermoDx[THERM_NODE_MULT];	// thermal component
+			/ ( 24.0 * betta * dt * dx * mu );
+			//- ( B11 * alpha1 + B12 * alpha2 ) * h * solThermoDx[THERM_NODE_MULT];	// thermal component
 
 	vect_f[3 + i * eq_num] = ( 1.0 / ( 4.0 * betta * B22 * dt * dx ) ) * ( eps_x_0 * ( 2.0 * B12 * h * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[0 + r * eq_num]
 			- 4.0 * dx * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[3 + i * eq_num]
@@ -637,8 +637,8 @@ void Solver::calc_system( int _x )
 				 * mesh[_x].Nk[8 + i * eq_num] + 2.0 * betta * dt * ( -8.0 * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num]
 				 + mesh[_x].Nk[9 + i * eq_num] * ( 8.0 * mesh[_x].Nk[9 + j * eq_num] + 6.0 * newmark_B[1 + j * eq_num] * eps_x_0 * mu * mesh[_x].Nk[8 + i * eq_num] )
 				 + 3.0 * dx * mu * ( 4.0 * newmark_A[0 + i * eq_num] * rho + newmark_B[0 + i * eq_num] * By1 * By1 * sigma_z ) ) ) )
-				 / ( 24.0 * betta * dt * dx * mu )
-				 - ( B11 * alpha1 + B12 * alpha2 ) * h * ( -solThermoDx[THERM_NODE_MULT] );	// thermal component
+				 / ( 24.0 * betta * dt * dx * mu );
+				 //- ( B11 * alpha1 + B12 * alpha2 ) * h * ( -solThermoDx[THERM_NODE_MULT] );	// thermal component
 
 	vect_f[3 + i * eq_num] = ( 1.0 / ( 4.0 * B22 * betta * dt * dx ) ) * ( -4.0 * newmark_B[3 + i * eq_num] * betta * dt * dx * eps_x_0 * mesh[_x].Nk[9 + i * eq_num]
 				 * mesh[_x].Nk[8 + i * eq_num]
@@ -884,8 +884,8 @@ void Solver::calc_system( int _x )
 			- ( By1 * eps_x_0 * h * ( newmark_B[4 + r * eq_num] - newmark_B[4 + j * eq_num] + ( mesh[_x].Nk[4 + r * eq_num] - mesh[_x].Nk[4 + j * eq_num] ) / ( 2 * betta * dt ) ) 
 			* mesh[_x].Nk[8 + i * eq_num] ) / ( 4 * dx ) - ( By1 * eps_x_0 * h * mesh[_x].Nk[4 + j * eq_num] * mesh[_x].Nk[8 + i * eq_num] ) / ( 8 * betta * dt * dx )
 			- mesh[_x].Nk[9 + i * eq_num] * ( ( h * ( mesh[_x].Nk[9 + r * eq_num] - mesh[_x].Nk[9 + j * eq_num] ) ) / ( 2 * dx * mu ) + ( eps_x_0 * h * ( newmark_B[1 + r * eq_num] 
-			- newmark_B[1 + j * eq_num] + ( mesh[_x].Nk[1 + r * eq_num] - mesh[_x].Nk[1 + j * eq_num] ) / ( 2 * betta * dt ) ) * mesh[_x].Nk[8 + i * eq_num] ) / ( 2 * dx ) )
-			- ( B11 * alpha1 + B12 * alpha2 ) * h * dTdx;	// thermal component
+			- newmark_B[1 + j * eq_num] + ( mesh[_x].Nk[1 + r * eq_num] - mesh[_x].Nk[1 + j * eq_num] ) / ( 2 * betta * dt ) ) * mesh[_x].Nk[8 + i * eq_num] ) / ( 2 * dx ) );
+			//- ( B11 * alpha1 + B12 * alpha2 ) * h * dTdx;	// thermal component
 
 		vect_f[3 + i * eq_num] = h * Jx * mesh[_x].Nk[9 + i * eq_num] - ( ( h * rho ) / ( betta * dt * dt ) + ( h *sigma_x * mesh[_x].Nk[9 + i * eq_num] * mesh[_x].Nk[9 + i * eq_num] )
 			/ ( 2 * betta * dt ) ) * mesh[_x].Nk[1 + i * eq_num] + h * rho * ( newmark_A[1 + i * eq_num] + mesh[_x].Nk[1 + i * eq_num] / ( betta * dt * dt ) ) 

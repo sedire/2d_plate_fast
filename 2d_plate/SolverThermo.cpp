@@ -171,7 +171,7 @@ int SolverThermoWElectrodes::updateSystem()
 {
 	CC = CC1;
 	CCel = CCel1;
-	Jx = J0 * exp( -curTime / tauExp ) * sin( M_PI * curTime / tauSin );
+	Jx = J0;// * exp( -curTime / tauExp ) * sin( M_PI * curTime / tauSin );
 	CC1 = Jx * Jx / sigmaX / rho / cc;
 	CCel1 = Jx * Jx / sigmaEl / rhoEl / ccEl; 
 
