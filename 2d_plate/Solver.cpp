@@ -2,8 +2,8 @@
 
 Solver::Solver():
 	E1( 102970000000 ),
-	//E2( 7550000000 ),
-	E2( 102970000000 ),
+	E2( 7550000000 ),
+	//E2( 102970000000 ),
 	nu21( 0.3 ),
 	nu23( 0.3 ),
 	rho( 1594 ),
@@ -14,14 +14,15 @@ Solver::Solver():
 	B12( nu21 * E2 * E1 / ( E1 - nu21 * nu21 * E2 ) ),
 	B66( G23 ),
 
-	By0( 0.0 ),
+	By0( 2.0 ),
 	By1( 2.0 * By0 ),
 	By2( 0.0 ),
 
 	betta( 0.25 ),
 
 	mu( 0.00000125664 ),
-	sigma_x( 39000 ),
+	//sigma_x( 39000 ),
+	sigma_x( 3900000 ),
 	sigma_x_mu( sigma_x * mu ),
 	sigma_y( sigma_x * 0.0001 ),
 	//sigma_y( sigma_x ),
@@ -29,11 +30,11 @@ Solver::Solver():
 	sigma_z( sigma_y ),
 
 	//J0( 1000000.0 ),
-	J0( 0.0 ),
+	J0( 1e6 ),
 	tauC( 0.01 ),
 	tauP( 0.01 ),
-	p0( 100.0 ),
-	//p0( 30000.0 ),
+	//p0( 100.0 ),
+	p0( 2000.0 ),
 	impRadSq( 64.0 ),
 
 	eps_0( 0.000000000008854 ),
@@ -41,8 +42,8 @@ Solver::Solver():
 	eps_x_0( eps_x - eps_0 ),
 
 	hp( 0.0021 ),
-	//ap( 0.1524 * 2.0 ),		//len in x-dir
-	ap( 0.1524 ),		//len in x-dir
+	ap( 0.1524 * 2.0 ),		//len in x-dir
+	//ap( 0.1524 ),		//len in x-dir
 	bp( 0.1524 ),		//width in y-dir
 
 	Km( NODES_ON_Y ),
@@ -684,8 +685,9 @@ void Solver::calc_system( int _x )
 {
 	PL_NUM h = hp;
 	PL_NUM Btdt = 2 * dt * betta;
-	PL_NUM Jx = J0 * exp( -( cur_t ) / tauC ) * sin( _MMM_PI / tauC * ( cur_t ) );  
-	PL_NUM Pimp = p0 * sin( 100.0 * _MMM_PI * ( cur_t ) );
+	//PL_NUM Jx = J0 * exp( -( cur_t ) / tauC ) * sin( _MMM_PI / tauC * ( cur_t ) );  
+	PL_NUM Jx = J0 * sin( _MMM_PI / tauC * ( cur_t ) );  
+	PL_NUM Pimp = p0 * sin( _MMM_PI / tauP * ( cur_t ) );
 
 	//strip load
 	//PL_NUM cur_X = _x * dy - bp / 2.0;
@@ -1126,7 +1128,7 @@ void Solver::calc_system( int _x )
 	for( int i = 1; i < nx - 1; ++i )
 	{
 		Pimp = 0.0;
-		Pimp = p0 * sin( 100.0 * _MMM_PI * ( cur_t ) );
+		Pimp = p0 * sin( _MMM_PI / tauP * ( cur_t ) );
 		//PL_NUM rad2 = ( ( Km - 1 ) / 2 - _x ) * dy * ( ( Km - 1 ) / 2 - _x ) * dy + ( ( nx - 1 ) / 2 - i ) * dx * ( ( nx - 1 ) / 2 - i ) * dx;
 		//if( rad2 < Rad2 && cur_t < tauP )
 		//{
@@ -1892,7 +1894,8 @@ void Solver::do_step()
 {	
 	int cont = 1;
 	prevVectDiff = -1.0;
-	while( cont == 1 )
+	newtonIt = 0;
+	while( cont == 1 && newtonIt < 10 )
 	{
 		cout << " = walk\n";
 		calc_Newmark_AB( 0, 1 );
@@ -1921,13 +1924,14 @@ void Solver::do_step()
 		}
 		walkthrough( 0 );
 		cont = checkConv();
+		++newtonIt;
 	}
 	updateDerivs();
 }
 
 int Solver::checkConv()
 {
-	//if( newtonIt >= maxNewtonIt )		//stopping criterion with a fixed number of iterations
+	//if( newtonIt >= maxNewtonIt - 1 )		//stopping criterion with a fixed number of iterations
 	//{
 	//	newtonIt = 0;
 	//	return 0;
@@ -1937,33 +1941,33 @@ int Solver::checkConv()
 	//	int i = 15;
 	//	cout << " newton iteration " << newtonIt << endl;
 	//	cout << " divergence in " << Km / 2 << " " << i << " " << fabsl( ( mesh[Km / 2].Nk1[i] - mesh[Km / 2].Nk[i] ) / mesh[Km / 2].Nk[i] ) << endl;
-	//	++newtonIt;
+	//	//++newtonIt;
 	//	return 1;
 	//}
 
-	for( int x = 0; x < Km; ++x ) //old and weird stopping criterion. I think it works only because 1-2 iterations are almost always suffice. otherwise this doed not make sense to me
-	{
-		for( int i = 0; i < varNum; ++i )
-		{
-			if( mesh[x].Nk[i] != 0.0 )
-			{
-				if( fabsl( ( mesh[x].Nk1[i] - mesh[x].Nk[i] ) / mesh[x].Nk[i] ) < ALMOST_ZERO )
-				{
-					cout << " divergence " << x << " " << i << " " << fabsl( ( mesh[x].Nk1[i] - mesh[x].Nk[i] ) / mesh[x].Nk[i] ) << " delta is " << ALMOST_ZERO << endl;
-					return 0;
-				}
-			}
-			else
-			{
-				if( fabsl( mesh[x].Nk1[i] ) < ALMOST_ZERO )
-				{
-					cout << " divergence " << x << " " << i << " " << fabsl( mesh[x].Nk1[i] ) << " delta is " << ALMOST_ZERO << endl;
-					return 0;
-				}
-			}
-		}
-	}
-	return 1;
+	//for( int x = 0; x < Km; ++x ) //old and weird stopping criterion. I think it works only because 1-2 iterations are almost always suffice. otherwise this doed not make sense to me
+	//{
+	//	for( int i = 0; i < varNum; ++i )
+	//	{
+	//		if( mesh[x].Nk[i] != 0.0 )
+	//		{
+	//			if( fabsl( ( mesh[x].Nk1[i] - mesh[x].Nk[i] ) / mesh[x].Nk[i] ) < ALMOST_ZERO )
+	//			{
+	//				cout << " divergence " << x << " " << i << " " << fabsl( ( mesh[x].Nk1[i] - mesh[x].Nk[i] ) / mesh[x].Nk[i] ) << " delta is " << ALMOST_ZERO << endl;
+	//				return 0;
+	//			}
+	//		}
+	//		else
+	//		{
+	//			if( fabsl( mesh[x].Nk1[i] ) < ALMOST_ZERO )
+	//			{
+	//				cout << " divergence " << x << " " << i << " " << fabsl( mesh[x].Nk1[i] ) << " delta is " << ALMOST_ZERO << endl;
+	//				return 0;
+	//			}
+	//		}
+	//	}
+	//}
+	//return 1;
 
 	//PL_NUM maxDiff = fabsl( mesh[0].Nk1[0] - mesh[0].Nk[0] );
 	//for( int y = 1; y < Km; ++y )
@@ -1994,30 +1998,35 @@ int Solver::checkConv()
 	//	prevVectDiff = maxDiff;
 	//}
 
-	//for( int y = 0; y < Km; ++y ) //new stopping criterion: the max of the absolute value of the relative difference + just the abs value check
-	//{
-	//	for( int i = 0; i < varNum; ++i )
-	//	{
-	//		if( fabsl( mesh[y].Nk[i] ) > ALMOST_ZERO * 1000.0 )
-	//		{
-	//			if( fabsl( ( mesh[y].Nk1[i] - mesh[y].Nk[i] ) / mesh[y].Nk[i] ) > QUASILIN_CHECK && fabsl( mesh[y].Nk1[i] - mesh[y].Nk[i] ) > QUASILIN_CHECK )
-	//			{
-	//				cout << " :: divergence " << y << " " << i << " " << fabsl( ( mesh[y].Nk1[i] - mesh[y].Nk[i] ) / mesh[y].Nk[i] ) << " delta is " << QUASILIN_CHECK << endl;
-	//				cout << " :: " << mesh[y].Nk1[i] << " " << mesh[y].Nk[i] << endl;
-	//				return 1;
-	//			}
-	//		}
-	//		else
-	//		{
-	//			if( fabsl( mesh[y].Nk1[i] ) > ALMOST_ZERO * 1000.0 )
-	//			{
-	//				cout << " :: divergence -- 0 -- " << y << " " << i << " " << fabsl( mesh[y].Nk1[i] ) << " delta is " << QUASILIN_CHECK << endl;
-	//				return 1;
-	//			}
-	//		}
-	//	}
-	//}
-	//return 0;
+	for( int y = 0; y < Km; ++y ) //new stopping criterion: the max of the absolute value of the relative difference + just the abs value check
+	{
+		for( int i = 0; i < varNum; ++i )
+		{
+			if( fabsl( mesh[y].Nk[i] ) > ALMOST_ZERO )
+			{
+				if( fabsl( ( mesh[y].Nk1[i] - mesh[y].Nk[i] ) / mesh[y].Nk[i] ) > QUASILIN_EPS 
+					&& fabsl( mesh[y].Nk1[i] - mesh[y].Nk[i] ) > QUASILIN_CHECK )
+				{
+					cout << "\t:: divergence-1 at " << y << " " << i << " : " << fabsl( ( mesh[y].Nk1[i] - mesh[y].Nk[i] ) / mesh[y].Nk[i] )
+							<< " " <<  fabsl( mesh[y].Nk1[i] - mesh[y].Nk[i] ) << endl;
+					cout << "\t:: deltas are " << QUASILIN_EPS << " " << QUASILIN_CHECK << endl;
+					return 1;
+				}
+			}
+			else
+			{
+				if( fabsl( mesh[y].Nk1[i] ) > ALMOST_ZERO
+					&& fabsl( ( mesh[y].Nk1[i] - mesh[y].Nk[i] ) / mesh[y].Nk1[i] ) > QUASILIN_EPS 
+					&& fabsl( mesh[y].Nk1[i] - mesh[y].Nk[i] ) > QUASILIN_CHECK)
+				{
+					cout << "\t:: divergence-2 at" << y << " " << i << " : " << fabsl( mesh[y].Nk1[i] ) << " " << fabsl( mesh[y].Nk[i] ) << endl;
+					cout << "\t:: deltas are " << QUASILIN_EPS << " " << QUASILIN_CHECK << endl;
+					return 1;
+				}
+			}
+		}
+	}
+	return 0;
 }
 
 void Solver::dump_sol()

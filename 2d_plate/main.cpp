@@ -55,7 +55,7 @@ int main()
 	cout << "\n pre_step done\n";
 	cout << "pre_step done in " << float( endTime - beginTime ) << " ~~\n";
 
-	while( solver->getCurTime() <= 0.05 )
+	while( solver->getCurTime() <= 0.03 )
 	{
 		for( int i = 0; i < 1; ++i )
 		{
