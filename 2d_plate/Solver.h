@@ -35,7 +35,7 @@ public:
 
 	void pre_step();
 	void do_step();
-	void doStepThermo();
+	int doStepThermo();
 	void dumpThermo();
 	void dump_sol();
 	void dump_whole_sol( int var );

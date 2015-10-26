@@ -31,7 +31,7 @@ Solver::Solver():
 	alpha1( -1.80089e-6 ),
 	alpha2( 26.8023e-6 ),
 
-	J0( 1000000.0 ),
+	J0( 1e5 ),
 	//J0( 0.0 ),
 	omega( 0.0 ),
 	tauC( 0.01 ),
@@ -200,16 +200,18 @@ void Solver::setTask()
 	//eps_x_0 = eps_x - eps_0;
 }
 
-void Solver::doStepThermo()
+int Solver::doStepThermo()
 {
+	int ret = 0;
 	if( solverThermo != 0 )
 	{
-		solverThermo->doStep();
+		ret = solverThermo->doStep();
 	}
 	else
 	{
 		cout << "warning: thermo solver is NULL!\n";
 	}
+	return ret;
 }
 
 void Solver::dumpThermo()

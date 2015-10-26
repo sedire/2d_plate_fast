@@ -25,6 +25,8 @@ public:
 	virtual void dumpSol() = 0;
 	virtual void dumpSolBin() = 0;
 	virtual PL_NUM* getSolDx() = 0;
+
+	ofstream outp1;
 protected:
 	PL_NUM aa;		//lenght of the plate in x-dir
 	PL_NUM bb;		//width of the plate in y-dir

@@ -8,7 +8,9 @@ SolverThermo::SolverThermo() :
 	ci( 0 ),
 	di( 0 )
 {
-
+	stringstream ss;
+	ss << "./res/maxTemp.bin";
+	outp1.open( ss.str(), ofstream::out | ofstream::app | ofstream::binary );
 }
 
 SolverThermo::~SolverThermo()
@@ -171,7 +173,7 @@ int SolverThermoWElectrodes::updateSystem()
 {
 	CC = CC1;
 	CCel = CCel1;
-	Jx = J0;// * exp( -curTime / tauExp ) * sin( M_PI * curTime / tauSin );
+	Jx = J0 * sin( M_PI * curTime / tauSin );// * exp( -curTime / tauExp ) * sin( M_PI * curTime / tauSin );
 	CC1 = Jx * Jx / sigmaX / rho / cc;
 	CCel1 = Jx * Jx / sigmaEl / rhoEl / ccEl; 
 
@@ -257,17 +259,43 @@ int SolverThermoWElectrodes::doStep()
 	{
 		electrNodesN[i] = electrNodesN1[i];
 	}
+	/*for( int i = 0; i < NN; ++i )
+	{
+		plateNodesN[i] = plateNodesN1[i];
+	}*/
+	PL_NUM maxTemp = plateNodesN1[0];
 	for( int i = 0; i < NN; ++i )
 	{
 		plateNodesN[i] = plateNodesN1[i];
+		if( maxTemp < plateNodesN1[i] )
+		{
+			maxTemp = plateNodesN1[i];
+		}
 	}
+
 	solDx[0] = ( plateNodesN1[1] - TleftG1 ) / 2.0 / dx;
 	for( int i = 1; i < NN - 1; ++i )
 	{
 		solDx[i] = ( plateNodesN1[i + 1] - plateNodesN1[i - 1] ) / 2.0 / dx;
 	}
 
-	return 0;
+	//stringstream ss;
+	//ss << "./res/maxTemp.bin";
+	//ofstream of1( ss.str(), ofstream::out | ofstream::app | ofstream::binary );
+	PL_NUM val = maxTemp + Tamb;
+	outp1.write( reinterpret_cast<char*>( &( val ) ), sizeof( PL_NUM ) );
+	//ofstream of1( ss.str(), ofstream::app );
+	//of1 << maxTemp + Tamb << endl;
+	cout << " max temp " << maxTemp + Tamb - 273.15 << endl;
+	//of1.close();
+
+	int ret = 0;
+	if( maxTemp - 273.15 > 300 )
+	{
+		ret = 1;		//max temp reached
+	}
+
+	return ret;
 }
 
 void SolverThermoWElectrodes::dumpSol()	//dump numerical soln + the soln obtained analytically for 1d case
@@ -440,12 +468,30 @@ int SolverThermoConstFlow::doStep()
 		plateNodesN1[i] = di[i] - ci[i] * plateNodesN1[i + 1];
 	}
 
+	PL_NUM maxTemp = plateNodesN1[0];
 	for( int i = 0; i < NN; ++i )
 	{
 		plateNodesN[i] = plateNodesN1[i];
+		if( maxTemp < plateNodesN1[i] )
+		{
+			maxTemp = plateNodesN1[i];
+		}
 	}
 
-	return 0;
+	stringstream ss;
+	ss << "./res/maxTemp.txt";
+	ofstream of1( ss.str(), ofstream::app );
+	of1 << maxTemp + Tamb << endl;
+	cout << " max temp " << maxTemp + Tamb - 273.15 << endl;
+	of1.close();
+
+	int ret = 0;
+	if( maxTemp - 273.15 > 300 )
+	{
+		ret = 1;		//max temp reached
+	}
+
+	return ret;
 }
 
 void SolverThermoConstFlow::dumpSol()	//dump numerical soln + the soln obtained analytically for 1d case
