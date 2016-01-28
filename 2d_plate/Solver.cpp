@@ -14,7 +14,7 @@ Solver::Solver():
 	B12( nu21 * E2 * E1 / ( E1 - nu21 * nu21 * E2 ) ),
 	B66( G23 ),
 
-	By0( 2.0 ),
+	By0( 0.5 ),
 	By1( 2.0 * By0 ),
 	By2( 0.0 ),
 
@@ -29,8 +29,8 @@ Solver::Solver():
 	sigma_y_mu( sigma_y * mu ),
 	sigma_z( sigma_y ),
 
-	//J0( 1000000.0 ),
 	J0( 1e6 ),
+	//J0( 0.0 ),
 	tauC( 0.01 ),
 	tauP( 0.01 ),
 	//p0( 100.0 ),
