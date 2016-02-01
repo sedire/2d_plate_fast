@@ -19,27 +19,27 @@ int main()
 
 	Solver* solver = new Solver();
 
-	/*solver->doStepThermo();
-	solver->dumpThermo();
-	for( int t = 0; t < 300; ++t )
+	solver->doStepThermo();
+	//solver->dumpThermo();
+	for( int t = 0; t < 14000001; ++t )
 	{
 		cout << " ::::: " << t << endl;
 		for( int i = 0; i < 1; ++i )
 		{
 			solver->doStepThermo();
 		}
-		solver->dumpThermo();
-	}*/
-	int ret = 0;
-	int t = 0;
-	while( ret != 1 )
-	{
-		ret = solver->doStepThermo();
 		//solver->dumpThermo();
-		cout << " ::::: " << t << endl;
-		++t;
 	}
-	cout << "... done!\n";
+	//int ret = 0;
+	//int t = 0;
+	//while( ret != 1 )
+	//{
+	//	ret = solver->doStepThermo();
+	//	//solver->dumpThermo();
+	//	cout << " ::::: " << t << endl;
+	//	++t;
+	//}
+	//cout << "... done!\n";
 	//std::cin.ignore( std::numeric_limits<std::streamsize>::max(), '\n' );
 
 	//time_t totTimeStart = time( 0 );

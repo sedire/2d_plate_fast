@@ -31,7 +31,7 @@ Solver::Solver():
 	alpha1( -1.80089e-6 ),
 	alpha2( 26.8023e-6 ),
 
-	J0( 1e5 ),
+	J0( 1e6 ),
 	//J0( 0.0 ),
 	omega( 0.0 ),
 	tauC( 0.01 ),
@@ -152,7 +152,7 @@ void Solver::setTask()
 	orthoBuilder = new OrthoBuilderGSh( varNum, Km );
 	orthoBuilder->setParams();			//NOTE: it takes a lot of time to initialize so much memory
 	solverThermo = new SolverThermoWElectrodes( ( nx + 1 ) / 2 * THERM_NODE_MULT + 1,
-							ap, bp, 0.0508, hp, 0.009525,
+							ap, bp, /*0.0508*/0.1016, hp, 0.009525,
 							J0, tauC, tauC, 296.15,
 							0.0424,
 							10.88, 23.0, sigma_x, rho, 1389.2,
