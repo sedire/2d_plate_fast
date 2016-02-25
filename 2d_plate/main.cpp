@@ -11,7 +11,7 @@ int main()
 {
 	cout << "hello\n";
 
-	//omp_set_num_threads( NUM_OF_THREADS );
+	omp_set_num_threads( NUM_OF_THREADS );
 	
 	time_t beginTime;
 	time_t endTime;
@@ -55,17 +55,22 @@ int main()
 	cout << "\n pre_step done\n";
 	cout << "pre_step done in " << float( endTime - beginTime ) << " ~~\n";
 
+	PL_NUM sum = 0;
+	PL_NUM res = 0;
 	while( solver->getCurTime() <= 0.03 )
 	{
 		for( int i = 0; i < 1; ++i )
 		{
 			beginTime = time( 0 );
-			solver->do_step();
+			res = solver->do_step();
 			endTime = time( 0 );
 			cout << "step done in " << float( endTime - beginTime ) << " ~~\n";
 
-			solver->increaseTime();
+			sum += res * res;
+			cout << " sum is " << sum << endl;
 			cout << solver->getCurTime() << " -- step done\n";
+
+			solver->increaseTime();
 		}
 		//solver->dump_whole_sol( 0 );
 		//solver->dump_whole_sol( 1 );

@@ -34,7 +34,7 @@ public:
 	void calc_nonlin_system_run_test( long  _x, long _t );
 
 	void pre_step();
-	void do_step();
+	PL_NUM do_step();
 	void dump_sol();
 	void dump_whole_sol( int var );
 	void dump_check_sol();
@@ -91,6 +91,10 @@ private:
 
 	const int maxNewtonIt;
 	int newtonIt;
+	int totNewtIt;
+	int totSteps;
+	PL_NUM l2Err;			//l2 norm of the current Newton iter absolute error
+	PL_NUM lInfRelErr;		//lInf norm of the current Newton iter relative error
 	PL_NUM prevVectDiff;
 
 	const PL_NUM dx;
